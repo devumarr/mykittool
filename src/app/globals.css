@@ -4,7 +4,7 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
+    --background: 210 20% 98%;
     --foreground: 222 47% 11%;
     --card: 0 0% 100%;
     --card-foreground: 222 47% 11%;
@@ -76,7 +76,7 @@
 
 @layer utilities {
   .glass-card {
-    @apply bg-card/60 backdrop-blur-2xl border border-foreground/5 shadow-xl transition-all duration-500 overflow-hidden;
+    @apply bg-card border border-foreground/5 shadow-[0_8px_40px_rgba(0,0,0,0.04)] transition-all duration-500 overflow-hidden;
   }
 
   .dark .glass-card {

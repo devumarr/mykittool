@@ -47,7 +47,7 @@ const QrScannerModal = dynamic(() => import('./qr-scanner-modal').then(mod => mo
 const Logo = ({ className = "h-8", iconOnly = false }: { className?: string, iconOnly?: boolean }) => (
   <div className={cn("flex items-center gap-1.5 sm:gap-3", className)}>
     <div className="relative w-7 h-7 sm:w-8 h-8 flex items-center justify-center shrink-0">
-      <div className="absolute inset-0 bg-[#2563eb] rounded-lg shadow-lg shadow-blue-600/20 flex items-center justify-center overflow-hidden icon-container-3d">
+      <div className="absolute inset-0 bg-[#2563eb] rounded-lg shadow-lg shadow-blue-600/10 flex items-center justify-center overflow-hidden icon-container-3d">
         <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 grid grid-cols-2 gap-0.5 relative z-10">
           <div className="border-[1.5px] border-white rounded-[1px]" />
           <div className="bg-white/40 rounded-[1px]" />
@@ -96,7 +96,7 @@ export function Navbar() {
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 z-[100] w-full max-w-full overflow-hidden border-b border-white/5 bg-background/80 backdrop-blur-xl h-16 transition-all duration-300">
+      <header className="fixed top-0 left-0 right-0 z-[100] w-full max-w-full overflow-hidden border-b border-foreground/5 bg-background/80 backdrop-blur-xl h-16 transition-all duration-300">
         <div className="container mx-auto px-3 sm:px-4 md:px-6 h-full flex items-center justify-between gap-1 sm:gap-4 max-w-full box-border">
           <Link href="/" className="flex items-center gap-1.5 sm:gap-2 group transition-transform active:scale-95 min-w-0" aria-label="My Kit Tool Home">
             <Logo />
@@ -124,7 +124,7 @@ export function Navbar() {
              <Link 
               href="/about" 
               className={cn(
-                "flex w-8 h-8 sm:w-10 sm:h-10 items-center justify-center rounded-xl bg-secondary/50 border border-white/5 transition-all hover:text-primary",
+                "flex w-8 h-8 sm:w-10 sm:h-10 items-center justify-center rounded-xl bg-secondary/50 border border-foreground/5 transition-all hover:text-primary",
                 pathname === '/about' ? "text-primary border-primary/20" : "text-foreground/40"
               )}
               title="About Studio"
@@ -136,7 +136,7 @@ export function Navbar() {
              <Link 
               href="/donate" 
               className={cn(
-                "flex w-8 h-8 sm:w-10 sm:h-10 items-center justify-center rounded-xl bg-secondary/50 border border-white/5 transition-all hover:text-primary",
+                "flex w-8 h-8 sm:w-10 sm:h-10 items-center justify-center rounded-xl bg-secondary/50 border border-foreground/5 transition-all hover:text-primary",
                 pathname === '/donate' ? "text-primary border-primary/20" : "text-foreground/40"
               )}
               title="Support Developer"
@@ -159,18 +159,18 @@ export function Navbar() {
                            <span className="hidden md:inline text-[9px] font-black uppercase tracking-widest">Account</span>
                         </button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-56 glass-card mt-2 p-2 border-white/10 shadow-2xl animate-in slide-in-from-top-2">
+                      <DropdownMenuContent align="end" className="w-56 glass-card mt-2 p-2 border-foreground/10 shadow-2xl animate-in slide-in-from-top-2">
                         <DropdownMenuLabel className="px-3 py-2 space-y-1">
                            <p className="text-[10px] font-black text-primary uppercase tracking-widest leading-none">My Account</p>
                            <p className="text-[11px] font-bold text-foreground/60 truncate">{user.email}</p>
                         </DropdownMenuLabel>
-                        <DropdownMenuSeparator className="bg-white/5" />
+                        <DropdownMenuSeparator className="bg-foreground/5" />
                         <DropdownMenuItem asChild>
                            <Link href="/account" className="flex items-center gap-3 px-3 py-2 text-[9px] font-black uppercase tracking-widest text-foreground/40 hover:text-primary transition-colors cursor-pointer rounded-lg">
                               <Fingerprint className="w-3.5 h-3.5" /> Profile
                            </Link>
                         </DropdownMenuItem>
-                        <DropdownMenuSeparator className="bg-white/5" />
+                        <DropdownMenuSeparator className="bg-foreground/5" />
                         <DropdownMenuItem onClick={handleLogout} className="flex items-center gap-3 px-3 py-2 text-[9px] font-black uppercase tracking-widest text-red-500/60 hover:text-red-500 hover:bg-red-500/10 transition-colors cursor-pointer rounded-lg">
                            <LogOut className="w-3.5 h-3.5" /> Logout
                         </DropdownMenuItem>
@@ -179,7 +179,7 @@ export function Navbar() {
                  ) : (
                    <Link 
                     href="/login"
-                    className="flex items-center gap-2 px-2 sm:px-5 h-8 sm:h-10 rounded-xl bg-white/5 border border-white/10 text-foreground/40 hover:text-primary hover:bg-white/10 transition-all shadow-xl icon-container-3d"
+                    className="flex items-center gap-2 px-2 sm:px-5 h-8 sm:h-10 rounded-xl bg-secondary/50 border border-foreground/5 text-foreground/40 hover:text-primary hover:bg-secondary transition-all shadow-xl icon-container-3d"
                     aria-label="Login to your account"
                    >
                       <User className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary" />
