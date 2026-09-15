@@ -231,7 +231,6 @@ const TOOLS: Tool[] = [
   { href: '/sim-data', title: 'Sim Data Finder', desc: 'Identify carrier and regional data for Pakistani numbers.', category: 'Other', icon: Smartphone, keywords: ['sim card', 'pakistan'] },
   { href: '/temp-room', title: 'Temp Room', desc: 'Shared live clipboard. Instant text sync between devices.', category: 'Other', icon: Zap, keywords: ['clipboard sharing'] },
   { href: '/hide-message-photo', title: 'Hide in Photo', desc: 'Embed secret messages inside images using steganography.', category: 'Other', icon: Lock, keywords: ['steganography', 'secret message', 'image', 'photo'] },
-  { href: '/direct-file-share', title: 'Direct File Share', desc: 'Send large files directly to any device via secret link.', category: 'Other', icon: Share2, keywords: ['peer to peer', 'p2p'] },
   { href: '/wifi-qr-decoder', title: 'WiFi QR Finder', desc: 'Extract hidden network passwords from any WiFi QR code.', category: 'Other', icon: Wifi, keywords: ['wifi password', 'qr code'] },
   { href: '/bulk', title: 'Bulk Production', desc: 'Generate hundreds of high-res assets in seconds.', category: 'Other', icon: Layers, keywords: ['bulk generation'] },
   { href: '/nickname-generator', title: 'Nickname Studio', desc: 'Synthesize stylized nicknames and gamertags with artistic matrixing.', category: 'Other', icon: Type, keywords: ['gamertag', 'username'] },
