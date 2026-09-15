@@ -91,17 +91,17 @@ export function Hero() {
       <div className="relative z-10 w-full max-w-5xl mx-auto px-6 flex flex-col items-center text-center space-y-12">
         <div className="flex flex-wrap items-center justify-center gap-3 animate-reveal">
            {/* Primary Brand Badge */}
-           <div className="inline-flex h-6 items-center gap-1.5 px-3 rounded-full bg-primary/10 border border-primary/20 dark:border-primary/30 backdrop-blur-3xl shadow-[0_0_15px_rgba(59,130,246,0.1)] cursor-default whitespace-nowrap">
+           <div className="inline-flex h-6 items-center gap-1.5 px-3 rounded-full bg-primary/10 border border-primary/20 dark:border-primary/30 backdrop-blur-3xl shadow-[0_0_15px_rgba(59,130,246,0.05)] cursor-default whitespace-nowrap">
               <div className="w-1 h-1 rounded-full bg-primary animate-pulse" />
               <span className="text-[8px] font-black uppercase tracking-widest text-primary">120+ free tools</span>
            </div>
 
            {/* Secondary Identity Badges */}
-           <div className="inline-flex h-6 items-center px-3 rounded-full bg-foreground/[0.03] border border-foreground/5 dark:border-foreground/10 backdrop-blur-3xl shadow-[0_0_15px_rgba(255,255,255,0.05)] cursor-default whitespace-nowrap">
+           <div className="inline-flex h-6 items-center px-3 rounded-full bg-foreground/[0.03] border border-foreground/[0.05] dark:border-foreground/10 backdrop-blur-3xl shadow-[0_0_15px_rgba(255,255,255,0.05)] cursor-default whitespace-nowrap">
               <span className="text-[8px] font-black uppercase tracking-widest text-foreground/30">Free online tools</span>
            </div>
            
-           <div className="inline-flex h-6 items-center px-3 rounded-full bg-foreground/[0.03] border border-foreground/5 dark:border-foreground/10 backdrop-blur-3xl shadow-[0_0_15px_rgba(255,255,255,0.05)] cursor-default whitespace-nowrap">
+           <div className="inline-flex h-6 items-center px-3 rounded-full bg-foreground/[0.03] border border-foreground/[0.05] dark:border-foreground/10 backdrop-blur-3xl shadow-[0_0_15px_rgba(255,255,255,0.05)] cursor-default whitespace-nowrap">
               <span className="text-[8px] font-black uppercase tracking-widest text-foreground/30">Free AI tools</span>
            </div>
         </div>
@@ -118,10 +118,10 @@ export function Hero() {
 
         {/* Integrated Discovery Node (Search) */}
         <div className="w-full max-w-lg animate-reveal stagger-3 px-4 relative">
-          <div className="absolute -inset-6 bg-primary/10 blur-[40px] rounded-full pointer-events-none opacity-30 dark:opacity-40" />
+          <div className="absolute -inset-6 bg-primary/10 blur-[40px] rounded-full pointer-events-none opacity-10 dark:opacity-30" />
           
           <form onSubmit={handleSearch} className="relative group/search">
-            <div className="relative flex items-center bg-background/80 dark:bg-background/60 backdrop-blur-3xl border border-primary/20 dark:border-primary/30 rounded-full h-14 shadow-[0_15px_50px_-10px_rgba(0,0,0,0.08)] dark:shadow-[0_20px_60px_-10px_rgba(0,0,0,0.8)] transition-all group-focus-within/search:border-primary group-focus-within/search:shadow-primary/10">
+            <div className="relative flex items-center bg-card dark:bg-background/60 backdrop-blur-3xl border border-foreground/[0.08] dark:border-primary/30 rounded-full h-16 shadow-[0_15px_50px_-10px_rgba(0,0,0,0.05)] dark:shadow-[0_20px_60px_-10px_rgba(0,0,0,0.8)] transition-all group-focus-within/search:border-primary/40 group-focus-within/search:shadow-primary/10">
                <Search className="absolute left-6 w-3.5 h-3.5 text-primary/40 group-focus-within/search:text-primary transition-colors" />
                <Input 
                 value={query}
@@ -131,16 +131,16 @@ export function Hero() {
                 aria-label="Search all tools"
                />
                <div className="absolute right-1.5">
-                  <Button type="submit" size="icon" className="h-11 w-11 rounded-full bg-primary text-primary-foreground shadow-xl transition-all active:scale-95 border-none" aria-label="Execute Search">
-                     <Search className="w-3.5 h-3.5" />
+                  <Button type="submit" size="icon" className="h-12 w-12 rounded-full bg-primary text-primary-foreground shadow-xl transition-all active:scale-95 border-none" aria-label="Execute Search">
+                     <Search className="w-4 h-4" />
                   </Button>
                </div>
             </div>
           </form>
 
           {/* Honest Trust Line */}
-          <div className="mt-4 flex flex-col items-center gap-1.5 animate-reveal stagger-4">
-             <p className="text-[10px] font-bold uppercase tracking-widest text-foreground/40">
+          <div className="mt-6 flex flex-col items-center gap-2 animate-reveal stagger-4">
+             <p className="text-[10px] font-bold uppercase tracking-widest text-foreground/30">
                 Free tools for resume, PDF and images.
              </p>
              {usageCount > 0 && (

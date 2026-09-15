@@ -261,7 +261,7 @@ export function FloatingActionHub() {
                   aria-label={tool ? `Open ${tool.label}` : `Assign tool to slot ${i + 1}`}
                   className={cn(
                     "w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-300 shadow-2xl border active:scale-90",
-                    s ? "bg-white dark:bg-card border-white/10 text-primary hover:border-primary/40" : "bg-white/10 backdrop-blur-xl border-dashed border-white/20 text-white/20 hover:border-primary/40 hover:text-primary"
+                    s ? "bg-white dark:bg-card border-foreground/[0.08] dark:border-white/10 text-primary hover:border-primary/40" : "bg-foreground/[0.03] dark:bg-white/10 backdrop-blur-xl border-dashed border-foreground/[0.08] dark:border-white/20 text-foreground/20 dark:text-white/20 hover:border-primary/40 hover:text-primary"
                   )}
                 >
                   {tool ? <tool.icon className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
@@ -297,34 +297,34 @@ export function FloatingActionHub() {
            </button>
            
            {!isOpen && (
-             <div className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-500 rounded-full border-[3px] border-[#0a0a0c] animate-pulse shadow-lg" />
+             <div className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-500 rounded-full border-[3px] border-background animate-pulse shadow-lg" />
            )}
         </div>
       </div>
 
       {/* REFINED TOOL PICKER MODAL */}
       <Dialog open={showPicker} onOpenChange={setShowAddPicker}>
-         <DialogContent className="glass-card max-w-2xl w-[calc(100%-32px)] border-white/20 p-0 overflow-hidden outline-none flex flex-col max-h-[85vh]">
-            <DialogHeader className="p-6 sm:p-8 border-b border-white/5 bg-secondary/30 shrink-0">
+         <DialogContent className="glass-card max-w-2xl w-[calc(100%-32px)] border-foreground/[0.08] dark:border-white/20 p-0 overflow-hidden outline-none flex flex-col max-h-[85vh]">
+            <DialogHeader className="p-6 sm:p-8 border-b border-foreground/[0.05] dark:border-white/5 bg-secondary/30 shrink-0">
                <div className="flex items-center gap-5">
                   <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shadow-inner border border-primary/20">
                      <Settings2 className="w-6 h-6" />
                   </div>
                   <div className="space-y-1">
-                     <DialogTitle className="text-2xl font-headline font-black uppercase tracking-tight text-white leading-none">Map Studio Unit</DialogTitle>
+                     <DialogTitle className="text-2xl font-headline font-black uppercase tracking-tight text-foreground leading-none">Map Studio Unit</DialogTitle>
                      <DialogDescription className="text-[10px] font-bold text-foreground/40 uppercase tracking-[0.3em]">Hardware slot 0{activeSlotIdx! + 1} integration • Long press to remove</DialogDescription>
                   </div>
                </div>
             </DialogHeader>
             
-            <div className="p-4 sm:p-6 border-b border-white/5 bg-black/20 flex flex-col sm:flex-row gap-4">
+            <div className="p-4 sm:p-6 border-b border-foreground/[0.05] dark:border-white/5 bg-foreground/[0.02] dark:bg-black/20 flex flex-col sm:flex-row gap-4">
                <div className="relative group/search flex-1">
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/20 group-focus-within/search:text-primary transition-colors" />
                   <Input 
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
                     placeholder="Search studio registry..."
-                    className="h-14 pl-12 bg-secondary/50 border-white/10 text-xs font-bold uppercase rounded-2xl shadow-inner"
+                    className="h-14 pl-12 bg-background border-foreground/[0.08] dark:border-white/10 text-xs font-bold uppercase rounded-2xl shadow-inner"
                     autoFocus
                     aria-label="Filter tool registry"
                   />
@@ -340,18 +340,18 @@ export function FloatingActionHub() {
                )}
             </div>
 
-            <div className="flex-1 overflow-y-auto custom-scrollbar p-6 grid grid-cols-2 sm:grid-cols-3 gap-3 bg-black/40">
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-6 grid grid-cols-2 sm:grid-cols-3 gap-3 bg-foreground/[0.01] dark:bg-black/40">
                {filteredTools.map(t => (
                  <button
                    key={t.id}
                    onClick={() => pickTool(t.id)}
-                   className="p-5 rounded-[2rem] bg-white/[0.03] border border-white/5 hover:border-primary/40 hover:bg-primary/5 transition-all text-left group/item flex flex-col gap-4"
+                   className="p-5 rounded-[2rem] bg-card dark:bg-white/[0.03] border border-foreground/[0.08] dark:border-white/5 hover:border-primary/40 hover:bg-primary/[0.02] transition-all text-left group/item flex flex-col gap-4 shadow-sm hover:shadow-md"
                    aria-label={`Select ${t.label}`}
                  >
                     <div className="w-10 h-10 rounded-xl bg-secondary border border-border flex items-center justify-center text-primary/30 group-hover/item:text-primary transition-all shadow-inner">
                        <t.icon className="w-5 h-5" />
                     </div>
-                    <span className="text-[10px] font-black uppercase tracking-widest text-foreground/50 group-hover/item:text-white transition-colors">{t.label}</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-foreground/50 group-hover:text-foreground transition-colors">{t.label}</span>
                  </button>
                ))}
                {filteredTools.length === 0 && (
@@ -362,14 +362,14 @@ export function FloatingActionHub() {
                )}
             </div>
 
-            <div className="p-4 bg-secondary/30 border-t border-white/5 flex justify-center shrink-0">
+            <div className="p-4 bg-secondary/30 border-t border-foreground/[0.05] dark:border-white/5 flex justify-center shrink-0">
                <p className="text-[8px] font-black uppercase tracking-[0.5em] text-foreground/10">Matrix Engine v7.2 Active</p>
             </div>
          </DialogContent>
       </Dialog>
 
       <style jsx global>{`
-        .icon-3d { filter: drop-shadow(1px 1px 0px rgba(0,0,0,0.2)); }
+        .icon-3d { filter: drop-shadow(1px 1px 0px rgba(0,0,0,0.1)); }
         .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { @apply bg-transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { @apply bg-primary/20 rounded-full; }

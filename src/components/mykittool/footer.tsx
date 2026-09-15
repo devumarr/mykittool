@@ -33,8 +33,8 @@ export function Footer() {
   if (pathname !== '/') return null;
 
   return (
-    <footer className="border-t border-foreground/5 bg-background py-32 md:py-48 relative overflow-hidden">
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-px bg-gradient-to-r from-transparent via-foreground/5 to-transparent" />
+    <footer className="border-t border-foreground/[0.05] bg-background py-32 md:py-48 relative overflow-hidden">
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-px bg-gradient-to-r from-transparent via-foreground/[0.05] to-transparent" />
       
       <div className="container mx-auto px-8 max-w-7xl">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-20 mb-32">
@@ -50,7 +50,7 @@ export function Footer() {
                 { icon: Lock, label: 'Private' },
                 { icon: Zap, label: 'Instant' }
               ].map(item => (
-                <div key={item.label} className="flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.3em] text-foreground/40">
+                <div key={item.label} className="flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.3em] text-foreground/30">
                   <item.icon className="w-4 h-4 text-primary/40" /> {item.label}
                 </div>
               ))}
@@ -68,7 +68,7 @@ export function Footer() {
                   { label: 'Logo Maker', href: '/logo-maker' },
                   { label: 'Photo to Text', href: '/ocr' },
                 ].map((link) => (
-                  <Link key={link.label} href={link.href} className="text-xs font-bold text-foreground/60 hover:text-foreground transition-all uppercase tracking-widest">
+                  <Link key={link.label} href={link.href} className="text-xs font-bold text-foreground/50 hover:text-foreground transition-all uppercase tracking-widest">
                     {link.label}
                   </Link>
                 ))}
@@ -88,7 +88,7 @@ export function Footer() {
                 ].map((link) => (
                   <Link key={link.label} href={link.href} className={cn(
                     "text-xs font-bold transition-all uppercase tracking-widest",
-                    link.href === '/donate' ? "text-primary hover:text-primary/80" : "text-foreground/60 hover:text-foreground"
+                    link.href === '/donate' ? "text-primary hover:text-primary/80" : "text-foreground/50 hover:text-foreground"
                   )}>
                     {link.label}
                   </Link>
@@ -98,8 +98,8 @@ export function Footer() {
 
             <div className="space-y-8 col-span-2 md:col-span-1">
               <h4 className="text-[11px] font-black uppercase tracking-[0.4em] text-primary">Developer</h4>
-              <div className="p-6 rounded-[2rem] bg-foreground/5 border border-foreground/5 space-y-6 shadow-xl">
-                <p className="text-[11px] text-foreground/60 font-bold uppercase leading-relaxed tracking-wider">
+              <div className="p-6 rounded-[2rem] bg-foreground/[0.02] border border-foreground/[0.08] space-y-6 shadow-xl">
+                <p className="text-[11px] text-foreground/50 font-bold uppercase leading-relaxed tracking-wider">
                   Built for precision and performance by <span className="text-foreground">Umar Farooq</span>.
                 </p>
                 <Link href="/donate" className="flex items-center gap-4 group/btn">
@@ -108,7 +108,7 @@ export function Footer() {
                    </div>
                    <div className="space-y-0.5">
                       <span className="text-[10px] font-black uppercase tracking-widest text-primary block">Support Dev</span>
-                      <span className="text-[8px] font-bold text-foreground/40 uppercase block">Fuel the engine</span>
+                      <span className="text-[8px] font-bold text-foreground/30 uppercase block">Fuel the engine</span>
                    </div>
                 </Link>
               </div>
@@ -116,16 +116,16 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="pt-20 border-t border-foreground/5 flex flex-col md:flex-row items-center justify-between gap-10">
+        <div className="pt-20 border-t border-foreground/[0.05] flex flex-col md:flex-row items-center justify-between gap-10">
           <div className="flex gap-12">
-            <span className="text-[10px] font-black uppercase tracking-[0.5em] text-foreground/30">V7.2 PRODUCTION</span>
-            <span className="text-[10px] font-black uppercase tracking-[0.5em] text-foreground/30 flex items-center gap-2">
+            <span className="text-[10px] font-black uppercase tracking-[0.5em] text-foreground/20">V7.2 PRODUCTION</span>
+            <span className="text-[10px] font-black uppercase tracking-[0.5em] text-foreground/20 flex items-center gap-2">
                <Globe className="w-3" /> NATIVE PWA
             </span>
           </div>
           
           <div className="text-center md:text-right space-y-1">
-            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-foreground/40">
+            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-foreground/30">
               MY KIT TOOL. ALL RIGHTS RESERVED. © <CopyrightYear />
             </p>
           </div>
