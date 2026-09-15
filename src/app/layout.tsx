@@ -10,6 +10,7 @@ import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { Suspense } from 'react';
 import { KitRouter } from '@/components/mykittool/kit-router';
 import { UsageTracker } from '@/components/mykittool/usage-tracker';
+import { ThemeProvider } from '@/components/mykittool/theme-provider';
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -52,7 +53,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
@@ -62,28 +63,30 @@ export default function RootLayout({
         className="font-body bg-background text-foreground antialiased selection:bg-primary/20 selection:text-foreground overflow-x-hidden w-full max-w-full"
         suppressHydrationWarning
       >
-        <FirebaseClientProvider>
-          <UsageTracker />
-          <Navbar />
-          <main className="min-h-screen pt-16 flex flex-col w-full max-w-full">
-            <Suspense fallback={null}>
-              <ToolNav />
-            </Suspense>
-            <div className="flex-1 w-full max-w-full">
+        <ThemeProvider>
+          <FirebaseClientProvider>
+            <UsageTracker />
+            <Navbar />
+            <main className="min-h-screen pt-16 flex flex-col w-full max-w-full">
               <Suspense fallback={null}>
-                <KitRouter>
-                  {children}
-                </KitRouter>
+                <ToolNav />
               </Suspense>
-              <Suspense fallback={null}>
-                <RelatedTools />
-              </Suspense>
-            </div>
-            <FeedbackRow />
-          </main>
-          <Footer />
-          <Toaster />
-        </FirebaseClientProvider>
+              <div className="flex-1 w-full max-w-full">
+                <Suspense fallback={null}>
+                  <KitRouter>
+                    {children}
+                  </KitRouter>
+                </Suspense>
+                <Suspense fallback={null}>
+                  <RelatedTools />
+                </Suspense>
+              </div>
+              <FeedbackRow />
+            </main>
+            <Footer />
+            <Toaster />
+          </FirebaseClientProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

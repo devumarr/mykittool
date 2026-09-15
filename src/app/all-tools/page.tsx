@@ -329,7 +329,7 @@ function AllToolsPageContent() {
     }, [searchQuery, activeCategory]);
 
     return (
-      <div className="min-h-screen w-full bg-[#02040a] text-foreground/80 selection:bg-primary/20">
+      <div className="min-h-screen w-full bg-background text-foreground/80 selection:bg-primary/20">
         {/* Atmospheric Depth */}
         <div className="fixed inset-0 pointer-events-none opacity-40">
             <div className="absolute top-0 right-0 w-[800px] h-[600px] bg-primary/5 blur-[120px] rounded-full" />
@@ -354,7 +354,7 @@ function AllToolsPageContent() {
           <div className="sticky top-20 z-[80] mb-12 flex flex-col items-center gap-6">
             <div className="w-full max-w-4xl group/search">
                <div className="absolute -inset-4 bg-primary/10 blur-[40px] rounded-full pointer-events-none opacity-0 group-focus-within/search:opacity-100 transition-opacity duration-1000" />
-               <div className="relative bg-black/60 backdrop-blur-3xl border border-white/5 rounded-3xl h-16 shadow-2xl flex items-center px-6 transition-all group-focus-within/search:border-primary/40">
+               <div className="relative bg-background/60 backdrop-blur-3xl border border-foreground/5 rounded-3xl h-16 shadow-2xl flex items-center px-6 transition-all group-focus-within/search:border-primary/40">
                   <Search className="w-4 h-4 text-foreground/20 group-focus-within/search:text-primary transition-colors" />
                   <Input
                     type="text"
@@ -372,7 +372,7 @@ function AllToolsPageContent() {
             </div>
 
             <div className="flex items-center justify-center gap-4 w-full px-2">
-                <div className="w-auto overflow-x-auto no-scrollbar bg-white/[0.02] backdrop-blur-3xl border border-white/5 rounded-2xl p-1.5 shadow-2xl">
+                <div className="w-auto overflow-x-auto no-scrollbar bg-foreground/[0.02] backdrop-blur-3xl border border-foreground/5 rounded-2xl p-1.5 shadow-2xl">
                     <div className="flex items-center space-x-1 min-w-max">
                       {CATEGORIES.map((cat) => (
                         <button
@@ -380,7 +380,7 @@ function AllToolsPageContent() {
                           onClick={() => setActiveCategory(cat.id)}
                           className={cn(
                             "flex items-center gap-2.5 px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap",
-                            activeCategory === cat.id ? "bg-primary text-white shadow-xl" : "text-foreground/30 hover:text-foreground/60 hover:bg-white/5"
+                            activeCategory === cat.id ? "bg-primary text-primary-foreground shadow-xl" : "text-foreground/30 hover:text-foreground/60 hover:bg-foreground/5"
                           )}
                         >
                           <cat.icon className="w-3.5 h-3.5" />
@@ -390,9 +390,9 @@ function AllToolsPageContent() {
                     </div>
                 </div>
 
-                 <div className="flex items-center gap-2 bg-white/[0.02] backdrop-blur-3xl border border-white/5 rounded-2xl p-1.5 shadow-2xl shrink-0">
-                   <button onClick={() => setViewMode('grid')} className={cn("p-2 rounded-xl transition-all", viewMode === 'grid' ? "bg-primary text-white shadow-lg" : "text-foreground/20 hover:text-white")}><LayoutGrid className="w-4 h-4" /></button>
-                   <button onClick={() => setViewMode('list')} className={cn("p-2 rounded-xl transition-all", viewMode === 'list' ? "bg-primary text-white shadow-lg" : "text-foreground/20 hover:text-white")}><List className="w-4 h-4" /></button>
+                 <div className="flex items-center gap-2 bg-foreground/[0.02] backdrop-blur-3xl border border-foreground/5 rounded-2xl p-1.5 shadow-2xl shrink-0">
+                   <button onClick={() => setViewMode('grid')} className={cn("p-2 rounded-xl transition-all", viewMode === 'grid' ? "bg-primary text-primary-foreground shadow-lg" : "text-foreground/20 hover:text-foreground")}><LayoutGrid className="w-4 h-4" /></button>
+                   <button onClick={() => setViewMode('list')} className={cn("p-2 rounded-xl transition-all", viewMode === 'list' ? "bg-primary text-primary-foreground shadow-lg" : "text-foreground/20 hover:text-foreground")}><List className="w-4 h-4" /></button>
                 </div>
             </div>
           </div>
@@ -415,8 +415,8 @@ function AllToolsPageContent() {
                 <div className="py-32 text-center opacity-10 flex flex-col items-center gap-8">
                     <AlertCircle className="w-20 h-20 text-primary" />
                     <div className="space-y-2">
-                       <p className="font-headline font-black text-3xl uppercase tracking-widest">Zero Matches</p>
-                       <p className="text-sm font-bold uppercase">Linguistic signal not found in current matrix.</p>
+                       <p className="font-headline font-black text-3xl uppercase tracking-widest text-foreground">Zero Matches</p>
+                       <p className="text-sm font-bold uppercase text-foreground">Linguistic signal not found in current matrix.</p>
                     </div>
                 </div>
              )}
@@ -430,33 +430,33 @@ function AllToolsPageContent() {
             {displayedTools.map((tool, i) => (
               <a href={tool.href} key={tool.href} className="block group animate-reveal" style={{ animationDelay: `${i * 10}ms` }}>
                   {viewMode === 'grid' ? (
-                      <div className="flex flex-col justify-between h-full p-5 bg-white/[0.01] backdrop-blur-3xl border border-white/5 rounded-3xl transition-all duration-500 hover:bg-white/[0.03] hover:border-primary/20 shadow-2xl relative overflow-hidden group-hover:-translate-y-1">
+                      <div className="flex flex-col justify-between h-full p-5 bg-card border border-foreground/5 rounded-3xl transition-all duration-500 hover:border-primary/20 shadow-2xl relative overflow-hidden group-hover:-translate-y-1">
                           <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
                           <div className="relative z-10">
-                              <div className={cn("inline-flex h-9 w-9 items-center justify-center rounded-xl mb-4 shadow-inner border border-white/5 transition-all group-hover:scale-110",
-                                  tool.category === 'AI' ? 'bg-cyan-500/10 text-cyan-400' :
-                                  tool.category === 'Image' ? 'bg-purple-500/10 text-purple-400' :
-                                  tool.category === 'File' ? 'bg-amber-500/10 text-amber-400' :
-                                  'bg-blue-500/10 text-blue-400',
+                              <div className={cn("inline-flex h-9 w-9 items-center justify-center rounded-xl mb-4 shadow-inner border border-foreground/5 transition-all group-hover:scale-110",
+                                  tool.category === 'AI' ? 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400' :
+                                  tool.category === 'Image' ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400' :
+                                  tool.category === 'File' ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400' :
+                                  'bg-blue-500/10 text-blue-600 dark:text-blue-400',
                               )}>
                                   <tool.icon size={18} />
                               </div>
                               <h3 className="font-headline font-black text-base text-foreground uppercase tracking-tight leading-none mb-2 group-hover:text-primary transition-colors">{tool.title}</h3>
                               <p className="text-[10px] text-foreground/40 font-medium leading-relaxed uppercase tracking-tighter line-clamp-2">{tool.desc}</p>
                           </div>
-                          <div className="mt-6 pt-3 border-t border-white/5 flex items-center justify-between relative z-10">
-                              <span className="text-[8px] font-black text-foreground/20 group-hover:text-primary transition-colors uppercase tracking-[0.3em]">Initialize</span>
+                          <div className="mt-6 pt-3 border-t border-foreground/5 flex items-center justify-between relative z-10">
+                              <span className="text-[8px] font-black text-foreground/10 group-hover:text-primary transition-colors uppercase tracking-[0.3em]">Initialize</span>
                               <ChevronRight size={14} className="text-foreground/10 group-hover:text-primary transition-all group-hover:translate-x-1" />
                          </div>
                       </div>
                   ) : (
-                      <div className="py-4 px-6 bg-white/[0.01] backdrop-blur-3xl border border-white/5 rounded-2xl hover:bg-white/[0.04] hover:border-primary/20 transition-all flex justify-between items-center group/row">
+                      <div className="py-4 px-6 bg-card border border-foreground/5 rounded-2xl hover:border-primary/20 transition-all flex justify-between items-center group/row">
                           <div className="flex items-center gap-6 flex-1 min-w-0">
-                              <div className={cn("flex-shrink-0 h-9 w-9 flex items-center justify-center rounded-xl shadow-inner border border-white/5",
-                                  tool.category === 'AI' ? 'bg-cyan-500/10 text-cyan-400' :
-                                  tool.category === 'Image' ? 'bg-purple-500/10 text-purple-400' :
-                                  tool.category === 'File' ? 'bg-amber-500/10 text-amber-400' :
-                                  'bg-blue-500/10 text-blue-400',
+                              <div className={cn("flex-shrink-0 h-9 w-9 flex items-center justify-center rounded-xl shadow-inner border border-foreground/5",
+                                  tool.category === 'AI' ? 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400' :
+                                  tool.category === 'Image' ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400' :
+                                  tool.category === 'File' ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400' :
+                                  'bg-blue-500/10 text-blue-600 dark:text-blue-400',
                               )}>
                                   <tool.icon size={16} />
                               </div>
@@ -466,7 +466,7 @@ function AllToolsPageContent() {
                               </div>
                           </div>
                           <div className="flex items-center gap-6 shrink-0">
-                             <Badge variant="outline" className="hidden sm:inline-flex bg-background/50 border-white/5 text-[7px] font-black uppercase tracking-widest text-foreground/20">{tool.category}</Badge>
+                             <Badge variant="outline" className="hidden sm:inline-flex bg-background/50 border-foreground/5 text-[7px] font-black uppercase tracking-widest text-foreground/20">{tool.category}</Badge>
                              <ArrowRight className="w-4 h-4 text-foreground/10 group-hover:text-primary transition-all group-hover/row:translate-x-1" />
                           </div>
                       </div>
@@ -490,7 +490,7 @@ function AllToolsPageContent() {
 export default function AllToolsPage() {
   return (
     <Suspense fallback={
-       <div className="min-h-screen flex items-center justify-center bg-[#02040a]">
+       <div className="min-h-screen flex items-center justify-center bg-background">
           <Loader2 className="w-10 h-10 text-primary animate-spin" />
        </div>
     }>

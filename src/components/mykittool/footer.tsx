@@ -1,4 +1,3 @@
-
 "use client"
 
 import React from 'react';
@@ -21,7 +20,7 @@ const Logo = ({ className = "h-8" }: { className?: string }) => (
     </div>
     
     <div className="font-headline font-black text-2xl tracking-tighter leading-none flex items-center">
-      <span className="text-white uppercase">MY KIT</span>
+      <span className="text-foreground dark:text-white uppercase">MY KIT</span>
       <span className="text-primary ml-1.5 uppercase">TOOL</span>
     </div>
   </div>
@@ -34,8 +33,8 @@ export function Footer() {
   if (pathname !== '/') return null;
 
   return (
-    <footer className="border-t border-white/5 bg-[#060608] py-32 md:py-48 relative overflow-hidden">
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-px bg-gradient-to-r from-transparent via-white/5 to-transparent" />
+    <footer className="border-t border-foreground/5 bg-background py-32 md:py-48 relative overflow-hidden">
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-px bg-gradient-to-r from-transparent via-foreground/5 to-transparent" />
       
       <div className="container mx-auto px-8 max-w-7xl">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-20 mb-32">
@@ -99,7 +98,7 @@ export function Footer() {
 
             <div className="space-y-8 col-span-2 md:col-span-1">
               <h4 className="text-[11px] font-black uppercase tracking-[0.4em] text-primary">Developer</h4>
-              <div className="p-6 rounded-[2rem] bg-white/[0.02] border border-white/5 space-y-6 shadow-2xl">
+              <div className="p-6 rounded-[2rem] bg-foreground/5 border border-foreground/5 space-y-6 shadow-xl">
                 <p className="text-[11px] text-foreground/60 font-bold uppercase leading-relaxed tracking-wider">
                   Built for precision and performance by <span className="text-foreground">Umar Farooq</span>.
                 </p>
@@ -109,7 +108,7 @@ export function Footer() {
                    </div>
                    <div className="space-y-0.5">
                       <span className="text-[10px] font-black uppercase tracking-widest text-primary block">Support Dev</span>
-                      <span className="text-[8px] font-bold text-white/40 uppercase block">Fuel the engine</span>
+                      <span className="text-[8px] font-bold text-foreground/40 uppercase block">Fuel the engine</span>
                    </div>
                 </Link>
               </div>
@@ -117,7 +116,7 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="pt-20 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-10">
+        <div className="pt-20 border-t border-foreground/5 flex flex-col md:flex-row items-center justify-between gap-10">
           <div className="flex gap-12">
             <span className="text-[10px] font-black uppercase tracking-[0.5em] text-foreground/30">V7.2 PRODUCTION</span>
             <span className="text-[10px] font-black uppercase tracking-[0.5em] text-foreground/30 flex items-center gap-2">

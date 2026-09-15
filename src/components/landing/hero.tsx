@@ -81,7 +81,7 @@ export function Hero() {
   };
 
   return (
-    <section className="relative w-full min-h-[75vh] flex flex-col items-center justify-center bg-[#02040a] text-white overflow-hidden pt-20 pb-12">
+    <section className="relative w-full min-h-[75vh] flex flex-col items-center justify-center bg-background text-foreground overflow-hidden pt-20 pb-12">
       {/* Premium Atmospheric Depth */}
       <div className="absolute inset-0 z-0">
         {/* Static Luxury Glow */}
@@ -97,21 +97,21 @@ export function Hero() {
            </div>
 
            {/* Secondary Identity Badges */}
-           <div className="inline-flex h-6 items-center px-3 rounded-full bg-white/[0.03] border border-white/10 backdrop-blur-3xl shadow-[0_0_15px_rgba(255,255,255,0.05)] cursor-default whitespace-nowrap">
-              <span className="text-[8px] font-black uppercase tracking-widest text-white/30">Free online tools</span>
+           <div className="inline-flex h-6 items-center px-3 rounded-full bg-foreground/[0.03] border border-foreground/10 backdrop-blur-3xl shadow-[0_0_15px_rgba(255,255,255,0.05)] cursor-default whitespace-nowrap">
+              <span className="text-[8px] font-black uppercase tracking-widest text-foreground/30">Free online tools</span>
            </div>
            
-           <div className="inline-flex h-6 items-center px-3 rounded-full bg-white/[0.03] border border-white/10 backdrop-blur-3xl shadow-[0_0_15px_rgba(255,255,255,0.05)] cursor-default whitespace-nowrap">
-              <span className="text-[8px] font-black uppercase tracking-widest text-white/30">Free AI tools</span>
+           <div className="inline-flex h-6 items-center px-3 rounded-full bg-foreground/[0.03] border border-foreground/10 backdrop-blur-3xl shadow-[0_0_15px_rgba(255,255,255,0.05)] cursor-default whitespace-nowrap">
+              <span className="text-[8px] font-black uppercase tracking-widest text-foreground/30">Free AI tools</span>
            </div>
         </div>
         
         {/* Refined Luxury Title */}
         <div className="space-y-6 animate-reveal stagger-2">
-          <h1 className="text-4xl md:text-6xl font-headline font-black tracking-tighter leading-[1.1] text-white max-w-3xl mx-auto">
+          <h1 className="text-4xl md:text-6xl font-headline font-black tracking-tighter leading-[1.1] text-foreground max-w-3xl mx-auto">
             FREE online <span className="text-primary italic">advanced tool studio</span>
           </h1>
-          <p className="max-w-xl mx-auto text-[10px] text-white/40 font-bold uppercase tracking-[0.3em] leading-relaxed">
+          <p className="max-w-xl mx-auto text-[10px] text-foreground/40 font-bold uppercase tracking-[0.3em] leading-relaxed">
             Master your digital workflow with 120+ private, instant, and high-fidelity utilities.
           </p>
         </div>
@@ -121,17 +121,17 @@ export function Hero() {
           <div className="absolute -inset-6 bg-primary/10 blur-[40px] rounded-full pointer-events-none opacity-40" />
           
           <form onSubmit={handleSearch} className="relative group/search">
-            <div className="relative flex items-center bg-black/60 backdrop-blur-3xl border border-primary/30 rounded-full h-14 shadow-[0_20px_60px_-10px_rgba(0,0,0,0.8)] transition-all group-focus-within/search:border-primary">
+            <div className="relative flex items-center bg-background/60 backdrop-blur-3xl border border-primary/30 rounded-full h-14 shadow-[0_20px_60px_-10px_rgba(0,0,0,0.1)] dark:shadow-[0_20px_60px_-10px_rgba(0,0,0,0.8)] transition-all group-focus-within/search:border-primary">
                <Search className="absolute left-6 w-3.5 h-3.5 text-primary/40 group-focus-within/search:text-primary transition-colors" />
                <Input 
                 value={query}
                 onChange={e => setQuery(e.target.value)}
                 placeholder={`Search ${placeholderText}...`} 
-                className="w-full h-full bg-transparent border-none pl-14 pr-16 text-sm font-bold placeholder:text-white/20 focus-visible:ring-0"
+                className="w-full h-full bg-transparent border-none pl-14 pr-16 text-sm font-bold placeholder:text-foreground/20 focus-visible:ring-0"
                 aria-label="Search all tools"
                />
                <div className="absolute right-1.5">
-                  <Button type="submit" size="icon" className="h-11 w-11 rounded-full bg-white text-black hover:bg-white/90 shadow-xl transition-all active:scale-95 border-none" aria-label="Execute Search">
+                  <Button type="submit" size="icon" className="h-11 w-11 rounded-full bg-primary text-primary-foreground shadow-xl transition-all active:scale-95 border-none" aria-label="Execute Search">
                      <Search className="w-3.5 h-3.5" />
                   </Button>
                </div>
@@ -140,7 +140,7 @@ export function Hero() {
 
           {/* Honest Trust Line */}
           <div className="mt-4 flex flex-col items-center gap-1.5 animate-reveal stagger-4">
-             <p className="text-[10px] font-bold uppercase tracking-widest text-white/40">
+             <p className="text-[10px] font-bold uppercase tracking-widest text-foreground/40">
                 Free tools for resume, PDF and images.
              </p>
              {usageCount > 0 && (
@@ -155,13 +155,13 @@ export function Hero() {
         <div className="flex items-center justify-center gap-12 pt-2 animate-reveal stagger-4">
           <button 
             onClick={() => router.push('/all-tools')}
-            className="group flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.3em] text-white/60 hover:text-primary transition-all"
+            className="group flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.3em] text-foreground/60 hover:text-primary transition-all"
             aria-label="View all tools"
           >
             See all tools <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
           </button>
           
-          <div className="hidden sm:flex items-center gap-8 text-[9px] font-black text-white/20 uppercase tracking-[0.4em]">
+          <div className="hidden sm:flex items-center gap-8 text-[9px] font-black text-foreground/20 uppercase tracking-[0.4em]">
              <div className="flex items-center gap-2.5">
                 <ShieldCheck className="w-4 h-4" />
                 <span>Private</span>

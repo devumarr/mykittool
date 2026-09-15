@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from '@/components/ui/button';
 import dynamic from 'next/dynamic';
+import { ThemeToggle } from './theme-toggle';
 
 const QrScannerModal = dynamic(() => import('./qr-scanner-modal').then(mod => mod.QrScannerModal), {
   ssr: false,
@@ -118,6 +119,8 @@ export function Navbar() {
 
           <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
              {/* Secondary Utilities */}
+             <ThemeToggle />
+             
              <Link 
               href="/about" 
               className={cn(
