@@ -161,12 +161,12 @@ export function Hero() {
             See all tools <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
           </button>
           
-          <div className="hidden sm:flex items-center gap-8 text-[9px] font-black text-foreground/20 uppercase tracking-[0.4em]">
-             <div className="flex items-center gap-2.5">
+          <div className="hidden sm:flex items-center gap-8 text-[9px] font-black uppercase tracking-[0.4em]">
+             <div className="flex items-center gap-2.5 text-emerald-600 dark:text-emerald-400">
                 <ShieldCheck className="w-4 h-4" />
                 <span>Private</span>
              </div>
-             <div className="flex items-center gap-2.5">
+             <div className="flex items-center gap-2.5 text-amber-600 dark:text-amber-400">
                 <Zap className="w-4 h-4" />
                 <span>Instant</span>
              </div>
