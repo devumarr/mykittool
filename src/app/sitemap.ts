@@ -120,7 +120,8 @@ const toolHrefs = [
   '/username-forge', 
   '/hashtag-engine', 
   '/html-site-rescue', 
-  '/mouse-cursor-maker'
+  '/mouse-cursor-maker',
+  '/image-size-converter'
 ];
 
 const blogHrefs = [

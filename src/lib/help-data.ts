@@ -7,6 +7,23 @@ export interface HelpContent {
 }
 
 export const HELP_REGISTRY: Record<string, HelpContent> = {
+  'image-size-converter': {
+    title: 'Image Size Converter',
+    description: 'Professional browser-side image scaling and format conversion utility.',
+    steps: [
+      'Upload your source image (PNG, JPG, or WebP).',
+      'Input the target width and height in pixels.',
+      'Optionally toggle "Lock Aspect Ratio" to prevent distortion.',
+      'Select the output format protocol (PNG, JPG, or WebP).',
+      'Execute the synthesis and download the optimized asset.'
+    ],
+    tips: [
+      'Use the 1200x630 preset for perfect social media preview (OG) images.',
+      'JPG and WebP formats support quality sliders to balance file size and clarity.',
+      'Keep the aspect ratio locked for 1:1 scaling fidelity.'
+    ],
+    privacy: 'All processing occurs 100% locally in your browser memory. Imagery is never transmitted or stored.'
+  },
   'single': {
     title: 'Single QR Studio',
     description: 'Design premium, branded QR codes with custom logos and AI-generated backgrounds.',

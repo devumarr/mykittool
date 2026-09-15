@@ -8,7 +8,8 @@ import {
   QrCode,
   Mic,
   ArrowRight,
-  Activity
+  Activity,
+  Maximize2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -22,6 +23,16 @@ const popularTools = [
     bg: 'bg-cyan-500/10',
     border: 'group-hover:border-cyan-500/30',
     className: 'lg:col-span-4'
+  },
+  {
+    href: '/image-size-converter',
+    icon: Maximize2,
+    title: 'Size Converter',
+    desc: 'Resize any image to 1200×630 or custom sizes instantly.',
+    color: 'text-indigo-600 dark:text-indigo-400',
+    bg: 'bg-indigo-500/10',
+    border: 'group-hover:border-indigo-500/30',
+    className: 'lg:col-span-2'
   },
   {
     href: '/ai-image-generator',

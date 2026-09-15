@@ -132,6 +132,7 @@ const TOOLS: Tool[] = [
   { href: '/vocal-separator', title: 'Vocal Remover', desc: 'Simple stereo matrix for vocal or music reduction.', category: 'AI', icon: Music, keywords: ['music', 'acapella', 'karaoke', 'audio'] },
 
   // Image Tools
+  { href: '/image-size-converter', title: 'Image Size Converter', desc: 'Resize any image to 1200×630, 1080p, or custom sizes instantly.', category: 'Image', icon: Maximize2, keywords: ['resize', 'convert', 'png', 'jpg', 'webp'] },
   { href: '/single', title: 'Single Studio', desc: 'Branded QR codes with logos and AI backgrounds.', category: 'Image', icon: QrCode, keywords: ['qr code', 'branding'] },
   { href: '/background-remove', title: 'Background Remove', desc: 'Isolate subjects from photos and export high-fidelity transparent PNGs.', category: 'Image', icon: Eraser, keywords: ['remove bg', 'transparent', 'png', 'image', 'photo'] },
   { href: '/image-to-link', title: 'Image to Link', desc: 'Upload visual assets and generate shareable link matrices via Imgur.', category: 'Image', icon: Globe, keywords: ['hosting', 'share', 'imgur', 'image', 'photo'] },
@@ -228,6 +229,7 @@ const TOOLS: Tool[] = [
   { href: '/bmi-calculator', title: 'BMI Calculator', desc: 'Calculate body mass index and healthy weight ranges.', category: 'Other', icon: Scale, keywords: ['body mass index'] },
   { href: '/lucky-draw', title: 'Lucky Draw', desc: 'Fair random selection wheel for giveaways and prizes.', category: 'Other', icon: Trophy, keywords: ['random wheel', 'giveaway'] },
   { href: '/tax-calculator', title: 'Tax Calculator', desc: 'Calculate extra % or reverse-lookup original prices instantly.', category: 'Other', icon: Calculator, keywords: ['sales tax', 'vat'] },
+  { href: '/html-to-url', title: 'HTML to URL', desc: 'Convert raw HTML code into a hosted shareable link.', category: 'Other', icon: Globe2, keywords: ['html', 'hosting'] },
   { href: '/sim-data', title: 'Sim Data Finder', desc: 'Identify carrier and regional data for Pakistani numbers.', category: 'Other', icon: Smartphone, keywords: ['sim card', 'pakistan'] },
   { href: '/temp-room', title: 'Temp Room', desc: 'Shared live clipboard. Instant text sync between devices.', category: 'Other', icon: Zap, keywords: ['clipboard sharing'] },
   { href: '/hide-message-photo', title: 'Hide in Photo', desc: 'Embed secret messages inside images using steganography.', category: 'Other', icon: Lock, keywords: ['steganography', 'secret message', 'image', 'photo'] },
