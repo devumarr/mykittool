@@ -1,12 +1,23 @@
 "use client"
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Sun, Moon } from 'lucide-react';
 import { useTheme } from './theme-provider';
 import { cn } from '@/lib/utils';
 
 export function ThemeToggle() {
   const { theme, toggleTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return (
+      <div className="w-8 h-8 sm:w-10 sm:h-10 bg-secondary/50 border border-white/5 rounded-xl animate-pulse" />
+    );
+  }
 
   return (
     <button
