@@ -7,7 +7,7 @@ import { HowItWorks } from '@/components/landing/how-it-works';
 
 export default function Home() {
   return (
-    <div className="flex flex-col items-center w-full max-w-full overflow-x-hidden font-sans bg-background">
+    <div className="flex flex-col items-center w-full max-w-full overflow-x-hidden font-sans bg-background animate-reveal">
       <Hero />
       <PopularTools />
       

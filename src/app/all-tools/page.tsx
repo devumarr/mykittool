@@ -231,6 +231,7 @@ const TOOLS: Tool[] = [
   { href: '/sim-data', title: 'Sim Data Finder', desc: 'Identify carrier and regional data for Pakistani numbers.', category: 'Other', icon: Smartphone, keywords: ['sim card', 'pakistan'] },
   { href: '/temp-room', title: 'Temp Room', desc: 'Shared live clipboard. Instant text sync between devices.', category: 'Other', icon: Zap, keywords: ['clipboard sharing'] },
   { href: '/hide-message-photo', title: 'Hide in Photo', desc: 'Embed secret messages inside images using steganography.', category: 'Other', icon: Lock, keywords: ['steganography', 'secret message', 'image', 'photo'] },
+  { href: '/direct-file-share', title: 'Direct File Share', desc: 'Send large files directly to any device via secret link.', category: 'Other', icon: Share2, keywords: ['peer to peer', 'p2p'] },
   { href: '/wifi-qr-decoder', title: 'WiFi QR Finder', desc: 'Extract hidden network passwords from any WiFi QR code.', category: 'Other', icon: Wifi, keywords: ['wifi password', 'qr code'] },
   { href: '/bulk', title: 'Bulk Production', desc: 'Generate hundreds of high-res assets in seconds.', category: 'Other', icon: Layers, keywords: ['bulk generation'] },
   { href: '/nickname-generator', title: 'Nickname Studio', desc: 'Synthesize stylized nicknames and gamertags with artistic matrixing.', category: 'Other', icon: Type, keywords: ['gamertag', 'username'] },
@@ -329,7 +330,7 @@ function AllToolsPageContent() {
     }, [searchQuery, activeCategory]);
 
     return (
-      <div className="min-h-screen w-full bg-background text-foreground/80 selection:bg-primary/20">
+      <div className="min-h-screen w-full bg-background text-foreground/80 selection:bg-primary/20 animate-reveal">
         {/* Atmospheric Depth */}
         <div className="fixed inset-0 pointer-events-none opacity-40">
             <div className="absolute top-0 right-0 w-[800px] h-[600px] bg-primary/5 blur-[120px] rounded-full" />
@@ -338,7 +339,7 @@ function AllToolsPageContent() {
         
         <main className="container mx-auto px-6 py-20 relative z-20">
           {/* Header Section */}
-          <div className="max-w-4xl mx-auto text-center space-y-6 mb-20 animate-reveal">
+          <div className="max-w-4xl mx-auto text-center space-y-6 mb-20">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-primary/10 border border-primary/20 text-[9px] font-black text-primary uppercase tracking-widest">
               <Layout className="w-3.5 h-3.5" /> Studio Registry
             </div>
@@ -427,10 +428,10 @@ function AllToolsPageContent() {
               "max-w-7xl mx-auto transition-all duration-500 pb-32",
               viewMode === 'grid' ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" : "flex flex-col gap-2"
           )}>
-            {displayedTools.map((tool, i) => (
-              <a href={tool.href} key={tool.href} className="block group animate-reveal" style={{ animationDelay: `${i * 10}ms` }}>
+            {displayedTools.map((tool) => (
+              <a href={tool.href} key={tool.href} className="block group">
                   {viewMode === 'grid' ? (
-                      <div className="flex flex-col justify-between h-full p-5 bg-card border border-foreground/5 rounded-3xl transition-all duration-500 hover:border-primary/20 shadow-2xl relative overflow-hidden group-hover:-translate-y-1">
+                      <div className="flex flex-col justify-between h-full p-5 bg-card border border-foreground/5 rounded-3xl transition-all duration-500 glass-card relative overflow-hidden">
                           <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
                           <div className="relative z-10">
                               <div className={cn("inline-flex h-9 w-9 items-center justify-center rounded-xl mb-4 shadow-inner border border-foreground/5 transition-all group-hover:scale-110",
