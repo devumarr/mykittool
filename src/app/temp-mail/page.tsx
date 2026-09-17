@@ -1,19 +1,25 @@
-"use client"
+"use client";
 
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { 
-  Mail, 
-  RefreshCcw, 
-  Copy, 
-  Trash2, 
-  Inbox, 
-  ArrowRight, 
-  Loader2, 
-  Clock, 
-  User, 
-  X, 
-  Zap, 
-  ShieldCheck, 
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+} from "react";
+import {
+  Mail,
+  RefreshCcw,
+  Copy,
+  Trash2,
+  Inbox,
+  ArrowRight,
+  Loader2,
+  Clock,
+  User,
+  X,
+  Zap,
+  ShieldCheck,
   Activity,
   MessageSquare,
   Sparkles,
@@ -42,15 +48,15 @@ import {
   LayoutGrid,
   Smartphone,
   Unplug,
-  Settings
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Label } from '@/components/ui/label';
-import { useToast } from '@/hooks/use-toast';
-import { cn } from '@/lib/utils';
-import { GetHelp } from '@/components/mykittool/get-help';
+  Settings,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
+import { GetHelp } from "@/components/mykittool/get-help";
 import {
   Dialog,
   DialogContent,
@@ -66,25 +72,34 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Input } from '@/components/ui/input';
-import DOMPurify from 'dompurify';
-import { fetchFromProvider } from './actions';
+import { Input } from "@/components/ui/input";
+import DOMPurify from "dompurify";
+import { fetchFromProvider } from "./actions";
+type ProviderRes = {
+  success: boolean;
+  email?: string;
+  error?: string;
+  messages?: any[];
+  message?: any;
+  sid?: string;
+  token?: string;
+};
 
 const DEFAULT_PROVIDERS = [
-  { id: 'guerrilla', label: 'Guerrilla Mail', icon: ShieldCheck },
-  { id: 'tempmail_lol', label: 'TempMail.lol', icon: Zap },
-  { id: 'mailnesia', label: 'Mailnesia', icon: Globe },
-  { id: 'tempmailc', label: 'TempMailC', icon: Zap },
-  { id: 'mailforspam', label: 'MailForSpam', icon: MessageSquare },
-  { id: 'temporam', label: 'Temporam', icon: LayoutGrid },
-  { id: 'sharklasers', label: 'Sharklasers', icon: ShieldCheck },
+  { id: "guerrilla", label: "Guerrilla Mail", icon: ShieldCheck },
+  { id: "tempmail_lol", label: "TempMail.lol", icon: Zap },
+  { id: "mailnesia", label: "Mailnesia", icon: Globe },
+  { id: "tempmailc", label: "TempMailC", icon: Zap },
+  { id: "mailforspam", label: "MailForSpam", icon: MessageSquare },
+  { id: "temporam", label: "Temporam", icon: LayoutGrid },
+  { id: "sharklasers", label: "Sharklasers", icon: ShieldCheck },
 ];
 
-const REFRESH_RATE = 10; 
-const PIN_STORAGE_KEY = 'mykit_tempmail_pinned_v1';
-const HISTORY_STORAGE_KEY = 'mykit_tempmail_history_v1';
-const MUTE_STORAGE_KEY = 'mykit_tempmail_mute_v1';
-const CUSTOM_PROVIDERS_KEY = 'mykit_tempmail_custom_nodes_v1';
+const REFRESH_RATE = 10;
+const PIN_STORAGE_KEY = "mykit_tempmail_pinned_v1";
+const HISTORY_STORAGE_KEY = "mykit_tempmail_history_v1";
+const MUTE_STORAGE_KEY = "mykit_tempmail_mute_v1";
+const CUSTOM_PROVIDERS_KEY = "mykit_tempmail_custom_nodes_v1";
 
 interface MailMessage {
   id: string | number;
@@ -126,7 +141,7 @@ interface CustomProvider {
     subject: string;
     from: string;
     body: string;
-  }
+  };
 }
 
 /**
@@ -134,13 +149,21 @@ interface CustomProvider {
  * Encapsulates the timer logic to prevent parent re-renders every second.
  * This ensures stable text selection and interaction in the main studio workspace.
  */
-function PollingNode({ email, isRefreshing, onSync }: { email: string | null, isRefreshing: boolean, onSync: (silent?: boolean) => void }) {
+function PollingNode({
+  email,
+  isRefreshing,
+  onSync,
+}: {
+  email: string | null;
+  isRefreshing: boolean;
+  onSync: (silent?: boolean) => void;
+}) {
   const [countdown, setCountdown] = useState(REFRESH_RATE);
 
   useEffect(() => {
     if (!email) return;
     const interval = setInterval(() => {
-      setCountdown(prev => {
+      setCountdown((prev) => {
         if (prev <= 1) return 0;
         return prev - 1;
       });
@@ -156,41 +179,47 @@ function PollingNode({ email, isRefreshing, onSync }: { email: string | null, is
   }, [countdown, onSync]);
 
   return (
-    <Button 
-      variant="outline" 
-      size="sm" 
-      onClick={() => { onSync(); setCountdown(REFRESH_RATE); }} 
-      disabled={isRefreshing || !email} 
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={() => {
+        onSync();
+        setCountdown(REFRESH_RATE);
+      }}
+      disabled={isRefreshing || !email}
       className="h-10 px-4 rounded-xl border-border bg-secondary text-[8px] font-black uppercase tracking-widest hover:text-primary"
     >
-      <RefreshCcw className={cn("w-3.5 h-3.5 mr-2", isRefreshing && "animate-spin")} /> {countdown > 0 ? countdown : '...'}S
+      <RefreshCcw
+        className={cn("w-3.5 h-3.5 mr-2", isRefreshing && "animate-spin")}
+      />{" "}
+      {countdown > 0 ? countdown : "..."}S
     </Button>
   );
 }
 
 export default function TempMailPage() {
   const { toast } = useToast();
-  
+
   // Settings & Status State
   const [provider, setProvider] = useState(DEFAULT_PROVIDERS[0].id);
   const [customNodes, setCustomNodes] = useState<CustomProvider[]>([]);
-  const [sessionData, setSessionData] = useState<any>(null); 
+  const [sessionData, setSessionData] = useState<any>(null);
   const [email, setEmail] = useState<string | null>(null);
-  const [customUsername, setCustomUsername] = useState('');
+  const [customUsername, setCustomUsername] = useState("");
   const [isMuted, setIsMuted] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
-  
+
   // Data State
   const [messages, setMessages] = useState<MailMessage[]>([]);
   const [selectedMsg, setSelectedMsg] = useState<FullMessage | null>(null);
   const [history, setHistory] = useState<HistoryItem[]>([]);
-  
+
   // UI State
   const [isLoading, setIsLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isCopied, setIsCopied] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [pinnedIds, setPinnedIds] = useState<Set<string | number>>(new Set());
   const [isLoaded, setIsLoaded] = useState(false);
 
@@ -198,22 +227,22 @@ export default function TempMailPage() {
   const [showAddNode, setShowAddNode] = useState(false);
   const [isTestingNode, setIsTestingNode] = useState(false);
   const [newNode, setNewNode] = useState<CustomProvider>({
-    id: '',
-    label: '',
-    baseUrl: '',
-    createUrl: '',
-    inboxUrl: '',
-    readUrl: '',
-    headers: '{}',
-    apiKey: '',
+    id: "",
+    label: "",
+    baseUrl: "",
+    createUrl: "",
+    inboxUrl: "",
+    readUrl: "",
+    headers: "{}",
+    apiKey: "",
     paths: {
-      email: '',
-      messages: '',
-      id: 'id',
-      subject: 'subject',
-      from: 'from',
-      body: 'body'
-    }
+      email: "",
+      messages: "",
+      id: "id",
+      subject: "subject",
+      from: "from",
+      body: "body",
+    },
   });
 
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -222,16 +251,19 @@ export default function TempMailPage() {
   const playNotification = useCallback(() => {
     if (isMuted) return;
     try {
-      if (!audioCtxRef.current) audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      if (!audioCtxRef.current)
+        audioCtxRef.current = new (
+          window.AudioContext || (window as any).webkitAudioContext
+        )();
       const ctx = audioCtxRef.current;
-      if (ctx.state === 'suspended') ctx.resume();
-      
+      if (ctx.state === "suspended") ctx.resume();
+
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.connect(gain);
       gain.connect(ctx.destination);
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(587.33, ctx.currentTime); 
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(587.33, ctx.currentTime);
       osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.1);
       gain.gain.setValueAtTime(0.1, ctx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
@@ -246,19 +278,32 @@ export default function TempMailPage() {
     const savedHistory = localStorage.getItem(HISTORY_STORAGE_KEY);
     const savedMute = localStorage.getItem(MUTE_STORAGE_KEY);
     const savedNodes = localStorage.getItem(CUSTOM_PROVIDERS_KEY);
-    
-    if (savedPins) try { setPinnedIds(new Set(JSON.parse(savedPins))); } catch (e) {}
-    if (savedHistory) try { setHistory(JSON.parse(savedHistory)); } catch (e) {}
-    if (savedNodes) try { setCustomNodes(JSON.parse(savedNodes)); } catch (e) {}
-    if (savedMute !== null) setIsMuted(savedMute === 'true');
-    
+
+    if (savedPins)
+      try {
+        setPinnedIds(new Set(JSON.parse(savedPins)));
+      } catch (e) {}
+    if (savedHistory)
+      try {
+        setHistory(JSON.parse(savedHistory));
+      } catch (e) {}
+    if (savedNodes)
+      try {
+        setCustomNodes(JSON.parse(savedNodes));
+      } catch (e) {}
+    if (savedMute !== null) setIsMuted(savedMute === "true");
+
     setIsLoaded(true);
     generateMail(DEFAULT_PROVIDERS[0].id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     if (isLoaded) {
-      localStorage.setItem(PIN_STORAGE_KEY, JSON.stringify(Array.from(pinnedIds)));
+      localStorage.setItem(
+        PIN_STORAGE_KEY,
+        JSON.stringify(Array.from(pinnedIds)),
+      );
       localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(history));
       localStorage.setItem(MUTE_STORAGE_KEY, isMuted.toString());
       localStorage.setItem(CUSTOM_PROVIDERS_KEY, JSON.stringify(customNodes));
@@ -266,14 +311,21 @@ export default function TempMailPage() {
   }, [pinnedIds, history, isMuted, customNodes, isLoaded]);
 
   const allProviders = useMemo(() => {
-    const customWithIcons = customNodes.map(n => ({ id: n.id, label: n.label, icon: Smartphone }));
+    const customWithIcons = customNodes.map((n) => ({
+      id: n.id,
+      label: n.label,
+      icon: Smartphone,
+    }));
     return [...DEFAULT_PROVIDERS, ...customWithIcons];
   }, [customNodes]);
 
   const addToHistory = (newEmail: string, prov: string) => {
-    setHistory(prev => {
-      const filtered = prev.filter(h => h.email !== newEmail);
-      return [{ email: newEmail, provider: prov, timestamp: Date.now() }, ...filtered].slice(0, 20);
+    setHistory((prev) => {
+      const filtered = prev.filter((h) => h.email !== newEmail);
+      return [
+        { email: newEmail, provider: prov, timestamp: Date.now() },
+        ...filtered,
+      ].slice(0, 20);
     });
   };
 
@@ -284,76 +336,96 @@ export default function TempMailPage() {
     setSessionData(null);
     setUnreadCount(0);
 
-    const customConfig = customNodes.find(n => n.id === targetProvider);
+    const customConfig = customNodes.find((n) => n.id === targetProvider);
 
     try {
-      const action = username ? 'genCustomMailbox' : 'genRandomMailbox';
-      const res = await fetchFromProvider(customConfig ? 'custom' : targetProvider, { action, username, email }, customConfig);
-      
+      const action = username ? "genCustomMailbox" : "genRandomMailbox";
+      const res = (await fetchFromProvider(
+        customConfig ? "custom" : targetProvider,
+        { action, username, email },
+        customConfig,
+      )) as ProviderRes;
+
       if (res.success && res.email) {
         setEmail(res.email);
-        setSessionData(res); 
+        setSessionData(res);
         addToHistory(res.email, targetProvider);
         toast({ title: "Identity Active", description: `${res.email} ready.` });
       } else {
         throw new Error(res.error || "Identity restricted on this node.");
       }
     } catch (err: any) {
-      setError(err.message || `Node [${targetProvider.toUpperCase()}] restricted.`);
+      setError(
+        err.message || `Node [${targetProvider.toUpperCase()}] restricted.`,
+      );
     } finally {
       setIsLoading(false);
     }
   };
 
-  const fetchMessages = useCallback(async (silent = false) => {
-    if (!email) return;
-    if (!silent) setIsRefreshing(true);
-    
-    const customConfig = customNodes.find(n => n.id === provider);
+  const fetchMessages = useCallback(
+    async (silent = false) => {
+      if (!email) return;
+      if (!silent) setIsRefreshing(true);
 
-    try {
-      const res = await fetchFromProvider(customConfig ? 'custom' : provider, { 
-        action: 'getMessages', 
-        email, 
-        sid: sessionData?.sid, 
-        token: sessionData?.token 
-      }, customConfig);
+      const customConfig = customNodes.find((n) => n.id === provider);
 
-      if (res.success && Array.isArray(res.messages)) {
-        const incomingMsgs = res.messages;
-        
-        setMessages(prev => {
-          if (incomingMsgs.length === 0 && prev.length > 0) return prev;
+      try {
+        const res = (await fetchFromProvider(
+          customConfig ? "custom" : provider,
+          {
+            action: "getMessages",
+            email,
+            sid: sessionData?.sid,
+            token: sessionData?.token,
+          },
+          customConfig,
+        )) as ProviderRes;
 
-          const prevMap = new Map(prev.map(m => [m.id.toString(), m]));
-          let newDetected = false;
+        if (res.success && Array.isArray(res.messages)) {
+          const incomingMsgs = res.messages;
 
-          incomingMsgs.forEach(msg => {
-            if (!prevMap.has(msg.id.toString())) {
-              prevMap.set(msg.id.toString(), msg);
-              newDetected = true;
-            }
-          });
+          setMessages((prev) => {
+            if (incomingMsgs.length === 0 && prev.length > 0) return prev;
 
-          if (newDetected) {
+            const prevMap = new Map(prev.map((m) => [m.id.toString(), m]));
+            let newDetected = false;
+
+            incomingMsgs.forEach((msg) => {
+              if (!prevMap.has(msg.id.toString())) {
+                prevMap.set(msg.id.toString(), msg);
+                newDetected = true;
+              }
+            });
+
+            if (!newDetected) return prev;
+
             if (prev.length > 0) playNotification();
-            const newCount = incomingMsgs.filter(m => !prev.some(p => p.id.toString() === m.id.toString())).length;
-            setUnreadCount(u => u + newCount);
-            
-            return Array.from(prevMap.values()).sort((a, b) => 
-              new Date(b.date).getTime() - new Date(a.date).getTime()
+            const newCount = incomingMsgs.filter(
+              (m) => !prev.some((p) => p.id.toString() === m.id.toString()),
+            ).length;
+            setUnreadCount((u) => u + newCount);
+
+            return Array.from(prevMap.values()).sort(
+              (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
             );
-          }
-          
-          return prev;
-        });
+          });
+        }
+      } catch (err) {
+        console.warn("Polling interrupted.");
+      } finally {
+        if (!silent) setIsRefreshing(false);
       }
-    } catch (err) {
-      console.warn("Polling interrupted.");
-    } finally {
-      if (!silent) setIsRefreshing(false);
-    }
-  }, [provider, email, sessionData, customNodes, playNotification]);
+    },
+    [provider, email, sessionData, customNodes, playNotification],
+  );
+
+  useEffect(() => {
+    if (!email) return;
+    fetchMessages(true);
+    const t = setInterval(() => fetchMessages(true), 8000);
+    return () => clearInterval(t);
+  }, [email, fetchMessages]);
 
   const handleProviderChange = (newVal: string) => {
     setProvider(newVal);
@@ -362,27 +434,32 @@ export default function TempMailPage() {
 
   const readMessage = async (msg: MailMessage) => {
     if (!email) return;
-    
+
     if (msg.body || msg.htmlBody) {
       setSelectedMsg(msg as FullMessage);
-      setUnreadCount(prev => Math.max(0, prev - 1));
+      setUnreadCount((prev) => Math.max(0, prev - 1));
       return;
     }
 
-    const customConfig = customNodes.find(n => n.id === provider);
+    const customConfig = customNodes.find((n) => n.id === provider);
 
     setIsLoading(true);
     try {
-      const res = await fetchFromProvider(customConfig ? 'custom' : provider, { 
-        action: 'readMessage', 
-        id: msg.id, 
-        email, 
-        sid: sessionData?.sid, 
-        token: sessionData?.token 
-      }, customConfig);
+      const res = (await fetchFromProvider(
+        customConfig ? "custom" : provider,
+        {
+          action: "readMessage",
+          id: msg.id,
+          email,
+          sid: sessionData?.sid,
+          token: sessionData?.token,
+        },
+        customConfig,
+      )) as ProviderRes;
+
       if (res.success) {
         setSelectedMsg({ ...res.message, id: msg.id });
-        setUnreadCount(prev => Math.max(0, prev - 1));
+        setUnreadCount((prev) => Math.max(0, prev - 1));
       } else {
         throw new Error(res.error);
       }
@@ -394,7 +471,7 @@ export default function TempMailPage() {
   };
 
   const togglePin = (id: string | number) => {
-    setPinnedIds(prev => {
+    setPinnedIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
@@ -405,17 +482,32 @@ export default function TempMailPage() {
   const handleTestAndConnectNode = async () => {
     setIsTestingNode(true);
     try {
-      // 1. Validate Identity Provisioning
-      const res = await fetchFromProvider('custom', { action: 'genRandomMailbox' }, newNode);
+      const res = (await fetchFromProvider(
+        "custom",
+        { action: "genRandomMailbox" },
+        newNode,
+      )) as ProviderRes;
+
       if (res.success && res.email) {
-        // 2. Validate Inbox Availability
-        const inboxRes = await fetchFromProvider('custom', { action: 'getMessages', email: res.email }, newNode);
+        const inboxRes = (await fetchFromProvider(
+          "custom",
+          { action: "getMessages", email: res.email },
+          newNode,
+        )) as ProviderRes;
+
         if (inboxRes.success) {
-          const finalNode = { ...newNode, id: `custom_${Date.now()}`, label: newNode.label || 'Custom Server' };
-          setCustomNodes(prev => [...prev, finalNode]);
+          const finalNode = {
+            ...newNode,
+            id: `custom_${Date.now()}`,
+            label: newNode.label || "Custom Server",
+          };
+          setCustomNodes((prev) => [...prev, finalNode]);
           setProvider(finalNode.id);
           setShowAddNode(false);
-          toast({ title: "Node Integrated", description: "Hardware handshake successful." });
+          toast({
+            title: "Node Integrated",
+            description: "Hardware handshake successful.",
+          });
           generateMail(finalNode.id);
         } else {
           throw new Error("Inbox node unreachable.");
@@ -424,14 +516,18 @@ export default function TempMailPage() {
         throw new Error("Identity provisioning node failed.");
       }
     } catch (err: any) {
-      toast({ variant: "destructive", title: "Handshake Failed", description: err.message });
+      toast({
+        variant: "destructive",
+        title: "Handshake Failed",
+        description: err.message,
+      });
     } finally {
       setIsTestingNode(false);
     }
   };
 
   const disconnectNode = (id: string) => {
-    setCustomNodes(prev => prev.filter(n => n.id !== id));
+    setCustomNodes((prev) => prev.filter((n) => n.id !== id));
     if (provider === id) setProvider(DEFAULT_PROVIDERS[0].id);
     toast({ title: "Node Decoupled" });
   };
@@ -439,16 +535,16 @@ export default function TempMailPage() {
   // --- 4. Logic Matrix ---
   const detectedOtp = useMemo(() => {
     if (!selectedMsg) return null;
-    const searchTarget = (selectedMsg.body + selectedMsg.htmlBody);
+    const searchTarget = selectedMsg.body + selectedMsg.htmlBody;
     const match = searchTarget.match(/\b\d{4,8}\b/);
     return match ? match[0] : null;
   }, [selectedMsg]);
 
   const filteredMessages = useMemo(() => {
     const q = searchQuery.toLowerCase();
-    const filtered = messages.filter(m => 
-      m.from.toLowerCase().includes(q) || 
-      m.subject.toLowerCase().includes(q)
+    const filtered = messages.filter(
+      (m) =>
+        m.from.toLowerCase().includes(q) || m.subject.toLowerCase().includes(q),
     );
 
     return [...filtered].sort((a, b) => {
@@ -460,12 +556,17 @@ export default function TempMailPage() {
     });
   }, [messages, searchQuery, pinnedIds]);
 
-  const handleDownload = (fmt: 'html' | 'eml') => {
+  const handleDownload = (fmt: "html" | "eml") => {
     if (!selectedMsg) return;
-    const content = fmt === 'html' ? selectedMsg.htmlBody : `From: ${selectedMsg.from}\nSubject: ${selectedMsg.subject}\nDate: ${selectedMsg.date}\n\n${selectedMsg.body}`;
-    const blob = new Blob([content], { type: fmt === 'html' ? 'text/html' : 'message/rfc822' });
+    const content =
+      fmt === "html"
+        ? selectedMsg.htmlBody
+        : `From: ${selectedMsg.from}\nSubject: ${selectedMsg.subject}\nDate: ${selectedMsg.date}\n\n${selectedMsg.body}`;
+    const blob = new Blob([content], {
+      type: fmt === "html" ? "text/html" : "message/rfc822",
+    });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
     a.download = `email_${selectedMsg.id}.${fmt}`;
     a.click();
@@ -482,358 +583,610 @@ export default function TempMailPage() {
   return (
     <div className="flex flex-1 w-full overflow-hidden bg-[#060608] selection:bg-primary/20 relative">
       <div className="container mx-auto px-4 flex flex-col h-full">
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-10 items-start overflow-hidden pt-4 pb-12">
-        {/* Left Column: Controls & History */}
-        <div className="lg:col-span-4 space-y-8 animate-in fade-in slide-in-from-left-6 duration-700 overflow-y-auto custom-scrollbar h-full pr-2">
-           <Card className="glass-card border-border shadow-2xl overflow-hidden">
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-10 items-start overflow-hidden pt-4 pb-12">
+          {/* Left Column: Controls & History */}
+          <div className="lg:col-span-4 space-y-8 animate-in fade-in slide-in-from-left-6 duration-700 overflow-y-auto custom-scrollbar h-full pr-2">
+            <Card className="glass-card border-border shadow-2xl overflow-hidden">
               <CardHeader className="py-6 border-b border-border bg-secondary/30 flex flex-row items-center justify-between">
-                 <CardTitle className="text-[10px] font-black uppercase tracking-widest flex items-center gap-4 text-foreground">
-                    <Server className="w-5 h-5 text-primary" /> Matrix Config
-                 </CardTitle>
-                 <Button variant="ghost" size="icon" onClick={() => setShowAddNode(true)} className="h-8 w-8 rounded-lg bg-primary/10 text-primary border border-primary/20">
-                    <Plus className="w-4 h-4" />
-                 </Button>
+                <CardTitle className="text-[10px] font-black uppercase tracking-widest flex items-center gap-4 text-foreground">
+                  <Server className="w-5 h-5 text-primary" /> Matrix Config
+                </CardTitle>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setShowAddNode(true)}
+                  className="h-8 w-8 rounded-lg bg-primary/10 text-primary border border-primary/20"
+                >
+                  <Plus className="w-4 h-4" />
+                </Button>
               </CardHeader>
               <CardContent className="pt-8 space-y-8">
-                 <div className="space-y-6">
-                    <div className="space-y-3">
-                       <Label className="text-[10px] font-black text-foreground/40 uppercase tracking-[0.2em] ml-1">Active Server Node</Label>
-                       <Select value={provider} onValueChange={handleProviderChange}>
-                          <SelectTrigger className="h-14 bg-secondary/50 border-border rounded-2xl font-bold uppercase text-[10px] tracking-widest">
-                             <SelectValue placeholder="Choose Provider" />
-                          </SelectTrigger>
-                          <SelectContent className="glass-card">
-                             {allProviders.map(p => (
-                               <SelectItem key={p.id} value={p.id} className="text-[10px] font-black uppercase">
-                                  {p.label} {p.id.startsWith('custom_') && ' (Custom)'}
-                               </SelectItem>
-                             ))}
-                          </SelectContent>
-                       </Select>
-                       
-                       {provider.startsWith('custom_') && (
-                          <div className="flex justify-end">
-                             <button onClick={() => disconnectNode(provider)} className="text-[8px] font-black text-red-500 uppercase tracking-widest hover:underline flex items-center gap-1.5">
-                                <Unplug className="w-3 h-3" /> Disconnect Node
-                             </button>
-                          </div>
-                       )}
-                    </div>
-
-                    <div className="space-y-3">
-                       <Label className="text-[10px] font-black text-foreground/40 uppercase tracking-[0.2em] ml-1">Custom Identity (Optional)</Label>
-                       <div className="flex gap-2">
-                          <Input 
-                            value={customUsername} 
-                            onChange={e => setCustomUsername(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ''))}
-                            placeholder="prefix handle..."
-                            className="h-12 bg-secondary border-border rounded-xl font-bold"
-                          />
-                          <Button 
-                            onClick={() => generateMail(provider, customUsername)}
-                            disabled={!customUsername.trim() || isLoading}
-                            className="h-12 px-4 bg-primary text-white font-black uppercase text-[9px] rounded-xl"
+                <div className="space-y-6">
+                  <div className="space-y-3">
+                    <Label className="text-[10px] font-black text-foreground/40 uppercase tracking-[0.2em] ml-1">
+                      Active Server Node
+                    </Label>
+                    <Select
+                      value={provider}
+                      onValueChange={handleProviderChange}
+                    >
+                      <SelectTrigger className="h-14 bg-secondary/50 border-border rounded-2xl font-bold uppercase text-[10px] tracking-widest">
+                        <SelectValue placeholder="Choose Provider" />
+                      </SelectTrigger>
+                      <SelectContent className="glass-card">
+                        {allProviders.map((p) => (
+                          <SelectItem
+                            key={p.id}
+                            value={p.id}
+                            className="text-[10px] font-black uppercase"
                           >
-                            Set
-                          </Button>
-                       </div>
-                    </div>
+                            {p.label}{" "}
+                            {p.id.startsWith("custom_") && " (Custom)"}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
 
-                    <div className="p-8 rounded-[3rem] bg-secondary/50 border-2 border-primary/20 shadow-inner flex flex-col items-center justify-center text-center gap-4 relative overflow-hidden group/mail">
-                       <p className="text-[9px] font-black uppercase text-primary/40 tracking-[0.6em] relative z-10">Active Mailbox</p>
-                       {isLoading ? (
-                         <Loader2 className="w-8 h-8 text-primary animate-spin" />
-                       ) : (
-                         <h2 className="text-xl font-headline font-black text-foreground break-all select-all relative z-10">
-                            {email || "---"}
-                         </h2>
-                       )}
-                       {unreadCount > 0 && <div className="absolute top-4 right-4 w-5 h-5 rounded-full bg-primary text-white text-[9px] font-black flex items-center justify-center animate-bounce">{unreadCount}</div>}
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                       <Button onClick={() => handleCopyText(email || '', 'identity')} disabled={!email} className="h-14 bg-primary text-white font-black uppercase tracking-widest text-[10px] rounded-2xl shadow-xl shadow-primary/30 active:scale-95 transition-all">
-                          {isCopied === 'identity' ? <CheckCircle2 className="w-5 h-5 mr-2" /> : <Copy className="w-5 h-5 mr-2" />} Copy
-                       </Button>
-                       <Button variant="outline" onClick={() => generateMail()} className="h-14 border-border bg-secondary text-foreground font-black text-[10px] uppercase tracking-widest rounded-2xl hover:text-primary">
-                          <RefreshCcw className="w-4 h-4 mr-2" /> Randomize
-                       </Button>
-                    </div>
-                 </div>
-              </CardContent>
-           </Card>
-
-           <Card className="glass-card border-border shadow-xl flex flex-col max-h-[350px]">
-              <CardHeader className="py-4 border-b border-white/5 bg-secondary/30 flex items-center justify-between shrink-0">
-                 <div className="flex items-center gap-3">
-                    <History className="w-4 h-4 text-primary" />
-                    <CardTitle className="text-[10px] font-black uppercase text-foreground">Identity Registry</CardTitle>
-                 </div>
-                 <button onClick={() => setHistory([])} className="text-[9px] font-black text-foreground/20 hover:text-red-500 uppercase transition-colors">Clear</button>
-              </CardHeader>
-              <CardContent className="p-0 overflow-y-auto custom-scrollbar flex-1">
-                 {history.length === 0 ? (
-                    <div className="py-12 text-center opacity-10 space-y-2">
-                       <History className="w-8 h-8 mx-auto" />
-                       <p className="text-[9px] font-black uppercase tracking-widest">No History</p>
-                    </div>
-                 ) : (
-                    <div className="divide-y divide-white/5">
-                       {history.map((h, i) => (
-                         <div key={i} className="p-4 flex items-center justify-between group hover:bg-white/5 transition-all">
-                            <div className="min-w-0 flex-1 cursor-pointer" onClick={() => { setEmail(h.email); setProvider(h.provider); }}>
-                               <p className="text-[11px] font-bold text-foreground truncate uppercase">{h.email}</p>
-                               <p className="text-[8px] font-black text-foreground/20 uppercase">{h.provider}</p>
-                            </div>
-                            <button onClick={() => handleCopyText(h.email, `hist-${i}`)} className="p-2 text-foreground/10 hover:text-primary transition-colors">
-                               <Copy className="w-3.5 h-3.5" />
-                            </button>
-                         </div>
-                       ))}
-                    </div>
-                 )}
-              </CardContent>
-           </Card>
-        </div>
-
-        {/* Right Column: Registry & Reader */}
-        <div className="lg:col-span-8 space-y-8 animate-in fade-in slide-in-from-right-6 duration-1000 h-full overflow-hidden flex flex-col">
-           <Card className="glass-card border-border shadow-2xl overflow-hidden relative flex flex-col flex-1 bg-black/10">
-              <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
-              <CardHeader className="py-8 border-b border-border bg-secondary/30 flex flex-col gap-6 shrink-0">
-                 <div className="flex flex-row items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shadow-inner">
-                          <Inbox className="w-5 h-5" />
-                        </div>
-                        <CardTitle className="text-[10px] font-black text-primary uppercase tracking-[0.5em]">Linguistic Registry</CardTitle>
-                    </div>
-                    {messages.length > 0 && <Badge className="bg-primary text-white text-[8px] font-black px-2 py-0.5 rounded-full">{messages.length} Signals</Badge>}
-                 </div>
-
-                 <div className="relative group/search">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/20 group-focus-within/search:text-primary transition-colors" />
-                    <Input 
-                      placeholder="Filter signals by sender or subject..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="h-12 pl-12 bg-background/50 border-white/5 rounded-xl text-[10px] font-black uppercase"
-                    />
-                 </div>
-              </CardHeader>
-              
-              <CardContent className="flex-1 p-0 overflow-hidden flex flex-col">
-                 <div className="flex-1 overflow-y-auto custom-scrollbar no-scrollbar">
-                    {filteredMessages.length === 0 ? (
-                      <div className="h-full flex flex-col items-center justify-center py-40 opacity-10 gap-6 grayscale">
-                         <Inbox className="w-24 h-24 text-primary" />
-                         <p className="text-sm font-black uppercase tracking-[0.3em]">Signal Buffer Empty</p>
-                      </div>
-                    ) : (
-                      <div className="divide-y divide-white/5">
-                         {filteredMessages.map((msg) => {
-                           const isPinned = pinnedIds.has(msg.id);
-                           return (
-                            <div 
-                              key={msg.id} 
-                              className={cn("flex group hover:bg-primary/[0.03] transition-all cursor-pointer relative", isPinned && "bg-primary/[0.05]")}
-                              onClick={() => readMessage(msg)}
-                            >
-                                <div className="flex-1 flex items-center gap-6 p-6 min-w-0">
-                                  <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center shadow-inner shrink-0", isPinned ? "bg-primary/20 text-primary" : "bg-secondary border border-border text-primary/30")}>
-                                      <MessageSquare className="w-5 h-5" />
-                                  </div>
-                                  <div className="min-w-0 flex-1">
-                                      <h4 className="text-sm font-bold text-foreground truncate uppercase">{msg.subject || "(No Subject)"}</h4>
-                                      <p className="text-[9px] font-bold text-foreground/20 uppercase truncate">{msg.from}</p>
-                                  </div>
-                                </div>
-                                <div className="p-6 flex items-center gap-4 shrink-0 border-l border-white/5">
-                                   <button 
-                                      onClick={(e) => { e.stopPropagation(); togglePin(msg.id); }}
-                                      className={cn("p-2 rounded-xl transition-all", isPinned ? "text-primary bg-primary/10" : "text-white/10 hover:text-primary")}
-                                   >
-                                      {isPinned ? <PinOff className="w-4 h-4" /> : <Pin className="w-4 h-4" />}
-                                   </button>
-                                   <div className="w-8 h-8 rounded-lg bg-background border border-border flex items-center justify-center text-foreground/10 group-hover:text-primary">
-                                      <ArrowRight className="w-4 h-4" />
-                                   </div>
-                                </div>
-                            </div>
-                           );
-                         })}
+                    {provider.startsWith("custom_") && (
+                      <div className="flex justify-end">
+                        <button
+                          onClick={() => disconnectNode(provider)}
+                          className="text-[8px] font-black text-red-500 uppercase tracking-widest hover:underline flex items-center gap-1.5"
+                        >
+                          <Unplug className="w-3 h-3" /> Disconnect Node
+                        </button>
                       </div>
                     )}
-                 </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <Label className="text-[10px] font-black text-foreground/40 uppercase tracking-[0.2em] ml-1">
+                      Custom Identity (Optional)
+                    </Label>
+                    <div className="flex gap-2">
+                      <Input
+                        value={customUsername}
+                        onChange={(e) =>
+                          setCustomUsername(
+                            e.target.value
+                              .toLowerCase()
+                              .replace(/[^a-z0-9]/g, ""),
+                          )
+                        }
+                        placeholder="prefix handle..."
+                        className="h-12 bg-secondary border-border rounded-xl font-bold"
+                      />
+                      <Button
+                        onClick={() => generateMail(provider, customUsername)}
+                        disabled={!customUsername.trim() || isLoading}
+                        className="h-12 px-4 bg-primary text-white font-black uppercase text-[9px] rounded-xl"
+                      >
+                        Set
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="p-8 rounded-[3rem] bg-secondary/50 border-2 border-primary/20 shadow-inner flex flex-col items-center justify-center text-center gap-4 relative overflow-hidden group/mail">
+                    <p className="text-[9px] font-black uppercase text-primary/40 tracking-[0.6em] relative z-10">
+                      Active Mailbox
+                    </p>
+                    {isLoading ? (
+                      <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                    ) : (
+                      <h2 className="text-xl font-headline font-black text-foreground break-all select-all relative z-10">
+                        {email || "---"}
+                      </h2>
+                    )}
+                    {unreadCount > 0 && (
+                      <div className="absolute top-4 right-4 w-5 h-5 rounded-full bg-primary text-white text-[9px] font-black flex items-center justify-center animate-bounce">
+                        {unreadCount}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <Button
+                      onClick={() => handleCopyText(email || "", "identity")}
+                      disabled={!email}
+                      className="h-14 bg-primary text-white font-black uppercase tracking-widest text-[10px] rounded-2xl shadow-xl shadow-primary/30 active:scale-95 transition-all"
+                    >
+                      {isCopied === "identity" ? (
+                        <CheckCircle2 className="w-5 h-5 mr-2" />
+                      ) : (
+                        <Copy className="w-5 h-5 mr-2" />
+                      )}{" "}
+                      Copy
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => generateMail()}
+                      className="h-14 border-border bg-secondary text-foreground font-black text-[10px] uppercase tracking-widest rounded-2xl hover:text-primary"
+                    >
+                      <RefreshCcw className="w-4 h-4 mr-2" /> Randomize
+                    </Button>
+                  </div>
+                </div>
               </CardContent>
-           </Card>
+            </Card>
+
+            <Card className="glass-card border-border shadow-xl flex flex-col max-h-[350px]">
+              <CardHeader className="py-4 border-b border-white/5 bg-secondary/30 flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-3">
+                  <History className="w-4 h-4 text-primary" />
+                  <CardTitle className="text-[10px] font-black uppercase text-foreground">
+                    Identity Registry
+                  </CardTitle>
+                </div>
+                <button
+                  onClick={() => setHistory([])}
+                  className="text-[9px] font-black text-foreground/20 hover:text-red-500 uppercase transition-colors"
+                >
+                  Clear
+                </button>
+              </CardHeader>
+              <CardContent className="p-0 overflow-y-auto custom-scrollbar flex-1">
+                {history.length === 0 ? (
+                  <div className="py-12 text-center opacity-10 space-y-2">
+                    <History className="w-8 h-8 mx-auto" />
+                    <p className="text-[9px] font-black uppercase tracking-widest">
+                      No History
+                    </p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-white/5">
+                    {history.map((h, i) => (
+                      <div
+                        key={i}
+                        className="p-4 flex items-center justify-between group hover:bg-white/5 transition-all"
+                      >
+                        <div
+                          className="min-w-0 flex-1 cursor-pointer"
+                          onClick={() => {
+                            setEmail(h.email);
+                            setProvider(h.provider);
+                          }}
+                        >
+                          <p className="text-[11px] font-bold text-foreground truncate uppercase">
+                            {h.email}
+                          </p>
+                          <p className="text-[8px] font-black text-foreground/20 uppercase">
+                            {h.provider}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => handleCopyText(h.email, `hist-${i}`)}
+                          className="p-2 text-foreground/10 hover:text-primary transition-colors"
+                        >
+                          <Copy className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Right Column: Registry & Reader */}
+          <div className="lg:col-span-8 space-y-8 animate-in fade-in slide-in-from-right-6 duration-1000 h-full overflow-hidden flex flex-col">
+            <Card className="glass-card border-border shadow-2xl overflow-hidden relative flex flex-col flex-1 bg-black/10">
+              <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+              <CardHeader className="py-8 border-b border-border bg-secondary/30 flex flex-col gap-6 shrink-0">
+                <div className="flex flex-row items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shadow-inner">
+                      <Inbox className="w-5 h-5" />
+                    </div>
+                    <CardTitle className="text-[10px] font-black text-primary uppercase tracking-[0.5em]">
+                      Linguistic Registry
+                    </CardTitle>
+                  </div>
+                  {messages.length > 0 && (
+                    <Badge className="bg-primary text-white text-[8px] font-black px-2 py-0.5 rounded-full">
+                      {messages.length} Signals
+                    </Badge>
+                  )}
+                </div>
+
+                <div className="relative group/search">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/20 group-focus-within/search:text-primary transition-colors" />
+                  <Input
+                    placeholder="Filter signals by sender or subject..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="h-12 pl-12 bg-background/50 border-white/5 rounded-xl text-[10px] font-black uppercase"
+                  />
+                </div>
+              </CardHeader>
+
+              <CardContent className="flex-1 p-0 overflow-hidden flex flex-col">
+                <div className="flex-1 overflow-y-auto custom-scrollbar no-scrollbar">
+                  {filteredMessages.length === 0 ? (
+                    <div className="h-full flex flex-col items-center justify-center py-40 opacity-10 gap-6 grayscale">
+                      <Inbox className="w-24 h-24 text-primary" />
+                      <p className="text-sm font-black uppercase tracking-[0.3em]">
+                        Signal Buffer Empty
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-white/5">
+                      {filteredMessages.map((msg) => {
+                        const isPinned = pinnedIds.has(msg.id);
+                        return (
+                          <div
+                            key={msg.id}
+                            className={cn(
+                              "flex group hover:bg-primary/[0.03] transition-all cursor-pointer relative",
+                              isPinned && "bg-primary/[0.05]",
+                            )}
+                            onClick={() => readMessage(msg)}
+                          >
+                            <div className="flex-1 flex items-center gap-6 p-6 min-w-0">
+                              <div
+                                className={cn(
+                                  "w-12 h-12 rounded-2xl flex items-center justify-center shadow-inner shrink-0",
+                                  isPinned
+                                    ? "bg-primary/20 text-primary"
+                                    : "bg-secondary border border-border text-primary/30",
+                                )}
+                              >
+                                <MessageSquare className="w-5 h-5" />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <h4 className="text-sm font-bold text-foreground truncate uppercase">
+                                  {msg.subject || "(No Subject)"}
+                                </h4>
+                                <p className="text-[9px] font-bold text-foreground/20 uppercase truncate">
+                                  {msg.from}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="p-6 flex items-center gap-4 shrink-0 border-l border-white/5">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  togglePin(msg.id);
+                                }}
+                                className={cn(
+                                  "p-2 rounded-xl transition-all",
+                                  isPinned
+                                    ? "text-primary bg-primary/10"
+                                    : "text-white/10 hover:text-primary",
+                                )}
+                              >
+                                {isPinned ? (
+                                  <PinOff className="w-4 h-4" />
+                                ) : (
+                                  <Pin className="w-4 h-4" />
+                                )}
+                              </button>
+                              <div className="w-8 h-8 rounded-lg bg-background border border-border flex items-center justify-center text-foreground/10 group-hover:text-primary">
+                                <ArrowRight className="w-4 h-4" />
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
-      </div>
       </div>
 
       {/* Custom Node Modal */}
       <Dialog open={showAddNode} onOpenChange={setShowAddNode}>
-         <DialogContent className="glass-card max-w-2xl w-[calc(100%-32px)] border-white/20 p-0 overflow-hidden flex flex-col max-h-[90vh]">
-            <DialogHeader className="p-6 border-b border-white/5 bg-secondary/30 shrink-0">
-               <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shadow-inner border border-primary/20">
-                     <Settings className="w-5 h-5" />
-                  </div>
-                  <div className="min-w-0">
-                     <DialogTitle className="text-xl font-headline font-black text-foreground uppercase tracking-tight">Add Custom Server</DialogTitle>
-                     <DialogDescription className="text-[10px] font-bold text-foreground/40 uppercase tracking-widest">Register a sovereign linguistic identity node</DialogDescription>
-                  </div>
-               </div>
-            </DialogHeader>
+        <DialogContent className="glass-card max-w-2xl w-[calc(100%-32px)] border-white/20 p-0 overflow-hidden flex flex-col max-h-[90vh]">
+          <DialogHeader className="p-6 border-b border-white/5 bg-secondary/30 shrink-0">
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shadow-inner border border-primary/20">
+                <Settings className="w-5 h-5" />
+              </div>
+              <div className="min-w-0">
+                <DialogTitle className="text-xl font-headline font-black text-foreground uppercase tracking-tight">
+                  Add Custom Server
+                </DialogTitle>
+                <DialogDescription className="text-[10px] font-bold text-foreground/40 uppercase tracking-widest">
+                  Register a sovereign linguistic identity node
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
 
-            <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-8 bg-transparent">
-               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                     <Label className="text-[9px] font-black uppercase text-foreground/30 ml-1">Server Label</Label>
-                     <Input value={newNode.label} onChange={e => setNewNode({...newNode, label: e.target.value})} placeholder="e.g. My Secure Node" className="h-11 bg-secondary/50 border-border text-xs font-bold" />
-                  </div>
-                  <div className="space-y-2">
-                     <Label className="text-[9px] font-black uppercase text-foreground/30 ml-1">Base API URL</Label>
-                     <Input value={newNode.baseUrl} onChange={e => setNewNode({...newNode, baseUrl: e.target.value})} placeholder="https://api.temp.com" className="h-11 bg-secondary/50 border-border text-xs font-mono" />
-                  </div>
-               </div>
-
-               <div className="space-y-4">
-                  <Label className="text-[10px] font-black uppercase text-primary tracking-widest ml-1">Protocol Handshakes</Label>
-                  <div className="grid grid-cols-1 gap-4">
-                     <div className="space-y-2">
-                        <Label className="text-[8px] font-black uppercase text-foreground/20">Create Endpoint</Label>
-                        <Input value={newNode.createUrl} onChange={e => setNewNode({...newNode, createUrl: e.target.value})} placeholder="/new or {baseUrl}/generate" className="h-10 bg-secondary/30 border-border text-[10px] font-mono" />
-                     </div>
-                     <div className="space-y-2">
-                        <Label className="text-[8px] font-black uppercase text-foreground/20">Inbox Endpoint</Label>
-                        <Input value={newNode.inboxUrl} onChange={e => setNewNode({...newNode, inboxUrl: e.target.value})} placeholder="/inbox?email={email}" className="h-10 bg-secondary/30 border-border text-[10px] font-mono" />
-                     </div>
-                     <div className="space-y-2">
-                        <Label className="text-[8px] font-black uppercase text-foreground/20">Read Endpoint</Label>
-                        <Input value={newNode.readUrl} onChange={e => setNewNode({...newNode, readUrl: e.target.value})} placeholder="/message?id={id}" className="h-10 bg-secondary/30 border-border text-[10px] font-mono" />
-                     </div>
-                  </div>
-               </div>
-
-               <div className="space-y-4 pt-4 border-t border-white/5">
-                  <Label className="text-[10px] font-black uppercase text-primary tracking-widest ml-1">Linguistic Path Hints</Label>
-                  <div className="grid grid-cols-2 gap-4">
-                     {Object.keys(newNode.paths).map(key => (
-                        <div key={key} className="space-y-1.5">
-                           <Label className="text-[8px] font-black uppercase text-foreground/30 ml-1">{key} path</Label>
-                           <Input value={newNode.paths[key as keyof typeof newNode.paths]} onChange={e => setNewNode({...newNode, paths: {...newNode.paths, [key]: e.target.value}})} placeholder="e.g. data.email" className="h-9 bg-secondary/20 border-border text-[10px] font-mono" />
-                        </div>
-                     ))}
-                  </div>
-               </div>
-
-               <div className="space-y-4 pt-4 border-t border-white/5">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                     <div className="space-y-2">
-                        <Label className="text-[9px] font-black uppercase text-foreground/30 ml-1">Optional Headers (JSON)</Label>
-                        <Input value={newNode.headers} onChange={e => setNewNode({...newNode, headers: e.target.value})} className="h-11 bg-secondary/20 border-border text-[10px] font-mono" />
-                     </div>
-                     <div className="space-y-2">
-                        <Label className="text-[9px] font-black uppercase text-foreground/30 ml-1">Optional API Key</Label>
-                        <Input value={newNode.apiKey} onChange={e => setNewNode({...newNode, apiKey: e.target.value})} type="password" placeholder="••••••••" className="h-11 bg-secondary/20 border-border text-[10px] font-mono" />
-                     </div>
-                  </div>
-               </div>
+          <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-8 bg-transparent">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label className="text-[9px] font-black uppercase text-foreground/30 ml-1">
+                  Server Label
+                </Label>
+                <Input
+                  value={newNode.label}
+                  onChange={(e) =>
+                    setNewNode({ ...newNode, label: e.target.value })
+                  }
+                  placeholder="e.g. My Secure Node"
+                  className="h-11 bg-secondary/50 border-border text-xs font-bold"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[9px] font-black uppercase text-foreground/30 ml-1">
+                  Base API URL
+                </Label>
+                <Input
+                  value={newNode.baseUrl}
+                  onChange={(e) =>
+                    setNewNode({ ...newNode, baseUrl: e.target.value })
+                  }
+                  placeholder="https://api.temp.com"
+                  className="h-11 bg-secondary/50 border-border text-xs font-mono"
+                />
+              </div>
             </div>
 
-            <DialogFooter className="p-6 border-t border-white/5 bg-secondary/30 shrink-0">
-               <div className="flex gap-3 w-full">
-                  <Button variant="outline" onClick={() => setShowAddNode(false)} className="h-12 flex-1 rounded-xl border-white/5 bg-white/5 text-[9px] font-black uppercase">Cancel</Button>
-                  <Button onClick={handleTestAndConnectNode} disabled={isTestingNode} className="h-12 flex-[2] bg-primary text-white font-black uppercase text-[10px] tracking-widest rounded-xl shadow-xl shadow-primary/30">
-                     {isTestingNode ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Zap className="w-4 h-4 mr-2" />}
-                     Test & Connect
-                  </Button>
-               </div>
-            </DialogFooter>
-         </DialogContent>
+            <div className="space-y-4">
+              <Label className="text-[10px] font-black uppercase text-primary tracking-widest ml-1">
+                Protocol Handshakes
+              </Label>
+              <div className="grid grid-cols-1 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-[8px] font-black uppercase text-foreground/20">
+                    Create Endpoint
+                  </Label>
+                  <Input
+                    value={newNode.createUrl}
+                    onChange={(e) =>
+                      setNewNode({ ...newNode, createUrl: e.target.value })
+                    }
+                    placeholder="/new or {baseUrl}/generate"
+                    className="h-10 bg-secondary/30 border-border text-[10px] font-mono"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[8px] font-black uppercase text-foreground/20">
+                    Inbox Endpoint
+                  </Label>
+                  <Input
+                    value={newNode.inboxUrl}
+                    onChange={(e) =>
+                      setNewNode({ ...newNode, inboxUrl: e.target.value })
+                    }
+                    placeholder="/inbox?email={email}"
+                    className="h-10 bg-secondary/30 border-border text-[10px] font-mono"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[8px] font-black uppercase text-foreground/20">
+                    Read Endpoint
+                  </Label>
+                  <Input
+                    value={newNode.readUrl}
+                    onChange={(e) =>
+                      setNewNode({ ...newNode, readUrl: e.target.value })
+                    }
+                    placeholder="/message?id={id}"
+                    className="h-10 bg-secondary/30 border-border text-[10px] font-mono"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4 pt-4 border-t border-white/5">
+              <Label className="text-[10px] font-black uppercase text-primary tracking-widest ml-1">
+                Linguistic Path Hints
+              </Label>
+              <div className="grid grid-cols-2 gap-4">
+                {Object.keys(newNode.paths).map((key) => (
+                  <div key={key} className="space-y-1.5">
+                    <Label className="text-[8px] font-black uppercase text-foreground/30 ml-1">
+                      {key} path
+                    </Label>
+                    <Input
+                      value={newNode.paths[key as keyof typeof newNode.paths]}
+                      onChange={(e) =>
+                        setNewNode({
+                          ...newNode,
+                          paths: { ...newNode.paths, [key]: e.target.value },
+                        })
+                      }
+                      placeholder="e.g. data.email"
+                      className="h-9 bg-secondary/20 border-border text-[10px] font-mono"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-4 pt-4 border-t border-white/5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-[9px] font-black uppercase text-foreground/30 ml-1">
+                    Optional Headers (JSON)
+                  </Label>
+                  <Input
+                    value={newNode.headers}
+                    onChange={(e) =>
+                      setNewNode({ ...newNode, headers: e.target.value })
+                    }
+                    className="h-11 bg-secondary/20 border-border text-[10px] font-mono"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[9px] font-black uppercase text-foreground/30 ml-1">
+                    Optional API Key
+                  </Label>
+                  <Input
+                    value={newNode.apiKey}
+                    onChange={(e) =>
+                      setNewNode({ ...newNode, apiKey: e.target.value })
+                    }
+                    type="password"
+                    placeholder="••••••••"
+                    className="h-11 bg-secondary/20 border-border text-[10px] font-mono"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="p-6 border-t border-white/5 bg-secondary/30 shrink-0">
+            <div className="flex gap-3 w-full">
+              <Button
+                variant="outline"
+                onClick={() => setShowAddNode(false)}
+                className="h-12 flex-1 rounded-xl border-white/5 bg-white/5 text-[9px] font-black uppercase"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleTestAndConnectNode}
+                disabled={isTestingNode}
+                className="h-12 flex-[2] bg-primary text-white font-black uppercase text-[10px] tracking-widest rounded-xl shadow-xl shadow-primary/30"
+              >
+                {isTestingNode ? (
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                ) : (
+                  <Zap className="w-4 h-4 mr-2" />
+                )}
+                Test & Connect
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
       </Dialog>
 
       {/* Message Modal */}
       <Dialog open={!!selectedMsg} onOpenChange={() => setSelectedMsg(null)}>
-        <DialogContent className="glass-card max-w-6xl border-white/20 p-0 overflow-hidden outline-none flex flex-col max-h-[85vh] select-text">
+        <DialogContent className="fixed left-1/2 top-[48%] z-[80] w-[calc(100%-1.5rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 p-0 gap-0 overflow-hidden rounded-2xl border border-border bg-background shadow-2xl outline-none flex flex-col max-h-[80vh] select-text">
           {selectedMsg && (
             <>
-               <DialogHeader className="px-6 py-4 border-b border-white/5 bg-secondary/30 shrink-0">
-                  <div className="flex items-start justify-between gap-4">
-                     <div className="min-w-0 flex-1">
-                        <DialogTitle className="text-xl font-headline font-black text-foreground uppercase tracking-tight line-clamp-1">{selectedMsg.subject || "(NO SUBJECT)"}</DialogTitle>
-                        <DialogDescription className="text-[10px] font-bold text-foreground/40 uppercase truncate">From: {selectedMsg.from} • {selectedMsg.date}</DialogDescription>
-                     </div>
-                     <button onClick={() => setSelectedMsg(null)} className="p-2 rounded-lg text-foreground/20 hover:text-white"><X className="w-5 h-5" /></button>
+              <DialogHeader className="px-6 py-4 border-b border-white/5 bg-secondary/30 shrink-0">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="min-w-0 flex-1">
+                    <DialogTitle className="text-xl font-headline font-black text-foreground uppercase tracking-tight line-clamp-1">
+                      {selectedMsg.subject || "(NO SUBJECT)"}
+                    </DialogTitle>
+                    <DialogDescription className="text-[10px] font-bold text-foreground/40 uppercase truncate">
+                      From: {selectedMsg.from} • {selectedMsg.date}
+                    </DialogDescription>
                   </div>
-               </DialogHeader>
+                  <button
+                    onClick={() => setSelectedMsg(null)}
+                    className="p-2 rounded-lg text-foreground/20 hover:text-white"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              </DialogHeader>
 
-               {detectedOtp && (
-                 <div className="px-6 py-3 bg-primary/[0.05] border-b border-primary/20 flex items-center justify-between gap-4 shrink-0">
-                    <div className="flex items-center gap-3">
-                       <KeyRound className="w-4 h-4 text-primary" />
-                       <span className="text-[10px] font-black uppercase text-primary tracking-widest">Verification Code:</span>
-                       <span className="text-base font-mono font-black text-foreground tracking-widest select-all">{detectedOtp}</span>
-                    </div>
-                    <Button onClick={() => handleCopyText(detectedOtp, 'otp')} size="sm" className="h-9 px-4 bg-primary text-white font-black text-[9px] uppercase tracking-widest rounded-xl">Copy Code</Button>
-                 </div>
-               )}
-               
-               <div className="flex-1 overflow-auto custom-scrollbar p-0 bg-white select-text">
-                  <div className="w-full min-h-full block select-text" style={{ writingMode: 'horizontal-tb', direction: 'ltr' }}>
-                    {selectedMsg.htmlBody ? (
-                      <div 
-                        className="text-slate-900 leading-relaxed text-base w-full p-6 sm:p-10 block select-text" 
-                        style={{ 
-                          whiteSpace: 'normal', 
-                          wordBreak: 'normal', 
-                          overflowWrap: 'anywhere',
-                          display: 'block',
-                          textAlign: 'left',
-                          userSelect: 'text',
-                          WebkitUserSelect: 'text'
-                        }}
-                        onPointerDown={(e) => e.stopPropagation()}
-                        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(selectedMsg.htmlBody) }} 
-                      />
-                    ) : (
-                      <pre 
-                        className="text-slate-800 font-mono text-sm whitespace-pre-wrap p-6 sm:p-10 bg-slate-50 w-full block select-text"
-                        style={{ 
-                          wordBreak: 'normal', 
-                          overflowWrap: 'anywhere',
-                          display: 'block',
-                          textAlign: 'left',
-                          userSelect: 'text',
-                          WebkitUserSelect: 'text'
-                        }}
-                        onPointerDown={(e) => e.stopPropagation()}
-                      >
-                        {selectedMsg.body}
-                      </pre>
-                    )}
-                  </div>
-               </div>
-
-               <div className="px-6 py-4 border-t border-white/5 bg-secondary/30 shrink-0 flex items-center justify-between">
-                  <span className="text-[8px] font-black text-foreground/20 uppercase tracking-widest">Verified Local Protocol</span>
+              {detectedOtp && (
+                <div className="px-6 py-3 bg-primary/[0.05] border-b border-primary/20 flex items-center justify-between gap-4 shrink-0">
                   <div className="flex items-center gap-3">
-                     <Button onClick={() => handleDownload('html')} variant="outline" size="sm" className="h-9 px-4 rounded-xl border-white/5 bg-white/5 text-[8px] font-black uppercase tracking-widest hover:text-primary transition-all"><FileCode className="w-3.5 h-3.5 mr-2" /> HTML</Button>
-                     <Button onClick={() => handleDownload('eml')} variant="outline" size="sm" className="h-9 px-4 rounded-xl border-white/5 bg-white/5 text-[8px] font-black uppercase tracking-widest hover:text-primary transition-all"><FileDown className="w-3.5 h-3.5 mr-2" /> EML</Button>
+                    <KeyRound className="w-4 h-4 text-primary" />
+                    <span className="text-[10px] font-black uppercase text-primary tracking-widest">
+                      Verification Code:
+                    </span>
+                    <span className="text-base font-mono font-black text-foreground tracking-widest select-all">
+                      {detectedOtp}
+                    </span>
                   </div>
-               </div>
+                  <Button
+                    onClick={() => handleCopyText(detectedOtp, "otp")}
+                    size="sm"
+                    className="h-9 px-4 bg-primary text-white font-black text-[9px] uppercase tracking-widest rounded-xl"
+                  >
+                    Copy Code
+                  </Button>
+                </div>
+              )}
+
+              <div className="flex-1 overflow-auto custom-scrollbar p-0 bg-white select-text">
+                <div
+                  className="w-full min-h-full block select-text"
+                  style={{ writingMode: "horizontal-tb", direction: "ltr" }}
+                >
+                  {selectedMsg.htmlBody ? (
+                    <div
+                      className="text-slate-900 leading-relaxed text-base w-full p-6 sm:p-10 block select-text"
+                      style={{
+                        whiteSpace: "normal",
+                        wordBreak: "normal",
+                        overflowWrap: "anywhere",
+                        display: "block",
+                        textAlign: "left",
+                        userSelect: "text",
+                        WebkitUserSelect: "text",
+                      }}
+                      onPointerDown={(e) => e.stopPropagation()}
+                      dangerouslySetInnerHTML={{
+                        __html: DOMPurify.sanitize(selectedMsg.htmlBody),
+                      }}
+                    />
+                  ) : (
+                    <pre
+                      className="text-slate-800 font-mono text-sm whitespace-pre-wrap p-6 sm:p-10 bg-slate-50 w-full block select-text"
+                      style={{
+                        wordBreak: "normal",
+                        overflowWrap: "anywhere",
+                        display: "block",
+                        textAlign: "left",
+                        userSelect: "text",
+                        WebkitUserSelect: "text",
+                      }}
+                      onPointerDown={(e) => e.stopPropagation()}
+                    >
+                      {selectedMsg.body}
+                    </pre>
+                  )}
+                </div>
+              </div>
+
+              <div className="px-6 py-4 border-t border-white/5 bg-secondary/30 shrink-0 flex items-center justify-between">
+                <span className="text-[8px] font-black text-foreground/20 uppercase tracking-widest">
+                  Verified Local Protocol
+                </span>
+                <div className="flex items-center gap-3">
+                  <Button
+                    onClick={() => handleDownload("html")}
+                    variant="outline"
+                    size="sm"
+                    className="h-9 px-4 rounded-xl border-white/5 bg-white/5 text-[8px] font-black uppercase tracking-widest hover:text-primary transition-all"
+                  >
+                    <FileCode className="w-3.5 h-3.5 mr-2" /> HTML
+                  </Button>
+                  <Button
+                    onClick={() => handleDownload("eml")}
+                    variant="outline"
+                    size="sm"
+                    className="h-9 px-4 rounded-xl border-white/5 bg-white/5 text-[8px] font-black uppercase tracking-widest hover:text-primary transition-all"
+                  >
+                    <FileDown className="w-3.5 h-3.5 mr-2" /> EML
+                  </Button>
+                </div>
+              </div>
             </>
           )}
         </DialogContent>
       </Dialog>
-      
+
       <style jsx global>{`
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-track { @apply bg-transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { @apply bg-primary/20 rounded-full; }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          @apply bg-transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          @apply bg-primary/20 rounded-full;
+        }
+        .no-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+        .no-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
       `}</style>
     </div>
   );
