@@ -1,85 +1,97 @@
 "use client";
 
-import { MousePointer2, DownloadCloud, ShieldCheck } from "lucide-react";
-import { cn } from "@/lib/utils";
+import Link from "next/link";
+import {
+  MousePointer2,
+  DownloadCloud,
+  ShieldCheck,
+  ArrowRight,
+} from "lucide-react";
 
 const steps = [
   {
     icon: MousePointer2,
-    title: "1. Choose a tool",
-    description: "Identify the tool you need from our collection.",
-    color: "text-cyan-600 dark:text-cyan-400",
-    bg: "bg-cyan-500/10",
-    border: "group-hover:border-cyan-500/20",
+    step: "01",
+    title: "Choose a tool",
+    description: "Pick what you need from the library.",
+    well: "bg-cyan-100 text-cyan-700 dark:bg-cyan-500/25 dark:text-cyan-300",
+    glow: "group-hover:shadow-cyan-500/20",
   },
   {
     icon: ShieldCheck,
-    title: "2. Use it in your browser",
-    description:
-      "Process everything locally on your device for absolute privacy.",
-    color: "text-emerald-600 dark:text-emerald-400",
-    bg: "bg-emerald-500/10",
-    border: "group-hover:border-emerald-500/20",
+    step: "02",
+    title: "Use it here",
+    description: "Work in the browser. Files stay on the device.",
+    well: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/25 dark:text-emerald-300",
+    glow: "group-hover:shadow-emerald-500/20",
   },
   {
     icon: DownloadCloud,
-    title: "3. Download or copy",
-    description: "Save your result instantly to your computer or phone.",
-    color: "text-purple-600 dark:text-purple-400",
-    bg: "bg-purple-500/10",
-    border: "group-hover:border-purple-500/20",
+    step: "03",
+    title: "Save the result",
+    description: "Download or copy when you are done.",
+    well: "bg-violet-100 text-violet-700 dark:bg-violet-500/25 dark:text-violet-300",
+    glow: "group-hover:shadow-violet-500/20",
   },
 ];
 
 export function HowItWorks() {
   return (
-    <section className="w-full py-24 sm:py-32 bg-background relative overflow-hidden">
-      <div className="max-w-7xl mx-auto px-6 lg:px-8 relative z-10">
-        <div className="text-center mb-24 space-y-4 animate-reveal">
-          <h2 className="text-2xl md:text-4xl font-headline font-black text-foreground uppercase tracking-tight leading-none">
-            Simple <span className="text-primary italic">Process</span>
-          </h2>
-          <p className="text-[9px] text-foreground/50 font-black uppercase tracking-[0.3em]">
-            Three step logic
+    <section className="relative isolate w-full overflow-hidden bg-background py-20">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(37,99,235,0.10),_transparent_55%)] dark:bg-[radial-gradient(ellipse_at_top,_rgba(96,165,250,0.14),_transparent_55%)]" />
+
+      <div className="relative mx-auto max-w-5xl px-6">
+        <div className="mb-12 text-center">
+          <p className="text-xs font-medium uppercase tracking-[0.18em] text-primary">
+            How it works
           </p>
+          <h2 className="mt-2 normal-case text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
+            Three steps. Then you are done.
+          </h2>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12">
-          {steps.map((step, index) => (
-            <div
-              key={index}
-              className="flex flex-col items-center text-center group animate-reveal"
-              style={{ animationDelay: `${index * 150}ms` }}
-            >
+        <div className="relative">
+          <div className="pointer-events-none absolute left-[16%] right-[16%] top-8 hidden h-px bg-gradient-to-r from-cyan-400/50 via-emerald-400/50 to-violet-400/50 md:block" />
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            {steps.map((item) => (
               <div
-                className={cn(
-                  "flex flex-col items-center justify-center h-full w-full p-10 rounded-[2.5rem] bg-card border border-foreground/5 transition-all duration-500 hover:border-primary/20 hover:-translate-y-1 shadow-xl dark:shadow-2xl relative overflow-hidden",
-                  step.border,
-                )}
+                key={item.step}
+                className={`group relative rounded-3xl bg-card p-7 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_12px_32px_rgba(15,23,42,0.06)] transition-all duration-300 hover:-translate-y-1.5 dark:shadow-[0_0_0_1px_rgba(255,255,255,0.06)] ${item.glow}`}
               >
-                <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
+                <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-primary/70 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
 
-                <div
-                  className={cn(
-                    "mb-8 w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500 border border-foreground/5 shadow-inner group-hover:scale-110",
-                    step.bg,
-                    step.color,
-                  )}
-                >
-                  <step.icon className="w-6 h-6" />
+                <div className="mb-8 flex items-center justify-between">
+                  <div
+                    className={`flex h-11 w-11 items-center justify-center rounded-2xl ${item.well} transition-transform duration-300 group-hover:scale-110`}
+                  >
+                    <item.icon className="h-5 w-5" />
+                  </div>
+                  <span className="text-sm font-medium text-muted-foreground group-hover:text-primary">
+                    {item.step}
+                  </span>
                 </div>
 
-                <div className="space-y-3 relative z-10">
-                  <h3 className="text-xs font-black text-foreground uppercase tracking-[0.3em]">
-                    {step.title}
-                  </h3>
-                  <p className="text-[10px] text-foreground/50 font-medium leading-relaxed uppercase tracking-tighter max-w-[200px] mx-auto">
-                    {step.description}
-                  </p>
-                </div>
+                <h3 className="normal-case text-base font-semibold text-foreground">
+                  {item.title}
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                  {item.description}
+                </p>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-12 text-center">
+          <Link
+            href="/all-tools"
+            className="group relative inline-flex items-center gap-2 overflow-hidden rounded-full bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground shadow-[0_0_20px_rgba(37,99,235,0.35)] transition-all duration-300 hover:gap-3 hover:shadow-[0_0_28px_rgba(37,99,235,0.55)]"
+          >
+            <span className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/25 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
+            Browse all tools
+            <ArrowRight className="relative h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+          </Link>
         </div>
       </div>
     </section>

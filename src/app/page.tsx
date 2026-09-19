@@ -68,7 +68,7 @@ export default function Home() {
               <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
                 PDF, image and AI tools in one place.
               </p>
-              <span className="mt-5 block h-px w-10 bg-primary/60 transition-all duration-300 group-hover:w-16" />
+              <span className="mx-auto mt-5 block h-[2px] w-8 rounded-full bg-primary/40 shadow-[0_0_0_rgba(37,99,235,0)] transition-all duration-500 group-hover:w-full group-hover:bg-primary group-hover:shadow-[0_0_16px_rgba(37,99,235,0.85)] sm:mx-0" />
             </div>
 
             <div className="group text-center sm:text-left">
@@ -79,7 +79,7 @@ export default function Home() {
               <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
                 Most work never leaves this device.
               </p>
-              <span className="mt-5 block h-px w-10 bg-emerald-500/70 transition-all duration-300 group-hover:w-16" />
+              <span className="mx-auto mt-5 block h-[2px] w-8 rounded-full bg-emerald-500/40 shadow-[0_0_0_rgba(16,185,129,0)] transition-all duration-500 group-hover:w-full group-hover:bg-emerald-500 group-hover:shadow-[0_0_16px_rgba(16,185,129,0.85)] sm:mx-0" />
             </div>
 
             <div className="group text-center sm:text-left">
@@ -90,7 +90,7 @@ export default function Home() {
               <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
                 No account. Open a tool and go.
               </p>
-              <span className="mt-5 block h-px w-10 bg-violet-500/70 transition-all duration-300 group-hover:w-16" />
+              <span className="mx-auto mt-5 block h-[2px] w-8 rounded-full bg-violet-500/40 shadow-[0_0_0_rgba(139,92,246,0)] transition-all duration-500 group-hover:w-full group-hover:bg-violet-500 group-hover:shadow-[0_0_16px_rgba(139,92,246,0.85)] sm:mx-0" />
             </div>
           </div>
         </div>
