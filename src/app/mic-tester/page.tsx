@@ -1,14 +1,14 @@
-"use client"
+"use client";
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { 
-  Mic, 
-  MicOff, 
-  Play, 
-  Square, 
-  Trash2, 
-  RefreshCcw, 
-  Settings2, 
+import React, { useState, useRef, useEffect, useCallback } from "react";
+import {
+  Mic,
+  MicOff,
+  Play,
+  Square,
+  Trash2,
+  RefreshCcw,
+  Settings2,
   Info,
   CheckCircle2,
   AlertCircle,
@@ -20,28 +20,36 @@ import {
   Monitor,
   Video,
   Pause,
-  ArrowRight
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useToast } from '@/hooks/use-toast';
-import { cn } from '@/lib/utils';
+  ArrowRight,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
 export default function MicTesterPage() {
   const { toast } = useToast();
-  
+
   // State
   const [isActive, setIsActive] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [devices, setDevices] = useState<{id: string, label: string}[]>([]);
-  const [selectedDeviceId, setSelectedDeviceId] = useState<string>('');
+  const [devices, setDevices] = useState<{ id: string; label: string }[]>([]);
+  const [selectedDeviceId, setSelectedDeviceId] = useState<string>("");
   const [audioLevel, setAudioLevel] = useState(0);
   const [recordedUrl, setRecordedUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [status, setStatus] = useState<'standby' | 'active' | 'silent' | 'blocked'>('standby');
+  const [status, setStatus] = useState<
+    "standby" | "active" | "silent" | "blocked"
+  >("standby");
 
   // Refs for Web Audio
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -57,12 +65,12 @@ export default function MicTesterPage() {
     const getDevices = async () => {
       try {
         const devs = await navigator.mediaDevices.enumerateDevices();
-        const audioInputs = devs.filter(d => d.kind === 'audioinput');
-        
+        const audioInputs = devs.filter((d) => d.kind === "audioinput");
+
         // Ensure no empty values for Select.Item components
         const formatted = audioInputs.map((d, i) => ({
           id: d.deviceId || `input-device-${i}`,
-          label: d.label || `Linguistic Port ${i + 1}`
+          label: d.label || `Linguistic Port ${i + 1}`,
         }));
 
         setDevices(formatted);
@@ -75,7 +83,7 @@ export default function MicTesterPage() {
     };
 
     getDevices();
-    
+
     // Listen for device changes (e.g. plugging in a new mic)
     navigator.mediaDevices.ondevicechange = getDevices;
 
@@ -87,43 +95,49 @@ export default function MicTesterPage() {
 
   const startStudio = async () => {
     setError(null);
-    setStatus('standby');
-    
+    setStatus("standby");
+
     try {
       // Use 'ideal' instead of 'exact' to prevent OverconstrainedError
       // Also filter out our synthetic fallback IDs before negotiation
-      const isSynthetic = selectedDeviceId.startsWith('input-device-');
+      const isSynthetic = selectedDeviceId.startsWith("input-device-");
       const constraints = {
-        audio: (selectedDeviceId && selectedDeviceId !== 'default' && !isSynthetic) 
-          ? { deviceId: { ideal: selectedDeviceId } } 
-          : true
+        audio:
+          selectedDeviceId && selectedDeviceId !== "default" && !isSynthetic
+            ? { deviceId: { ideal: selectedDeviceId } }
+            : true,
       };
 
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
       streamRef.current = stream;
-      
-      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+
+      const audioCtx = new (
+        window.AudioContext || (window as any).webkitAudioContext
+      )();
       const analyzer = audioCtx.createAnalyser();
       const source = audioCtx.createMediaStreamSource(stream);
-      
+
       analyzer.fftSize = 256;
       source.connect(analyzer);
-      
+
       audioContextRef.current = audioCtx;
       analyzerRef.current = analyzer;
-      
+
       setIsActive(true);
-      setStatus('active');
-      toast({ title: "Hardware Synchronized", description: "Microphone uplink established." });
-      
+      setStatus("active");
+      toast({
+        title: "Hardware Synchronized",
+        description: "Microphone uplink established.",
+      });
+
       // Level Meter Loop
       const bufferLength = analyzer.frequencyBinCount;
       const dataArray = new Uint8Array(bufferLength);
-      
+
       const updateLevel = () => {
         if (!analyzerRef.current) return;
         analyzerRef.current.getByteFrequencyData(dataArray);
-        
+
         // Calculate average volume
         let sum = 0;
         for (let i = 0; i < bufferLength; i++) {
@@ -131,36 +145,44 @@ export default function MicTesterPage() {
         }
         const average = sum / bufferLength;
         const normalized = Math.min(100, Math.round((average / 128) * 100));
-        
+
         setAudioLevel(normalized);
-        
+
         if (normalized < 2 && isActive) {
-          setStatus('silent');
+          setStatus("silent");
         } else if (isActive) {
-          setStatus('active');
+          setStatus("active");
         }
-        
+
         animationFrameRef.current = requestAnimationFrame(updateLevel);
       };
-      
+
       updateLevel();
     } catch (err: any) {
-      console.error('Mic Access Error:', err);
-      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-        setError("Linguistic Access Denied: Please enable microphone permissions in your browser matrix.");
-      } else if (err.name === 'OverconstrainedError') {
-        setError("Hardware Constraint Error: The selected device is currently unavailable or busy.");
+      console.error("Mic Access Error:", err);
+      if (
+        err.name === "NotAllowedError" ||
+        err.name === "PermissionDeniedError"
+      ) {
+        setError(
+          "Linguistic Access Denied: Please enable microphone permissions in your browser matrix.",
+        );
+      } else if (err.name === "OverconstrainedError") {
+        setError(
+          "Hardware Constraint Error: The selected device is currently unavailable or busy.",
+        );
       } else {
         setError("Hardware Fault: Could not initialize audio input buffer.");
       }
-      setStatus('blocked');
+      setStatus("blocked");
     }
   };
 
   const stopStudio = () => {
-    if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+    if (animationFrameRef.current)
+      cancelAnimationFrame(animationFrameRef.current);
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
     }
     if (audioContextRef.current) {
@@ -169,13 +191,13 @@ export default function MicTesterPage() {
     }
     setIsActive(false);
     setAudioLevel(0);
-    setStatus('standby');
+    setStatus("standby");
     if (isRecording) stopRecording();
   };
 
   const startRecording = () => {
     if (!streamRef.current) return;
-    
+
     setRecordedUrl(null);
     chunksRef.current = [];
     const mediaRecorder = new MediaRecorder(streamRef.current);
@@ -186,26 +208,32 @@ export default function MicTesterPage() {
     };
 
     mediaRecorder.onstop = () => {
-      const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
+      const blob = new Blob(chunksRef.current, { type: "audio/webm" });
       const url = URL.createObjectURL(blob);
       setRecordedUrl(url);
       setIsRecording(false);
-      toast({ title: "Echo Buffer Ready", description: "Record cycle complete." });
+      toast({
+        title: "Echo Buffer Ready",
+        description: "Record cycle complete.",
+      });
     };
 
     mediaRecorder.start();
     setIsRecording(true);
-    
+
     // Auto-stop after 5 seconds for Echo Test
     setTimeout(() => {
-      if (mediaRecorder.state === 'recording') {
+      if (mediaRecorder.state === "recording") {
         stopRecording();
       }
     }, 5000);
   };
 
   const stopRecording = () => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+    if (
+      mediaRecorderRef.current &&
+      mediaRecorderRef.current.state === "recording"
+    ) {
       mediaRecorderRef.current.stop();
     }
   };
@@ -222,7 +250,10 @@ export default function MicTesterPage() {
     stopStudio();
     setRecordedUrl(null);
     setError(null);
-    toast({ title: "Studio Reset", description: "Buffers and project memory purged." });
+    toast({
+      title: "Studio Reset",
+      description: "Buffers and project memory purged.",
+    });
   };
 
   return (
@@ -235,7 +266,9 @@ export default function MicTesterPage() {
           Microphone <span className="text-primary italic">Tester Studio</span>
         </h1>
         <p className="text-foreground/40 text-sm md:text-base font-medium mt-4 max-w-2xl leading-relaxed">
-          Professional hardware integrity matrix. Test microphone input levels, clarity, and driver fidelity locally in your browser with absolute zero-storage privacy.
+          Professional hardware integrity matrix. Test microphone input levels,
+          clarity, and driver fidelity locally in your browser with absolute
+          zero-storage privacy.
         </p>
       </div>
 
@@ -252,125 +285,184 @@ export default function MicTesterPage() {
             <CardContent className="pt-10 space-y-10">
               {/* Device Selection */}
               <div className="space-y-4">
-                <Label className="text-[10px] font-black text-foreground/40 uppercase tracking-[0.2em] ml-1">Input Protocol (Source)</Label>
-                <Select value={selectedDeviceId} onValueChange={setSelectedDeviceId} disabled={isActive}>
+                <Label className="text-[10px] font-black text-foreground/40 uppercase tracking-[0.2em] ml-1">
+                  Input Protocol (Source)
+                </Label>
+                <Select
+                  value={selectedDeviceId}
+                  onValueChange={setSelectedDeviceId}
+                  disabled={isActive}
+                >
                   <SelectTrigger className="h-14 bg-secondary border-border rounded-2xl text-foreground font-bold">
                     <SelectValue placeholder="Identify Hardware..." />
                   </SelectTrigger>
                   <SelectContent className="glass-card">
                     {devices.length > 0 ? (
                       devices.map((d) => (
-                        <SelectItem key={d.id} value={d.id} className="text-xs font-bold uppercase">
+                        <SelectItem
+                          key={d.id}
+                          value={d.id}
+                          className="text-xs font-bold uppercase"
+                        >
                           {d.label}
                         </SelectItem>
                       ))
                     ) : (
-                      <SelectItem value="none" disabled className="text-xs italic uppercase">Searching Hardware...</SelectItem>
+                      <SelectItem
+                        value="none"
+                        disabled
+                        className="text-xs italic uppercase"
+                      >
+                        Searching Hardware...
+                      </SelectItem>
                     )}
                   </SelectContent>
                 </Select>
                 <div className="flex justify-between items-center px-1">
-                   <p className="text-[9px] text-foreground/20 font-bold uppercase tracking-widest flex items-center gap-2">
+                  <p className="text-[9px] text-foreground/20 font-bold uppercase tracking-widest flex items-center gap-2">
                     <Info className="w-3.5 h-3.5" /> Hardware enumeration active
                   </p>
-                  <button onClick={() => window.location.reload()} className="text-[9px] font-black text-primary uppercase tracking-widest hover:underline">Refresh Matrix</button>
+                  <button
+                    onClick={() => window.location.reload()}
+                    className="text-[9px] font-black text-primary uppercase tracking-widest hover:underline"
+                  >
+                    Refresh Matrix
+                  </button>
                 </div>
               </div>
 
               {/* Status Indicator */}
-              <div className={cn(
-                "p-8 rounded-[2.5rem] border-2 border-dashed transition-all duration-500 flex flex-col items-center justify-center text-center gap-6",
-                isActive ? "border-primary bg-primary/5 shadow-2xl shadow-primary/10" : "border-border bg-secondary/30",
-                error && "border-destructive bg-destructive/5"
-              )}>
-                 {!isActive && !error && (
-                    <>
-                       <div className="w-16 h-16 rounded-[1.5rem] bg-background border border-border flex items-center justify-center text-foreground/10 shadow-xl group-hover:scale-110 transition-transform">
-                          <MicOff className="w-8 h-8" />
-                       </div>
-                       <div className="space-y-1">
-                          <h4 className="text-[11px] font-black uppercase text-foreground tracking-widest">Handshake Standby</h4>
-                          <p className="text-[9px] text-foreground/30 font-medium uppercase px-6 leading-relaxed">Requesting linguistic hardware permissions</p>
-                       </div>
-                       <Button 
-                        onClick={startStudio} 
-                        className="h-14 px-8 bg-primary hover:bg-primary/90 text-primary-foreground font-black rounded-2xl text-xs uppercase tracking-widest shadow-xl shadow-primary/30 active:scale-95 transition-all"
-                       >
-                         Sync Hardware
-                       </Button>
-                    </>
-                 )}
+              <div
+                className={cn(
+                  "p-8 rounded-[2.5rem] border-2 border-dashed transition-all duration-500 flex flex-col items-center justify-center text-center gap-6",
+                  isActive
+                    ? "border-primary bg-primary/5 shadow-2xl shadow-primary/10"
+                    : "border-border bg-secondary/30",
+                  error && "border-destructive bg-destructive/5",
+                )}
+              >
+                {!isActive && !error && (
+                  <>
+                    <div className="w-16 h-16 rounded-[1.5rem] bg-background border border-border flex items-center justify-center text-foreground/10 shadow-xl group-hover:scale-110 transition-transform">
+                      <MicOff className="w-8 h-8" />
+                    </div>
+                    <div className="space-y-1">
+                      <h4 className="text-[11px] font-black uppercase text-foreground tracking-widest">
+                        Handshake Standby
+                      </h4>
+                      <p className="text-[9px] text-foreground/30 font-medium uppercase px-6 leading-relaxed">
+                        Requesting linguistic hardware permissions
+                      </p>
+                    </div>
+                    <Button
+                      onClick={startStudio}
+                      className="h-14 px-8 bg-primary hover:bg-primary/90 text-primary-foreground font-black rounded-2xl text-xs uppercase tracking-widest shadow-xl shadow-primary/30 active:scale-95 transition-all"
+                    >
+                      Sync Hardware
+                    </Button>
+                  </>
+                )}
 
-                 {isActive && (
-                    <>
-                       <div className="relative">
-                          <div className="absolute inset-0 bg-primary/20 rounded-full animate-ping scale-150" />
-                          <div className="w-16 h-16 rounded-full bg-primary flex items-center justify-center text-white shadow-xl relative z-10">
-                             <Mic className="w-8 h-8" />
-                          </div>
-                       </div>
-                       <div className="space-y-1">
-                          <h4 className="text-[11px] font-black uppercase text-primary tracking-widest">Active Signal Decoding</h4>
-                          <p className="text-[9px] text-foreground/30 font-medium uppercase">Input matrix verified operational</p>
-                       </div>
-                       <Button 
-                        onClick={stopStudio} 
-                        variant="outline"
-                        className="h-12 border-border bg-background text-foreground/40 hover:text-destructive hover:bg-destructive/5 text-[9px] font-black uppercase tracking-widest rounded-xl transition-all"
-                       >
-                         Abort Session
-                       </Button>
-                    </>
-                 )}
+                {isActive && (
+                  <>
+                    <div className="relative">
+                      <div className="absolute inset-0 bg-primary/20 rounded-full animate-ping scale-150" />
+                      <div className="w-16 h-16 rounded-full bg-primary flex items-center justify-center text-white shadow-xl relative z-10">
+                        <Mic className="w-8 h-8" />
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <h4 className="text-[11px] font-black uppercase text-primary tracking-widest">
+                        Active PREVIEW
+                      </h4>
+                      <p className="text-[9px] text-foreground/30 font-medium uppercase">
+                        Input matrix verified operational
+                      </p>
+                    </div>
+                    <Button
+                      onClick={stopStudio}
+                      variant="outline"
+                      className="h-12 border-border bg-background text-foreground/40 hover:text-destructive hover:bg-destructive/5 text-[9px] font-black uppercase tracking-widest rounded-xl transition-all"
+                    >
+                      Abort Session
+                    </Button>
+                  </>
+                )}
 
-                 {error && (
-                    <>
-                       <AlertCircle className="w-12 h-12 text-destructive animate-bounce" />
-                       <div className="space-y-2">
-                          <h4 className="text-[11px] font-black uppercase text-destructive tracking-widest">Protocol Failure</h4>
-                          <p className="text-[10px] text-foreground/50 font-medium leading-relaxed uppercase px-8">{error}</p>
-                       </div>
-                       <Button onClick={() => window.location.reload()} className="h-12 bg-secondary border border-border text-foreground font-black rounded-xl text-[9px] uppercase tracking-widest hover:bg-secondary/80">Restart Handshake</Button>
-                    </>
-                 )}
+                {error && (
+                  <>
+                    <AlertCircle className="w-12 h-12 text-destructive animate-bounce" />
+                    <div className="space-y-2">
+                      <h4 className="text-[11px] font-black uppercase text-destructive tracking-widest">
+                        Protocol Failure
+                      </h4>
+                      <p className="text-[10px] text-foreground/50 font-medium leading-relaxed uppercase px-8">
+                        {error}
+                      </p>
+                    </div>
+                    <Button
+                      onClick={() => window.location.reload()}
+                      className="h-12 bg-secondary border border-border text-foreground font-black rounded-xl text-[9px] uppercase tracking-widest hover:bg-secondary/80"
+                    >
+                      Restart Handshake
+                    </Button>
+                  </>
+                )}
               </div>
 
               {/* Echo Test Trigger */}
               {isActive && (
                 <div className="p-6 rounded-[2.5rem] bg-secondary border border-border space-y-6 animate-in zoom-in duration-500">
-                   <div className="flex items-center justify-between">
-                      <div className="space-y-1">
-                        <Label className="text-[10px] font-black text-foreground/60 uppercase tracking-widest">Echo Buffer (5s)</Label>
-                        <p className="text-[8px] font-bold text-foreground/20 uppercase">Loopback testing protocol</p>
-                      </div>
-                      <div className="w-8 h-8 rounded-full border-2 border-primary/20 flex items-center justify-center">
-                         <div className={cn("w-2 h-2 rounded-full", isRecording ? "bg-red-500 animate-pulse" : "bg-primary/20")} />
-                      </div>
-                   </div>
-                   
-                   <div className="flex gap-3">
-                      <Button 
-                        onClick={isRecording ? stopRecording : startRecording}
-                        disabled={isPlaying}
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <Label className="text-[10px] font-black text-foreground/60 uppercase tracking-widest">
+                        Echo Buffer (5s)
+                      </Label>
+                      <p className="text-[8px] font-bold text-foreground/20 uppercase">
+                        Loopback testing protocol
+                      </p>
+                    </div>
+                    <div className="w-8 h-8 rounded-full border-2 border-primary/20 flex items-center justify-center">
+                      <div
                         className={cn(
-                          "flex-1 h-14 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all shadow-lg",
-                          isRecording ? "bg-red-600 hover:bg-red-700 text-white" : "bg-primary text-white"
+                          "w-2 h-2 rounded-full",
+                          isRecording
+                            ? "bg-red-500 animate-pulse"
+                            : "bg-primary/20",
                         )}
-                      >
-                         {isRecording ? <Square className="w-4 h-4 mr-2 fill-current" /> : <Zap className="w-4 h-4 mr-2" />}
-                         {isRecording ? 'Capturing...' : 'Record Test'}
-                      </Button>
-                      
-                      {recordedUrl && !isRecording && (
-                        <Button 
-                          onClick={playEcho}
-                          variant="outline"
-                          className="h-14 w-14 rounded-2xl bg-background border-border text-primary shadow-xl"
-                        >
-                           <Play className="w-5 h-5 fill-current" />
-                        </Button>
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3">
+                    <Button
+                      onClick={isRecording ? stopRecording : startRecording}
+                      disabled={isPlaying}
+                      className={cn(
+                        "flex-1 h-14 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all shadow-lg",
+                        isRecording
+                          ? "bg-red-600 hover:bg-red-700 text-white"
+                          : "bg-primary text-white",
                       )}
-                   </div>
+                    >
+                      {isRecording ? (
+                        <Square className="w-4 h-4 mr-2 fill-current" />
+                      ) : (
+                        <Zap className="w-4 h-4 mr-2" />
+                      )}
+                      {isRecording ? "Capturing..." : "Record Test"}
+                    </Button>
+
+                    {recordedUrl && !isRecording && (
+                      <Button
+                        onClick={playEcho}
+                        variant="outline"
+                        className="h-14 w-14 rounded-2xl bg-background border-border text-primary shadow-xl"
+                      >
+                        <Play className="w-5 h-5 fill-current" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
               )}
             </CardContent>
@@ -379,9 +471,13 @@ export default function MicTesterPage() {
           <div className="p-6 rounded-[2.5rem] bg-primary/5 border border-primary/10 flex items-start gap-5">
             <ShieldCheck className="w-6 h-6 text-primary mt-1 shrink-0" />
             <div className="space-y-2">
-              <h4 className="text-[11px] font-black text-primary uppercase tracking-widest">Privacy Absolute</h4>
+              <h4 className="text-[11px] font-black text-primary uppercase tracking-widest">
+                Privacy Absolute
+              </h4>
               <p className="text-[11px] text-foreground/40 leading-relaxed font-medium uppercase">
-                Audio processing and visualization occur 100% locally. The Echo Buffer is held in volatile memory and is definitively purged upon exit.
+                Audio processing and visualization occur 100% locally. The Echo
+                Buffer is held in volatile memory and is definitively purged
+                upon exit.
               </p>
             </div>
           </div>
@@ -392,145 +488,200 @@ export default function MicTesterPage() {
           <Card className="glass-card border-border shadow-2xl overflow-hidden relative flex flex-col min-h-[600px]">
             <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
             <CardHeader className="py-8 border-b border-border bg-secondary/30">
-               <CardTitle className="text-[10px] font-black text-primary uppercase tracking-[0.5em] flex items-center gap-2">
+              <CardTitle className="text-[10px] font-black text-primary uppercase tracking-[0.5em] flex items-center gap-2">
                 <Activity className="w-3.5 h-3.5" /> Signal Intensity Matrix
               </CardTitle>
             </CardHeader>
             <CardContent className="flex-1 flex flex-col items-center justify-center p-10 bg-[#060608]">
-              
               {/* The Meter Visualizer */}
               <div className="w-full max-w-sm space-y-12">
-                 <div className="flex flex-col gap-2">
-                    <div className="flex justify-between items-end mb-4 px-1">
-                       <p className="text-[10px] font-black uppercase tracking-[0.3em] text-foreground/20">Input Level</p>
-                       <div className="flex items-center gap-3">
-                          <span className={cn(
-                            "text-3xl font-headline font-black transition-colors duration-300",
-                            audioLevel > 80 ? "text-red-500" : audioLevel > 5 ? "text-primary" : "text-foreground/10"
-                          )}>
-                            {audioLevel}%
-                          </span>
-                       </div>
+                <div className="flex flex-col gap-2">
+                  <div className="flex justify-between items-end mb-4 px-1">
+                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-foreground/20">
+                      Input Level
+                    </p>
+                    <div className="flex items-center gap-3">
+                      <span
+                        className={cn(
+                          "text-3xl font-headline font-black transition-colors duration-300",
+                          audioLevel > 80
+                            ? "text-red-500"
+                            : audioLevel > 5
+                              ? "text-primary"
+                              : "text-foreground/10",
+                        )}
+                      >
+                        {audioLevel}%
+                      </span>
                     </div>
-                    
-                    {/* Segmented Meter */}
-                    <div className="flex gap-1.5 h-20 items-end">
-                       {Array.from({ length: 24 }).map((_, i) => {
-                         const isActive = audioLevel >= (i + 1) * (100/24);
-                         const isPeak = i > 18;
-                         return (
-                           <div 
-                            key={i} 
-                            className={cn(
-                              "flex-1 rounded-sm transition-all duration-100",
-                              isActive 
-                                ? (isPeak ? "bg-red-500 shadow-[0_0_15px_rgba(239,68,68,0.5)]" : "bg-primary shadow-[0_0_10px_rgba(37,99,235,0.4)]") 
-                                : "bg-white/5",
-                              isActive ? "h-full" : "h-2"
-                            )}
-                           />
-                         );
-                       })}
-                    </div>
-                 </div>
+                  </div>
 
-                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    <div className={cn(
+                  {/* Segmented Meter */}
+                  <div className="flex gap-1.5 h-20 items-end">
+                    {Array.from({ length: 24 }).map((_, i) => {
+                      const isActive = audioLevel >= (i + 1) * (100 / 24);
+                      const isPeak = i > 18;
+                      return (
+                        <div
+                          key={i}
+                          className={cn(
+                            "flex-1 rounded-sm transition-all duration-100",
+                            isActive
+                              ? isPeak
+                                ? "bg-red-500 shadow-[0_0_15px_rgba(239,68,68,0.5)]"
+                                : "bg-primary shadow-[0_0_10px_rgba(37,99,235,0.4)]"
+                              : "bg-white/5",
+                            isActive ? "h-full" : "h-2",
+                          )}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  <div
+                    className={cn(
                       "p-8 rounded-[3rem] border-2 transition-all duration-500 text-center space-y-4 relative overflow-hidden",
-                      status === 'active' ? "bg-primary/5 border-primary/20 shadow-xl" : "bg-background border-border opacity-20"
-                    )}>
-                       <div className="w-12 h-12 rounded-2xl mx-auto bg-primary/10 flex items-center justify-center text-primary shadow-inner">
-                          <CheckCircle2 className="w-6 h-6" />
-                       </div>
-                       <p className="text-[10px] font-black uppercase tracking-widest">Protocol Active</p>
-                       {status === 'active' && <div className="absolute top-2 right-4 w-1.5 h-1.5 rounded-full bg-primary animate-ping" />}
+                      status === "active"
+                        ? "bg-primary/5 border-primary/20 shadow-xl"
+                        : "bg-background border-border opacity-20",
+                    )}
+                  >
+                    <div className="w-12 h-12 rounded-2xl mx-auto bg-primary/10 flex items-center justify-center text-primary shadow-inner">
+                      <CheckCircle2 className="w-6 h-6" />
                     </div>
+                    <p className="text-[10px] font-black uppercase tracking-widest">
+                      Protocol Active
+                    </p>
+                    {status === "active" && (
+                      <div className="absolute top-2 right-4 w-1.5 h-1.5 rounded-full bg-primary animate-ping" />
+                    )}
+                  </div>
 
-                    <div className={cn(
+                  <div
+                    className={cn(
                       "p-8 rounded-[3rem] border-2 transition-all duration-500 text-center space-y-4",
-                      status === 'silent' ? "bg-yellow-500/5 border-yellow-500/20 shadow-xl" : "bg-background border-border opacity-20"
-                    )}>
-                       <div className="w-12 h-12 rounded-2xl mx-auto bg-yellow-500/10 flex items-center justify-center text-yellow-500 shadow-inner">
-                          <Volume2 className="w-6 h-6" />
-                       </div>
-                       <p className="text-[10px] font-black uppercase tracking-widest">Silence Detection</p>
+                      status === "silent"
+                        ? "bg-yellow-500/5 border-yellow-500/20 shadow-xl"
+                        : "bg-background border-border opacity-20",
+                    )}
+                  >
+                    <div className="w-12 h-12 rounded-2xl mx-auto bg-yellow-500/10 flex items-center justify-center text-yellow-500 shadow-inner">
+                      <Volume2 className="w-6 h-6" />
                     </div>
-                 </div>
+                    <p className="text-[10px] font-black uppercase tracking-widest">
+                      Silence Detection
+                    </p>
+                  </div>
+                </div>
 
-                 {recordedUrl && (
-                    <div className="animate-in zoom-in duration-500">
-                       <div className="p-8 rounded-[2.5rem] bg-secondary border border-border space-y-6 relative overflow-hidden group/audio">
-                          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl opacity-0 group-hover/audio:opacity-100 transition-opacity" />
-                          <div className="flex items-center justify-between relative z-10">
-                             <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary border border-primary/20 shadow-lg">
-                                   <Play className="w-5 h-5 fill-current" />
-                                </div>
-                                <div className="space-y-0.5">
-                                   <p className="text-[10px] font-black uppercase text-foreground">Loopback Capture</p>
-                                   <p className="text-[9px] font-bold text-foreground/30 uppercase tracking-widest">5.0s Linguistic Sample</p>
-                                </div>
-                             </div>
-                             <audio 
-                              ref={audioPlaybackRef} 
-                              src={recordedUrl} 
-                              onEnded={() => setIsPlaying(false)}
-                              onPlay={() => setIsPlaying(true)}
-                              onPause={() => setIsPlaying(false)}
-                              className="hidden" 
-                             />
-                             <Button onClick={isPlaying ? () => audioPlaybackRef.current?.pause() : playEcho} className="h-10 w-24 rounded-xl bg-primary text-white text-[9px] font-black uppercase tracking-widest shadow-xl shadow-primary/20">
-                                {isPlaying ? 'Stop' : 'Review'}
-                             </Button>
+                {recordedUrl && (
+                  <div className="animate-in zoom-in duration-500">
+                    <div className="p-8 rounded-[2.5rem] bg-secondary border border-border space-y-6 relative overflow-hidden group/audio">
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl opacity-0 group-hover/audio:opacity-100 transition-opacity" />
+                      <div className="flex items-center justify-between relative z-10">
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary border border-primary/20 shadow-lg">
+                            <Play className="w-5 h-5 fill-current" />
                           </div>
-                       </div>
+                          <div className="space-y-0.5">
+                            <p className="text-[10px] font-black uppercase text-foreground">
+                              Loopback Capture
+                            </p>
+                            <p className="text-[9px] font-bold text-foreground/30 uppercase tracking-widest">
+                              5.0s Linguistic Sample
+                            </p>
+                          </div>
+                        </div>
+                        <audio
+                          ref={audioPlaybackRef}
+                          src={recordedUrl}
+                          onEnded={() => setIsPlaying(false)}
+                          onPlay={() => setIsPlaying(true)}
+                          onPause={() => setIsPlaying(false)}
+                          className="hidden"
+                        />
+                        <Button
+                          onClick={
+                            isPlaying
+                              ? () => audioPlaybackRef.current?.pause()
+                              : playEcho
+                          }
+                          className="h-10 w-24 rounded-xl bg-primary text-white text-[9px] font-black uppercase tracking-widest shadow-xl shadow-primary/20"
+                        >
+                          {isPlaying ? "Stop" : "Review"}
+                        </Button>
+                      </div>
                     </div>
-                 )}
+                  </div>
+                )}
               </div>
 
               {!isActive && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center opacity-10 pointer-events-none p-12 text-center space-y-6">
-                   <Activity className="w-24 h-24 text-primary" />
-                   <p className="text-sm font-black uppercase tracking-[0.3em]">Hardware Handshake Required</p>
+                  <Activity className="w-24 h-24 text-primary" />
+                  <p className="text-sm font-black uppercase tracking-[0.3em]">
+                    Hardware Handshake Required
+                  </p>
                 </div>
               )}
             </CardContent>
           </Card>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-             <div className="p-6 rounded-[2.5rem] bg-secondary border border-border flex items-start gap-5 group hover:border-primary/20 transition-all">
-                <div className="w-10 h-10 rounded-xl bg-background border border-border flex items-center justify-center text-primary/40 group-hover:text-primary transition-all shadow-inner">
-                   <Monitor className="w-5 h-5" />
-                </div>
-                <div className="space-y-1">
-                   <h4 className="text-[10px] font-black text-foreground uppercase tracking-widest">Amplitude Matrix</h4>
-                   <p className="text-[10px] text-foreground/40 leading-relaxed font-medium uppercase">Precision real-time FFT analysis provides clinical volume feedback with peak detection.</p>
-                </div>
-             </div>
-             <div className="p-6 rounded-[2.5rem] bg-secondary border border-border flex items-start gap-5 group hover:border-primary/20 transition-all">
-                <div className="w-10 h-10 rounded-xl bg-background border border-border flex items-center justify-center text-primary/40 group-hover:text-primary transition-all shadow-inner">
-                   <ShieldCheck className="w-5 h-5" />
-                </div>
-                <div className="space-y-1">
-                   <h4 className="text-[10px] font-black text-foreground uppercase tracking-widest">Zero Recording</h4>
-                   <p className="text-[10px] text-foreground/40 leading-relaxed font-medium uppercase">All audio synthesis is strictly local. Echo buffers are wiped upon session completion.</p>
-                </div>
-             </div>
+            <div className="p-6 rounded-[2.5rem] bg-secondary border border-border flex items-start gap-5 group hover:border-primary/20 transition-all">
+              <div className="w-10 h-10 rounded-xl bg-background border border-border flex items-center justify-center text-primary/40 group-hover:text-primary transition-all shadow-inner">
+                <Monitor className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-[10px] font-black text-foreground uppercase tracking-widest">
+                  Amplitude Matrix
+                </h4>
+                <p className="text-[10px] text-foreground/40 leading-relaxed font-medium uppercase">
+                  Precision real-time FFT analysis provides clinical volume
+                  feedback with peak detection.
+                </p>
+              </div>
+            </div>
+            <div className="p-6 rounded-[2.5rem] bg-secondary border border-border flex items-start gap-5 group hover:border-primary/20 transition-all">
+              <div className="w-10 h-10 rounded-xl bg-background border border-border flex items-center justify-center text-primary/40 group-hover:text-primary transition-all shadow-inner">
+                <ShieldCheck className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-[10px] font-black text-foreground uppercase tracking-widest">
+                  Zero Recording
+                </h4>
+                <p className="text-[10px] text-foreground/40 leading-relaxed font-medium uppercase">
+                  All audio synthesis is strictly local. Echo buffers are wiped
+                  upon session completion.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
       <style jsx global>{`
         .bg-checkered {
-          background-image: linear-gradient(45deg, #f0f0f0 25%, transparent 25%), 
-                            linear-gradient(-45deg, #f0f0f0 25%, transparent 25%), 
-                            linear-gradient(45deg, transparent 75%, #f0f0f0 75%), 
-                            linear-gradient(-45deg, transparent 75%, #f0f0f0 75%);
+          background-image:
+            linear-gradient(45deg, #f0f0f0 25%, transparent 25%),
+            linear-gradient(-45deg, #f0f0f0 25%, transparent 25%),
+            linear-gradient(45deg, transparent 75%, #f0f0f0 75%),
+            linear-gradient(-45deg, transparent 75%, #f0f0f0 75%);
           background-size: 20px 20px;
         }
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-track { @apply bg-transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { @apply bg-primary/20 rounded-full; }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          @apply bg-transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          @apply bg-primary/20 rounded-full;
+        }
+        .no-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
       `}</style>
     </div>
   );
