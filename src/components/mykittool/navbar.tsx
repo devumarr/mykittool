@@ -1,11 +1,13 @@
-"use client"
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { 
-  Scan, 
+import React, { useState, useEffect, useRef } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import Link from "next/link";
+
+import {
+  Scan,
   Home,
+  Menu,
   QrCode,
   Layers,
   Type,
@@ -20,11 +22,11 @@ import {
   Settings,
   Info,
   Heart,
-  Fingerprint
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { useUser, useAuth } from '@/firebase';
-import { signOut } from 'firebase/auth';
+  Fingerprint,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useUser, useAuth } from "@/firebase";
+import { signOut } from "firebase/auth";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,18 +35,27 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Button } from '@/components/ui/button';
-import dynamic from 'next/dynamic';
-import { ThemeToggle } from './theme-toggle';
+import { Button } from "@/components/ui/button";
+import dynamic from "next/dynamic";
+import { ThemeToggle } from "./theme-toggle";
 
-const QrScannerModal = dynamic(() => import('./qr-scanner-modal').then(mod => mod.QrScannerModal), {
-  ssr: false,
-});
+const QrScannerModal = dynamic(
+  () => import("./qr-scanner-modal").then((mod) => mod.QrScannerModal),
+  {
+    ssr: false,
+  },
+);
 
 /**
  * Static Logo Component
  */
-const Logo = ({ className = "h-8", iconOnly = false }: { className?: string, iconOnly?: boolean }) => (
+const Logo = ({
+  className = "h-8",
+  iconOnly = false,
+}: {
+  className?: string;
+  iconOnly?: boolean;
+}) => (
   <div className={cn("flex items-center gap-1.5 sm:gap-3", className)}>
     <div className="relative w-7 h-7 sm:w-8 h-8 flex items-center justify-center shrink-0">
       <div className="absolute inset-0 bg-[#2563eb] rounded-lg shadow-lg shadow-blue-600/10 flex items-center justify-center overflow-hidden icon-container-3d">
@@ -58,8 +69,12 @@ const Logo = ({ className = "h-8", iconOnly = false }: { className?: string, ico
     </div>
     {!iconOnly && (
       <div className="font-headline font-black text-base sm:text-2xl tracking-tighter leading-none flex items-center min-w-0">
-        <span className="text-[#0f172a] dark:text-white uppercase truncate">MY KIT</span>
-        <span className="text-[#2563eb] ml-0.5 sm:ml-1 shrink-0 uppercase">TOOL</span>
+        <span className="text-[#0f172a] dark:text-white uppercase truncate">
+          MY KIT
+        </span>
+        <span className="text-[#2563eb] ml-0.5 sm:ml-1 shrink-0 uppercase">
+          TOOL
+        </span>
       </div>
     )}
   </div>
@@ -69,10 +84,9 @@ const Logo = ({ className = "h-8", iconOnly = false }: { className?: string, ico
  * STATIC NAV ITEMS REGISTRY
  */
 const NAV_ITEMS = [
-  { label: 'Home', href: '/', icon: Home },
-  { label: 'Single QR', href: '/single', icon: QrCode },
-  { label: 'Bulk Mode', href: '/bulk', icon: Layers },
-  { label: 'Logo Maker', href: '/logo-maker', icon: Type },
+  { label: "Home", href: "/", icon: Home },
+  { label: "About", href: "/about", icon: Info },
+  { label: "Support", href: "/donate", icon: Coffee },
 ];
 
 export function Navbar() {
@@ -81,7 +95,20 @@ export function Navbar() {
   const auth = useAuth();
   const { user, loading: authLoading } = useUser();
   const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onDown = (e: MouseEvent) => {
+      if (!menuRef.current?.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [menuOpen]);
 
   useEffect(() => {
     setMounted(true);
@@ -90,119 +117,122 @@ export function Navbar() {
   const handleLogout = async () => {
     if (auth) {
       await signOut(auth);
-      router.push('/');
+      router.push("/");
     }
   };
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 z-[100] w-full max-w-full overflow-hidden border-b border-foreground/5 bg-background/80 backdrop-blur-xl h-16 transition-all duration-300">
+      <header className="fixed top-0 left-0 right-0 z-[100] w-full border-b border-foreground/5 bg-background/80 backdrop-blur-xl h-16">
         <div className="container mx-auto px-3 sm:px-4 md:px-6 h-full flex items-center justify-between gap-1 sm:gap-4 max-w-full box-border">
-          <Link href="/" className="flex items-center gap-1.5 sm:gap-2 group transition-transform active:scale-95 min-w-0" aria-label="My Kit Tool Home">
+          <Link
+            href="/"
+            className="flex items-center gap-1.5 sm:gap-2 group transition-transform active:scale-95 min-w-0"
+            aria-label="My Kit Tool Home"
+          >
             <Logo />
           </Link>
-          
-          <nav className="hidden xl:flex items-center gap-8 shrink-0">
-            {NAV_ITEMS.map((item) => (
-              <Link 
-                key={item.label} 
-                href={item.href}
-                className={cn(
-                  "text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300 hover:text-primary relative py-1",
-                  pathname === item.href ? "text-primary" : "text-foreground/40"
-                )}
-              >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-
           <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
-             {/* Secondary Utilities */}
-             <ThemeToggle />
-             
-             <Link 
-              href="/about" 
-              className={cn(
-                "flex w-8 h-8 sm:w-10 sm:h-10 items-center justify-center rounded-xl bg-secondary/50 border border-foreground/5 transition-all hover:text-primary",
-                pathname === '/about' ? "text-primary border-primary/20" : "text-foreground/40"
+            {/* Secondary Utilities */}
+
+            <ThemeToggle />
+
+            <button
+              onClick={() => setIsScannerOpen(true)}
+              className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary text-primary-foreground sm:h-10 sm:w-10"
+              aria-label="Open QR Scanner"
+            >
+              <Scan className="h-4 w-4" />
+            </button>
+
+            <div className="relative" ref={menuRef}>
+              <button
+                type="button"
+                aria-label="Open menu"
+                onClick={() => setMenuOpen((v) => !v)}
+                className="flex h-8 w-8 items-center justify-center rounded-xl bg-secondary/50 text-foreground hover:text-primary sm:h-10 sm:w-10"
+              >
+                {menuOpen ? (
+                  <X className="h-4 w-4" />
+                ) : (
+                  <Menu className="h-4 w-4" />
+                )}
+              </button>
+
+              {menuOpen && (
+                <div className="absolute right-0 top-full z-[110] mt-2 w-56 rounded-2xl bg-card p-2 shadow-2xl">
+                  {[
+                    { label: "Home", href: "/", icon: Home },
+
+                    { label: "All Tools", href: "/all-tools", icon: Layers },
+                    { label: "About", href: "/about", icon: Info },
+                    { label: "Support", href: "/donate", icon: Coffee },
+                  ].map((item) => (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setMenuOpen(false)}
+                      className={cn(
+                        "flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm hover:bg-muted",
+                        pathname === item.href
+                          ? "text-primary"
+                          : "text-foreground",
+                      )}
+                    >
+                      <item.icon className="h-4 w-4" />
+                      {item.label}
+                    </Link>
+                  ))}
+
+                  <div className="my-1.5 h-px bg-border" />
+
+                  {user ? (
+                    <>
+                      <Link
+                        href="/account"
+                        onClick={() => setMenuOpen(false)}
+                        className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm hover:bg-muted"
+                      >
+                        <User className="h-4 w-4" />
+                        Account
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMenuOpen(false);
+                          handleLogout();
+                        }}
+                        className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-sm text-red-500 hover:bg-muted"
+                      >
+                        <LogOut className="h-4 w-4" />
+                        Logout
+                      </button>
+                    </>
+                  ) : (
+                    <Link
+                      href="/login"
+                      onClick={() => setMenuOpen(false)}
+                      className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm hover:bg-muted"
+                    >
+                      <User className="h-4 w-4" />
+                      Account
+                    </Link>
+                  )}
+                </div>
               )}
-              title="About Studio"
-              aria-label="About My Kit Tool"
-             >
-                <Info className="w-3.5 h-3.5 sm:w-4 sm:h-4 icon-3d" />
-             </Link>
+            </div>
 
-             <Link 
-              href="/donate" 
-              className={cn(
-                "flex w-8 h-8 sm:w-10 sm:h-10 items-center justify-center rounded-xl bg-secondary/50 border border-foreground/5 transition-all hover:text-primary",
-                pathname === '/donate' ? "text-primary border-primary/20" : "text-foreground/40"
-              )}
-              title="Support Developer"
-              aria-label="Support the Developer"
-             >
-                <Coffee className="w-3.5 h-3.5 sm:w-4 sm:h-4 icon-3d" />
-             </Link>
-
-             {/* IDENTITY UNIT / AUTH SECTION */}
-             {!authLoading && (
-               <>
-                 {user ? (
-                   <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <button 
-                          className="flex items-center gap-2 px-3 h-8 sm:h-10 rounded-xl bg-primary/10 border border-primary/20 text-primary transition-all hover:bg-primary/20 icon-container-3d"
-                          aria-label="User Account Menu"
-                        >
-                           <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 icon-3d" />
-                           <span className="hidden md:inline text-[9px] font-black uppercase tracking-widest">Account</span>
-                        </button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-56 glass-card mt-2 p-2 border-foreground/10 shadow-2xl animate-in slide-in-from-top-2">
-                        <DropdownMenuLabel className="px-3 py-2 space-y-1">
-                           <p className="text-[10px] font-black text-primary uppercase tracking-widest leading-none">My Account</p>
-                           <p className="text-[11px] font-bold text-foreground/60 truncate">{user.email}</p>
-                        </DropdownMenuLabel>
-                        <DropdownMenuSeparator className="bg-foreground/5" />
-                        <DropdownMenuItem asChild>
-                           <Link href="/account" className="flex items-center gap-3 px-3 py-2 text-[9px] font-black uppercase tracking-widest text-foreground/40 hover:text-primary transition-colors cursor-pointer rounded-lg">
-                              <Fingerprint className="w-3.5 h-3.5" /> Profile
-                           </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator className="bg-foreground/5" />
-                        <DropdownMenuItem onClick={handleLogout} className="flex items-center gap-3 px-3 py-2 text-[9px] font-black uppercase tracking-widest text-red-500/60 hover:text-red-500 hover:bg-red-500/10 transition-colors cursor-pointer rounded-lg">
-                           <LogOut className="w-3.5 h-3.5" /> Logout
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                   </DropdownMenu>
-                 ) : (
-                   <Link 
-                    href="/login"
-                    className="flex items-center gap-2 px-2 sm:px-5 h-8 sm:h-10 rounded-xl bg-secondary/50 border border-foreground/5 text-foreground/40 hover:text-primary hover:bg-secondary transition-all shadow-xl icon-container-3d"
-                    aria-label="Login to your account"
-                   >
-                      <User className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary" />
-                      <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-widest">Account</span>
-                   </Link>
-                 )}
-               </>
-             )}
-
-             {/* SCANNER */}
-             <button 
-                onClick={() => setIsScannerOpen(true)}
-                className="flex items-center justify-center sm:gap-2 text-[8px] sm:text-[10px] font-black uppercase tracking-[0.1em] sm:tracking-[0.2em] w-8 h-8 sm:w-auto sm:px-5 sm:py-2.5 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-xl shadow-primary/20 icon-container-3d"
-                aria-label="Open QR Scanner"
-             >
-              <Scan className="w-3.5 h-3.5 sm:w-4 sm:h-4 icon-3d" />
-              <span className="hidden sm:inline">Scanner</span>
-             </button>
+            {/* SCANNER */}
           </div>
         </div>
       </header>
 
-      {isScannerOpen && <QrScannerModal isOpen={isScannerOpen} onClose={() => setIsScannerOpen(false)} />}
+      {isScannerOpen && (
+        <QrScannerModal
+          isOpen={isScannerOpen}
+          onClose={() => setIsScannerOpen(false)}
+        />
+      )}
     </>
   );
 }
