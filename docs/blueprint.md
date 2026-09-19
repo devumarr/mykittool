@@ -1,4 +1,4 @@
-# **App Name**: QR Canvas
+# **App Name**: MY KIT TOOL
 
 ## Core Features:
 

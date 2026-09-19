@@ -1,7 +1,6 @@
-
 {
-  "name": "QR Canvas",
-  "short_name": "QRCanvas",
+  "name": "MY KIT TOOL",
+  "short_name": "MY KIT TOOL",
   "description": "Professional QR Code Generator with Logo & Background",
   "start_url": "/",
   "display": "standalone",

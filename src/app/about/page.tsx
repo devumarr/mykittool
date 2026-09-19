@@ -96,7 +96,7 @@ const PROJECTS: Project[] = [
     color: "text-red-500 bg-red-500/10",
   },
   {
-    name: "QR CANVAS",
+    name: "MY KIT TOOL",
     url: "https://qrcode-amber-ten.vercel.app/",
     desc: "High-performance artistic QR code generation engine.",
     icon: QrCode,
