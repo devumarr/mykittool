@@ -1245,17 +1245,52 @@ function AllToolsPageContent() {
 
       <main className="container mx-auto px-6 py-20 relative z-20">
         {/* Header Section */}
-        <div className="max-w-4xl mx-auto text-center space-y-6 mb-20">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-primary/10 border border-primary/20 text-[9px] font-black text-primary uppercase tracking-widest">
-            <Layout className="w-3.5 h-3.5" /> Studio Registry
-          </div>
-          <h1 className="text-5xl md:text-7xl font-headline font-black text-foreground uppercase tracking-tight leading-none">
-            The <span className="text-primary italic">ToolBox</span>
-          </h1>
-          <p className="text-sm md:text-base text-foreground/40 max-w-2xl mx-auto leading-relaxed uppercase tracking-widest font-medium">
-            Explore our complete suite of {TOOLS.length} free, professional
-            utilities engineered for high-fidelity production.
+        <div className="relative mx-auto mb-14 max-w-2xl text-center">
+          <div className="pointer-events-none absolute left-1/2 top-0 h-24 w-56 -translate-x-1/2 rounded-full bg-primary/15 blur-3xl dark:bg-primary/25" />
+
+          <p className="relative text-xs font-medium uppercase tracking-[0.18em] text-primary">
+            {TOOLS.length} tools
           </p>
+          <h1 className="relative mt-3 normal-case text-3xl font-semibold tracking-tight text-foreground md:text-5xl transition-transform duration-300 group-hover:scale-110">
+            Find a tool.
+            <span className="text-primary"> Use it now.</span>
+          </h1>
+          <p className="relative mx-auto mt-3 max-w-md text-sm leading-relaxed text-muted-foreground">
+            Search by name or type. Open a tool and start.
+          </p>
+          <div className="relative mt-6 flex flex-wrap items-center justify-center gap-2">
+            {[
+              {
+                q: "pdf",
+                cls: "border-blue-400/70 text-blue-700 shadow-[0_0_12px_rgba(59,130,246,0.18)] dark:border-blue-400/50 dark:text-blue-300",
+              },
+              {
+                q: "image",
+                cls: "border-rose-400/70 text-rose-700 shadow-[0_0_12px_rgba(244,63,94,0.18)] dark:border-rose-400/50 dark:text-rose-300",
+              },
+              {
+                q: "resume",
+                cls: "border-emerald-400/70 text-emerald-700 shadow-[0_0_12px_rgba(16,185,129,0.18)] dark:border-emerald-400/50 dark:text-emerald-300",
+              },
+              {
+                q: "qr",
+                cls: "border-amber-400/70 text-amber-700 shadow-[0_0_12px_rgba(245,158,11,0.18)] dark:border-amber-400/50 dark:text-amber-300",
+              },
+              {
+                q: "compress",
+                cls: "border-violet-400/70 text-violet-700 shadow-[0_0_12px_rgba(139,92,246,0.18)] dark:border-violet-400/50 dark:text-violet-300",
+              },
+            ].map((item) => (
+              <button
+                key={item.q}
+                type="button"
+                onClick={() => setSearchQuery(item.q)}
+                className={`rounded-full border bg-background px-3.5 py-1.5 text-xs font-medium transition-transform duration-300 hover:-translate-y-0.5 hover:scale-[1.04] ${item.cls}`}
+              >
+                {item.q}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Recalibrated Desktop Controller Bar */}
@@ -1374,7 +1409,8 @@ function AllToolsPageContent() {
           {displayedTools.map((tool) => (
             <a href={tool.href} key={tool.href} className="block group">
               {viewMode === "grid" ? (
-                <div className="flex flex-col justify-between h-full p-5 bg-card border border-foreground/5 rounded-3xl transition-all duration-500 glass-card relative overflow-hidden">
+                <div className="group relative flex h-full flex-col justify-between overflow-hidden rounded-3xl bg-card p-5 shadow-[0_1px_2px_rgba(15,23,42,0.05),0_10px_28px_rgba(15,23,42,0.05)] transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_16px_40px_rgba(15,23,42,0.10)] dark:shadow-[0_0_0_1px_rgba(255,255,255,0.06)] dark:hover:shadow-[0_0_0_1px_rgba(255,255,255,0.12),0_20px_40px_rgba(0,0,0,0.35)]">
+                  <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-primary/70 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
                   <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
                   <div className="relative z-10">
                     <div
