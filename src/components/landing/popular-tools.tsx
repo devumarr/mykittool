@@ -9,132 +9,111 @@ import {
   Mic,
   ArrowRight,
   Activity,
-  Maximize2,
+  Moon,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 const popularTools = [
   {
     href: "/ai-chatbot",
     icon: MessageSquare,
     title: "AI Chatbot",
-    desc: "Advanced linguistic synthesis and real-time assistance.",
-    color: "text-cyan-600 dark:text-cyan-400",
-    bg: "bg-cyan-500/10",
-    border: "group-hover:border-cyan-500/30",
-    className: "lg:col-span-4",
+    desc: "Chat with AI in your browser.",
+    well: "bg-cyan-100 text-cyan-700 dark:bg-cyan-500/25 dark:text-cyan-300",
+    glow: "hover:shadow-cyan-500/25 dark:hover:shadow-cyan-400/30",
+    span: "sm:col-span-2",
   },
-
   {
     href: "/ai-image-generator",
-    icon: Sparkles,
+    icon: Moon,
     title: "AI Image Gen",
-    desc: "High-fidelity visual production.",
-    color: "text-purple-600 dark:text-purple-400",
-    bg: "bg-purple-500/10",
-    border: "group-hover:border-purple-500/30",
-    className: "lg:col-span-2",
+    desc: "Create images from a prompt.",
+    well: "bg-violet-100 text-violet-700 dark:bg-violet-500/25 dark:text-violet-300",
+    glow: "hover:shadow-violet-500/25 dark:hover:shadow-violet-400/30",
+    span: "",
   },
   {
     href: "/ai-resume-builder",
     icon: User,
     title: "Resume Builder",
-    desc: "Professional identity formatting.",
-    color: "text-emerald-600 dark:text-emerald-400",
-    bg: "bg-emerald-500/10",
-    border: "group-hover:border-emerald-500/30",
-    className: "lg:col-span-2",
+    desc: "Write a clean resume fast.",
+    well: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-300",
+    glow: "hover:shadow-emerald-500/25 dark:hover:shadow-emerald-400/30",
+    span: "",
   },
   {
     href: "/single",
     icon: QrCode,
-    title: "Single Studio",
-    desc: "Branded QR protocols.",
-    color: "text-amber-600 dark:text-amber-400",
-    bg: "bg-amber-500/10",
-    border: "group-hover:border-amber-500/30",
-    className: "lg:col-span-2",
+    title: "QR Studio",
+    desc: "Make a branded QR code.",
+    well: "bg-amber-500/15 text-amber-600 dark:text-amber-300",
+    glow: "hover:shadow-amber-500/25 dark:hover:shadow-amber-400/30",
+    span: "",
   },
-  {
-    href: "/speech-to-text",
-    icon: Mic,
-    title: "Speech to Text",
-    desc: "Acoustic transcription.",
-    color: "text-rose-600 dark:text-rose-400",
-    bg: "bg-rose-500/10",
-    border: "group-hover:border-rose-500/30",
-    className: "lg:col-span-2",
-  },
+
   {
     href: "/all-units-converter",
     icon: Activity,
     title: "Unit Converter",
-    desc: "Universal measurement matrix and translation for global standards.",
-    color: "text-blue-600 dark:text-blue-400",
-    bg: "bg-blue-500/10",
-    border: "group-hover:border-blue-500/30",
-    className: "lg:col-span-6",
+    desc: "Convert length, weight and more.",
+    well: "bg-blue-500/15 text-blue-600 dark:text-blue-300",
+    glow: "hover:shadow-blue-500/25 dark:hover:shadow-blue-400/30",
+    span: "sm:col-span-2 lg:col-span-1",
   },
 ];
 
 export function PopularTools() {
   return (
-    <section className="w-full py-20 sm:py-24 bg-background">
-      <div className="max-w-7xl mx-auto px-6 lg:px-8">
-        <div className="flex flex-col items-center text-center gap-6 mb-16 px-2">
-          <div className="space-y-3">
-            <h2 className="text-2xl md:text-4xl font-headline font-black text-foreground uppercase tracking-tight leading-none">
-              Featured <span className="text-primary italic">tools</span>
-            </h2>
-            <p className="text-[9px] text-foreground/40 font-black uppercase tracking-[0.3em]">
-              Popular tools
+    <section className="relative w-full overflow-hidden bg-background py-14">
+      <div className="pointer-events-none absolute left-1/2 top-12 h-56 w-[36rem] -translate-x-1/2 rounded-full bg-primary/10 blur-2xl dark:bg-primary/10" />
+
+      <div className="relative mx-auto max-w-5xl px-6">
+        <div className="mb-12 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-xs font-medium uppercase tracking-[0.18em] text-primary">
+              Featured
             </p>
+            <h2 className="mt-2 normal-case text-3xl font-semibold tracking-tight text-foreground">
+              Tools people open first
+            </h2>
           </div>
           <Link
             href="/all-tools"
-            className="inline-flex items-center gap-3 text-[10px] font-black text-primary uppercase tracking-widest hover:gap-4 transition-all group"
+            className="inline-flex w-fit items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm font-medium text-foreground shadow-sm transition-all hover:border-primary/40 hover:shadow-md"
           >
-            See all tools <ArrowRight className="w-3.5 h-3.5" />
+            See all tools
+            <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {popularTools.map((tool) => (
             <Link
               key={tool.href}
               href={tool.href}
-              className={cn("group block", tool.className)}
+              className={`group relative ${tool.span}`}
             >
               <div
-                className={cn(
-                  "flex flex-col justify-between h-full p-6 rounded-3xl bg-card border border-foreground/5 transition-all duration-500 hover:border-primary/20 hover:-translate-y-1 shadow-xl dark:shadow-2xl relative overflow-hidden",
-                  tool.border,
-                )}
+                className={`relative flex h-full flex-col rounded-3xl bg-card p-6 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_12px_32px_rgba(15,23,42,0.06)] ring-0 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_8px_30px_rgba(15,23,42,0.10)] dark:ring-1 dark:ring-border dark:shadow-none dark:hover:ring-primary/30 ${tool.glow}`}
               >
-                <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
-
-                <div className="relative z-10">
+                <div className="mb-8 flex items-start justify-between">
                   <div
-                    className={cn(
-                      "mb-4 w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-500 border border-foreground/5 shadow-inner group-hover:scale-110",
-                      tool.bg,
-                      tool.color,
-                    )}
+                    className={`flex h-12 w-12 items-center justify-center rounded-2xl ${tool.well} transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3`}
                   >
-                    <tool.icon className="w-4 h-4" />
+                    <tool.icon className="h-5 w-5" />
                   </div>
-                  <h3 className="text-base font-headline font-black text-foreground mb-2 uppercase tracking-tight leading-none">
-                    {tool.title}
-                  </h3>
-                  <p className="text-[10px] text-foreground/40 font-medium leading-relaxed uppercase tracking-tighter group-hover:text-foreground/60 transition-colors line-clamp-2">
-                    {tool.desc}
-                  </p>
+                  <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 transition-all duration-300 group-hover:translate-x-0.5 group-hover:opacity-100 group-hover:text-primary" />
                 </div>
 
-                <div className="mt-6 flex items-center gap-3 text-[8px] font-black text-foreground/10 group-hover:text-primary uppercase tracking-[0.3em] transition-colors duration-500">
-                  Open{" "}
-                  <ArrowRight className="h-2.5 w-2.5 transition-transform group-hover:translate-x-0.5" />
-                </div>
+                <h3 className="normal-case text-lg font-semibold tracking-tight text-foreground">
+                  {tool.title}
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                  {tool.desc}
+                </p>
+
+                <span className="mt-6 text-sm font-medium text-primary">
+                  Open tool
+                </span>
               </div>
             </Link>
           ))}

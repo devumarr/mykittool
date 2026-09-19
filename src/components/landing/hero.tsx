@@ -92,7 +92,7 @@ export function Hero() {
           130+ tools · works in your browser
         </span>
 
-        <h1 className="normal-case text-[34px] font-semibold leading-[1.15] tracking-[-0.03em] text-foreground md:text-[44px]">
+        <h1 className="normal-case text-[42px] font-semibold leading-[1.15] tracking-[-0.03em] text-foreground md:text-[44px]">
           Free tools for PDF,
           <br />
           images and AI
