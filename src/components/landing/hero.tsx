@@ -92,19 +92,29 @@ export function Hero() {
           130+ tools · works in your browser
         </span>
 
-        <h1 className="normal-case text-[42px] font-semibold leading-[1.15] tracking-[-0.03em] text-foreground md:text-[44px]">
+        <h1 className="normal-case text-[32px] font-semibold leading-[1.15] tracking-[-0.03em] text-foreground md:text-6xl">
           Free tools for PDF,
           <br />
           images and AI
         </h1>
-
-        <p className="mt-5 max-w-sm text-[15px] leading-relaxed text-muted-foreground">
-          Compress a photo, build a resume, or chat with AI. No install. No
-          signup.
+        <p className="mt-5 max-w-md text-[15px] leading-relaxed text-muted-foreground md:text-lg">
+          Compress a{" "}
+          <span className="font-medium text-rose-600 dark:text-rose-400">
+            photo
+          </span>
+          , build a{" "}
+          <span className="font-medium text-emerald-600 dark:text-emerald-400">
+            resume
+          </span>
+          , or chat with{" "}
+          <span className="font-medium text-violet-600 dark:text-violet-400">
+            AI
+          </span>
+          . No install. No signup.
         </p>
 
         <form onSubmit={handleSearch} className="mt-10 w-full">
-          <div className="flex h-14 items-center rounded-2xl border border-border bg-card pl-4 pr-1.5 shadow-sm transition-[border,box-shadow] focus-within:border-primary/40 focus-within:shadow-md">
+          <div className="flex h-12 items-center rounded-2xl border border-border bg-card pl-4 pr-1.5 shadow-sm transition-[border,box-shadow] focus-within:border-primary/40 focus-within:shadow-md md:h-14">
             <Input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -123,14 +133,19 @@ export function Hero() {
           </div>
         </form>
 
-        <div className="mt-5 flex items-center gap-3 text-[13px] text-muted-foreground">
-          <span>PDF</span>
+        <div className="mt-5 flex items-center gap-3 text-[13px] md:text-sm">
+          <span className="font-medium text-blue-600 dark:text-blue-400">
+            PDF
+          </span>
           <span className="h-0.5 w-0.5 rounded-full bg-border" />
-          <span>Images</span>
+          <span className="font-medium text-rose-600 dark:text-rose-400">
+            Images
+          </span>
           <span className="h-0.5 w-0.5 rounded-full bg-border" />
-          <span>AI</span>
+          <span className="font-medium text-violet-600 dark:text-violet-400">
+            AI
+          </span>
         </div>
-
         <button
           onClick={() => router.push("/all-tools")}
           className="group mt-10 inline-flex items-center gap-1.5 text-[14px] font-medium text-foreground/80 hover:text-primary"
