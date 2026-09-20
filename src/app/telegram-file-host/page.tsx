@@ -550,7 +550,7 @@ export default function FILEHOSTPage() {
               className="h-16 flex-1 bg-primary text-white font-black uppercase text-[10px] tracking-widest rounded-2xl shadow-xl shadow-primary/30 active:scale-95 transition-all"
             >
               <Link href="/login?redirect=/telegram-file-host">
-                Initialize Session
+                startSession
               </Link>
             </Button>
             <Button

@@ -481,15 +481,14 @@ export default function VoiceChangerPage() {
                       Identity Offline
                     </h3>
                     <p className="text-[10px] text-foreground/40 font-bold uppercase tracking-widest max-w-xs mx-auto leading-relaxed">
-                      Initialize a secure hardware handshake to start live
-                      modulation.
+                      starta secure hardware handshake to start live modulation.
                     </p>
                   </div>
                   <Button
                     onClick={startStudio}
                     className="h-16 w-full max-w-sm bg-primary text-white font-black uppercase text-xs tracking-widest rounded-2xl shadow-xl shadow-primary/30 active:scale-95 transition-all"
                   >
-                    Initialize Handshake
+                    startHandshake
                   </Button>
                 </div>
               ) : (

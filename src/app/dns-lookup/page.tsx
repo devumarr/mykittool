@@ -243,7 +243,7 @@ export default function DnsLookupPage() {
                   ) : (
                     <Zap className="w-5 h-5 mr-3" />
                   )}
-                  Initialize Scan
+                  startScan
                 </Button>
               </form>
 

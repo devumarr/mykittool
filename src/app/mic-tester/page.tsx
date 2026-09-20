@@ -60,7 +60,7 @@ export default function MicTesterPage() {
   const chunksRef = useRef<Blob[]>([]);
   const audioPlaybackRef = useRef<HTMLAudioElement | null>(null);
 
-  // Initialize and Fetch Devices
+  // startand Fetch Devices
   useEffect(() => {
     const getDevices = async () => {
       try {
@@ -172,7 +172,7 @@ export default function MicTesterPage() {
           "Hardware Constraint Error: The selected device is currently unavailable or busy.",
         );
       } else {
-        setError("Hardware Fault: Could not initialize audio input buffer.");
+        setError("Hardware Fault: Could not startaudio input buffer.");
       }
       setStatus("blocked");
     }

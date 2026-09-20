@@ -563,7 +563,7 @@ export default function AIChatbotPage() {
       toast({
         variant: "destructive",
         title: "Key Required",
-        description: "Personal API key is required to initialize node.",
+        description: "Personal API key is required to startnode.",
       });
       return;
     }

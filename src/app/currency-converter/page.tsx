@@ -81,7 +81,7 @@ export default function CurrencyConverterPage() {
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [isCopied, setIsCopied] = useState(false);
 
-  // --- Initialize Session ---
+  // --- startSession ---
   useEffect(() => {
     const saved = localStorage.getItem(HISTORY_KEY);
     if (saved) {

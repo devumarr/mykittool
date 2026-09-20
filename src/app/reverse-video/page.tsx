@@ -167,7 +167,7 @@ export default function ReverseVideoPage() {
       toast({
         variant: "destructive",
         title: "Engine Failure",
-        description: "Failed to initialize WASM node.",
+        description: "Failed to startWASM node.",
       });
       return false;
     }

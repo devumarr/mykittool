@@ -343,7 +343,7 @@ export default function CodePreviewPage() {
             </h3>
             <p className="text-sm text-foreground/20 font-medium max-w-md mb-10 leading-relaxed uppercase tracking-tighter">
               Upload a single HTML file, select a project folder, or drop a ZIP
-              archive to initialize the Preview Lab.
+              archive to startthe Preview Lab.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 w-full max-w-lg">

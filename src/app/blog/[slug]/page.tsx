@@ -47,10 +47,10 @@ const POSTS: Record<string, BlogPost> = {
     category: "Image",
     icon: Eraser,
     toolUrl: "/background-remove",
-    toolLabel: "Initialize Background Remover",
+    toolLabel: "startBackground Remover",
     steps: [
       'Import or drop your visual asset into the "Inbound Matrix" viewport.',
-      "Initialize your session to maintain local registry privacy.",
+      "startyour session to maintain local registry privacy.",
       "Execute the neural isolation protocol to strip the background.",
       "Download your final master as a high-fidelity transparent PNG.",
     ],
@@ -69,7 +69,7 @@ const POSTS: Record<string, BlogPost> = {
     category: "PDF",
     icon: Layers,
     toolUrl: "/pdf-merger",
-    toolLabel: "Initialize PDF Merger",
+    toolLabel: "Merge",
     steps: [
       'Drop your PDF documents into the "Sequence Manager" buffer.',
       "Arrange the document matrix using the reordering controls.",
@@ -91,7 +91,7 @@ const POSTS: Record<string, BlogPost> = {
     category: "PDF",
     icon: Archive,
     toolUrl: "/pdf-compressor",
-    toolLabel: "Initialize PDF Compressor",
+    toolLabel: "compressor",
     steps: [
       'Inject your PDF payload into the "Production Pipeline" zone.',
       "Select a compression protocol (Eco, Standard, or Intensive).",
@@ -113,7 +113,7 @@ const POSTS: Record<string, BlogPost> = {
     category: "PDF",
     icon: FileText,
     toolUrl: "/image-to-pdf",
-    toolLabel: "Initialize Image to PDF",
+    toolLabel: "convert",
     steps: [
       'Drop JPG, PNG, or WebP files into the "Visual Payload" area.',
       "Configure your page architecture as Dynamic Fit or ISO A4.",
@@ -136,7 +136,7 @@ const POSTS: Record<string, BlogPost> = {
     category: "AI",
     icon: User,
     toolUrl: "/ai-resume-builder",
-    toolLabel: "Initialize Resume Builder",
+    toolLabel: "startResume Builder",
     steps: [
       "Populate the identity matrix with your skills and work history.",
       "Select your preferred tone (Professional, Simple, or Strong).",
@@ -158,7 +158,7 @@ const POSTS: Record<string, BlogPost> = {
     category: "AI",
     icon: Mail,
     toolUrl: "/ai-email-writer",
-    toolLabel: "Initialize Email Writer",
+    toolLabel: "startEmail Writer",
     steps: [
       "Specify the email purpose and the intended recipient.",
       "Select a linguistic tone that matches your communication style.",

@@ -425,9 +425,7 @@ export default function ImageToLinkPage() {
                 asChild
                 className="h-16 flex-1 bg-primary text-white font-black uppercase text-[10px] tracking-widest rounded-2xl shadow-xl shadow-primary/30 active:scale-95 transition-all"
               >
-                <Link href="/login?redirect=/image-to-link">
-                  Initialize Session
-                </Link>
+                <Link href="/login?redirect=/image-to-link">startSession</Link>
               </Button>
               <Button
                 asChild

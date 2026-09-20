@@ -273,7 +273,7 @@ export default function CountryInfoPage() {
                   ) : (
                     <Zap className="w-5 h-5 mr-2" />
                   )}
-                  Initialize REST Lookup
+                  startREST Lookup
                 </Button>
               </div>
 

@@ -82,7 +82,7 @@ export default function TextToSpeechPage() {
 
   // Audio State
   const [text, setText] = useState(
-    "Hello. Welcome to the professional Text to Speech Studio. Enter your payload here to initialize synthesis.",
+    "Hello. Welcome to the professional Text to Speech Studio. Enter your payload here to startsynthesis.",
   );
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [selectedVoiceName, setSelectedVoiceName] = useState<string>("");

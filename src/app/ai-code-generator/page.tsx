@@ -122,7 +122,7 @@ export default function AiCodeGeneratorPage() {
       toast({
         variant: "destructive",
         title: "Key Required",
-        description: "Enter an API key to initialize node.",
+        description: "Enter an API key to startnode.",
       });
       return;
     }

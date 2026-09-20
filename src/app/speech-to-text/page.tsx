@@ -94,7 +94,7 @@ export default function SpeechToTextPage() {
   const [isCopied, setIsCopied] = useState(false);
   const recognitionRef = useRef<any>(null);
 
-  // Initialize Speech Protocol
+  // startSpeech Protocol
   useEffect(() => {
     const SpeechRecognition =
       (window as any).SpeechRecognition ||
@@ -440,7 +440,7 @@ export default function SpeechToTextPage() {
                             Ready to listen
                           </h4>
                           <p className="text-[9px] text-foreground/20 font-bold uppercase tracking-tighter">
-                            Initialize handshake to start
+                            starthandshake to start
                           </p>
                         </div>
                       </>
@@ -469,7 +469,7 @@ export default function SpeechToTextPage() {
                         onClick={startStudio}
                         className="h-16 flex-1 bg-primary text-white font-black uppercase tracking-widest text-[11px] rounded-2xl shadow-xl shadow-primary/30 active:scale-95 transition-all"
                       >
-                        <Mic className="w-5 h-5 mr-3" /> Initialize Studio
+                        <Mic className="w-5 h-5 mr-3" /> startStudio
                       </Button>
                     )}
 

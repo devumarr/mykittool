@@ -751,7 +751,7 @@ export default function TempRoomPage() {
                       <Info className="w-4 h-4 text-primary shrink-0 mt-0.5" />
                       <p className="text-[10px] text-white/20 font-bold uppercase leading-relaxed text-left">
                         Keep this page open. Share the code above with your
-                        partner to initialize sync.
+                        partner to startsync.
                       </p>
                     </div>
                   </div>
@@ -1099,7 +1099,7 @@ export default function TempRoomPage() {
                     onClick={() => window.location.reload()}
                     className="h-16 px-12 bg-primary text-white font-black rounded-2xl uppercase tracking-widest text-xs shadow-2xl shadow-primary/30"
                   >
-                    Initialize New Studio
+                    startNew Studio
                   </Button>
                 </div>
               )}

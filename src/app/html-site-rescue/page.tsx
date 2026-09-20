@@ -759,7 +759,7 @@ export default function HtmlSiteRescuePage() {
                   Project Intake
                 </h2>
                 <p className="text-[10px] text-foreground/30 font-black uppercase tracking-[0.4em]">
-                  Initialize local re-matricing protocol
+                  startlocal re-matricing protocol
                 </p>
               </div>
 

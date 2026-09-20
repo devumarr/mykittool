@@ -59,7 +59,7 @@ export default function UsernameCheckerPage() {
   const [activeCategory, setActiveCategory] = useState<CategoryFilter>("all");
   const [platformNames, setPlatformNames] = useState<string[]>([]);
 
-  // --- Initialize Registry ---
+  // --- startRegistry ---
   useEffect(() => {
     getPlatformList().then(setPlatformNames);
   }, []);
@@ -68,7 +68,7 @@ export default function UsernameCheckerPage() {
     if (!targetName.trim() || targetName.length < 2) return;
 
     setIsProcessing(true);
-    // Initialize results with 'checking' state
+    // startresults with 'checking' state
     const initialResults: PlatformResult[] = platformNames.map((name) => ({
       platform: name,
       status: "checking",

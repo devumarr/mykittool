@@ -277,9 +277,7 @@ export default function BackgroundRemovePage() {
             asChild
             className="h-16 w-full max-w-md bg-primary text-white font-black uppercase text-[10px] tracking-widest rounded-2xl shadow-xl shadow-primary/30 relative z-10"
           >
-            <Link href="/login?redirect=/background-remove">
-              Initialize Session
-            </Link>
+            <Link href="/login?redirect=/background-remove">startSession</Link>
           </Button>
         </Card>
       ) : authLoading ? (

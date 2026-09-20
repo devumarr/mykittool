@@ -297,7 +297,7 @@ export default function WifiQrDecoderPage() {
                     <Search className="w-8 h-8" />
                   </div>
                   <p className="text-[10px] font-black uppercase tracking-widest px-12">
-                    Upload a WiFi QR code to initialize the decoding protocol.
+                    Upload a WiFi QR code to startthe decoding protocol.
                   </p>
                 </div>
               )}

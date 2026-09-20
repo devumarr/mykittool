@@ -82,7 +82,7 @@ export default function DirectFileSharePage() {
   const qrRef = useRef<HTMLDivElement>(null);
   const qrInstance = useRef<any>(null);
 
-  // 1. Initialize Peer
+  // 1. startPeer
   useEffect(() => {
     let p: any;
     const init = async () => {

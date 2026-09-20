@@ -232,7 +232,7 @@ export default function WeatherPage() {
       },
       (err) => {
         setIsLoading(false);
-        setError("Location permission needed to initialize hardware sync.");
+        setError("Location permission needed to starthardware sync.");
         toast({
           variant: "destructive",
           title: "Access Denied",

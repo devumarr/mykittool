@@ -480,8 +480,7 @@ export default function KeyboardTestPage() {
             </h4>
             <p className="text-xs text-amber-600/60 font-medium leading-relaxed uppercase">
               Mobile inputs may not trigger standard hardware events. Connect a
-              linguistic hardware unit or laptop to initialize the diagnostic
-              matrix.
+              linguistic hardware unit or laptop to startthe diagnostic matrix.
             </p>
           </div>
         </div>

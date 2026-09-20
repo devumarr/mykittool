@@ -202,7 +202,7 @@ export function QrScannerModal({ isOpen, onClose }: QrScannerModalProps) {
         if (isMounted) setIsInitializing(false);
       } catch (err) {
         if (isMounted) {
-          setError("Failed to initialize hardware stream. Retrying...");
+          setError("Failed to starthardware stream. Retrying...");
           setIsInitializing(false);
         }
       }
