@@ -253,8 +253,8 @@ export default function AccountPage() {
               </CardContent>
             </Card>
 
-            <div className="flex items-start gap-4 rounded-[1.6rem] border border-border bg-muted/30 p-6">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-background text-primary shadow">
+            <div className="flex items-start gap-4 rounded-[1.6rem] border border-emerald-500/15 bg-gradient-to-r from-emerald-500/10 to-transparent p-6 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-400 text-white shadow-lg shadow-emerald-500/30">
                 <ShieldCheck className="h-5 w-5" />
               </div>
               <div>
@@ -267,13 +267,17 @@ export default function AccountPage() {
           </div>
 
           <div className="space-y-6 lg:col-span-4">
-            <Card className="overflow-hidden rounded-[1.8rem] border-border shadow-xl">
-              <CardHeader className="border-b border-border bg-muted/40">
+            <Card className="overflow-hidden rounded-[1.8rem] border-black/5 bg-white shadow-[0_12px_40px_rgba(0,0,0,0.06)] transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_24px_60px_rgba(37,99,235,0.12)] dark:border-white/10 dark:bg-white/[0.04]">
+              <div className="h-[3px] bg-gradient-to-r from-[#2563eb] to-[#60a5fa]" />
+              <CardHeader className="border-b border-black/5 bg-[#2563eb]/5">
                 <CardTitle className="flex items-center gap-3 text-sm">
-                  <Activity className="h-4 w-4 text-primary" /> Session
+                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#2563eb] to-[#60a5fa] text-white shadow-md">
+                    <Activity className="h-4 w-4" />
+                  </span>
+                  Session
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-6 p-6">
+              <CardContent className="space-y-4 p-6">
                 {[
                   { label: "Email", val: user.email, icon: Mail },
                   {
@@ -293,8 +297,11 @@ export default function AccountPage() {
                       : "text-amber-500",
                   },
                 ].map((item) => (
-                  <div key={item.label} className="flex gap-3">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted text-primary">
+                  <div
+                    key={item.label}
+                    className="flex items-center gap-3 rounded-2xl bg-secondary/50 p-3"
+                  >
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#2563eb] to-[#60a5fa] text-white">
                       <item.icon className="h-4 w-4" />
                     </div>
                     <div className="min-w-0">
@@ -315,7 +322,7 @@ export default function AccountPage() {
                 <Button
                   onClick={handleLogout}
                   variant="outline"
-                  className="h-12 w-full rounded-xl text-red-500 hover:bg-red-500/10 hover:text-red-500"
+                  className="h-12 w-full rounded-2xl border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white"
                 >
                   <LogOut className="mr-2 h-4 w-4" /> Logout
                 </Button>
