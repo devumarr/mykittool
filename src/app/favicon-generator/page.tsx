@@ -560,7 +560,7 @@ const head = \`
                         className="m-0 p-8 space-y-6 animate-in fade-in duration-500"
                       >
                         <div className="relative group/snippet">
-                          <pre className="p-8 rounded-[2rem] bg-black/90 text-green-500/80 font-mono text-[11px] leading-relaxed overflow-x-auto shadow-inner border border-white/5 custom-scrollbar max-h-[300px]">
+                          <pre className="p-8 rounded-[2rem] bg-background/90 text-green-500/80 font-mono text-[11px] leading-relaxed overflow-x-auto shadow-inner border border-white/5 custom-scrollbar max-h-[300px]">
                             {code}
                           </pre>
                           <Button

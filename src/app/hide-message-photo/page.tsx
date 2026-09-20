@@ -480,7 +480,7 @@ export default function HideMessagePhotoPage() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-start">
         {/* Viewport - Left */}
         <div className="lg:col-span-7 xl:col-span-8 space-y-6">
-          <Card className="glass-card border-border shadow-2xl overflow-hidden relative flex flex-col min-h-[400px] max-h-[50vh] lg:max-h-none lg:min-h-[700px] bg-black/60">
+          <Card className="glass-card border-border shadow-2xl overflow-hidden relative flex flex-col min-h-[400px] max-h-[50vh] lg:max-h-none lg:min-h-[700px] bg-background/60">
             <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
             <CardHeader className="py-4 border-b border-white/5 bg-white/5 flex flex-row items-center justify-between shrink-0">
               <CardTitle className="text-[9px] font-black text-primary uppercase tracking-[0.4em] flex items-center gap-2">

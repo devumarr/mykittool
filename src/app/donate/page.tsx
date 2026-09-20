@@ -238,7 +238,7 @@ export default function DonatePage() {
               <div className="flex h-40 w-40 items-center justify-center rounded-[1.6rem] bg-white shadow-xl ring-1 ring-black/5 transition-transform duration-500 group-hover:scale-105">
                 <div className="relative flex h-full w-full items-center justify-center rounded-[1.2rem] bg-slate-50">
                   <QrCode className="h-20 w-20 text-slate-300" />
-                  <span className="absolute bottom-3 rounded-full bg-black px-3 py-1 text-[8px] font-bold uppercase tracking-widest text-white">
+                  <span className="absolute bottom-3 rounded-full bg-background px-3 py-1 text-[8px] font-bold uppercase tracking-widest text-white">
                     TRC20
                   </span>
                 </div>

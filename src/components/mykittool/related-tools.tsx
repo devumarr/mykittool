@@ -323,7 +323,7 @@ export function RelatedTools() {
   if (!isToolPage) return null;
 
   return (
-    <section className="w-full py-24 border-t border-white/5 bg-black/20 mt-32 animate-in fade-in duration-1000">
+    <section className="w-full py-24 border-t border-white/5 bg-background mt-32 animate-in fade-in duration-1000">
       <div className="container mx-auto px-6 max-w-7xl">
         <div className="flex flex-col items-center text-center gap-4 mb-16">
           <h2 className="text-2xl md:text-4xl font-headline font-black text-foreground uppercase tracking-tight leading-none">

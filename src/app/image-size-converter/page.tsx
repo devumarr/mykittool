@@ -401,7 +401,7 @@ export default function ImageSizeConverterPage() {
 
         {/* Results Matrix - Right */}
         <div className="lg:col-span-7 xl:col-span-8 space-y-8 animate-in fade-in slide-in-from-right-6 duration-1000 stagger-2">
-          <Card className="glass-card border-border shadow-2xl overflow-hidden relative flex flex-col min-h-[600px] bg-black/10">
+          <Card className="glass-card border-border shadow-2xl overflow-hidden relative flex flex-col min-h-[600px] bg-background/10">
             <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
             <CardHeader className="py-6 border-b border-border bg-secondary/30 flex flex-row items-center justify-between shrink-0 px-6 sm:px-10">
               <div className="flex items-center gap-4">
@@ -450,7 +450,7 @@ export default function ImageSizeConverterPage() {
 
                     {/* Safe Zone / Resolution Badge */}
                     <div className="absolute top-4 left-4 flex gap-2">
-                      <div className="px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-white text-[8px] font-black uppercase tracking-widest shadow-xl">
+                      <div className="px-3 py-1.5 rounded-full bg-background/60 backdrop-blur-md border border-white/10 text-white text-[8px] font-black uppercase tracking-widest shadow-xl">
                         {targetWidth} × {targetHeight} PX
                       </div>
                     </div>

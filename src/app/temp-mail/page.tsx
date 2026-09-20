@@ -769,7 +769,7 @@ export default function TempMailPage() {
 
           {/* Right Column: Registry & Reader */}
           <div className="lg:col-span-8 space-y-8 animate-in fade-in slide-in-from-right-6 duration-1000 h-full overflow-hidden flex flex-col">
-            <Card className="glass-card border-border shadow-2xl overflow-hidden relative flex flex-col flex-1 bg-black/10">
+            <Card className="glass-card border-border shadow-2xl overflow-hidden relative flex flex-col flex-1 bg-background/10">
               <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
               <CardHeader className="py-8 border-b border-border bg-secondary/30 flex flex-col gap-6 shrink-0">
                 <div className="flex flex-row items-center justify-between">

@@ -407,7 +407,7 @@ export default function ImageToLinkPage() {
 
       {!user && !authLoading ? (
         <div className="grid grid-cols-1 gap-8 animate-in fade-in zoom-in duration-500">
-          <Card className="glass-card border-border shadow-2xl p-12 sm:p-24 text-center flex flex-col items-center gap-8 relative overflow-hidden bg-black/10 rounded-[2.5rem]">
+          <Card className="glass-card border-border shadow-2xl p-12 sm:p-24 text-center flex flex-col items-center gap-8 relative overflow-hidden bg-background/10 rounded-[2.5rem]">
             <div className="absolute top-0 right-0 w-80 h-80 bg-primary/5 rounded-full blur-[120px] pointer-events-none" />
             <div className="w-20 h-20 rounded-[2rem] bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shadow-2xl ring-1 ring-primary/10 relative z-10">
               <Lock className="w-8 h-8" />
@@ -549,7 +549,7 @@ export default function ImageToLinkPage() {
                         alt="Preview"
                         className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl group-hover/upload:opacity-40 transition-opacity"
                       />
-                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/upload:opacity-100 transition-opacity bg-black/40 backdrop-blur-sm rounded-2xl">
+                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/upload:opacity-100 transition-opacity bg-background backdrop-blur-sm rounded-2xl">
                         <RefreshCcw className="w-10 h-10 text-white animate-spin-slow" />
                       </div>
                     </div>
@@ -640,7 +640,7 @@ export default function ImageToLinkPage() {
                       <Label className="text-[10px] font-black text-foreground/30 uppercase tracking-[0.3em] ml-1">
                         Preview
                       </Label>
-                      <div className="aspect-square w-full rounded-[2.5rem] bg-white dark:bg-black/40 border border-emerald-500/10 shadow-2xl p-4 flex items-center justify-center relative group/preview">
+                      <div className="aspect-square w-full rounded-[2.5rem] bg-white dark:bg-background border border-emerald-500/10 shadow-2xl p-4 flex items-center justify-center relative group/preview">
                         <img
                           src={image!}
                           alt="Final"
@@ -709,7 +709,7 @@ export default function ImageToLinkPage() {
                                   : "Copy Snippet"}
                               </button>
                             </div>
-                            <div className="h-11 bg-white/40 dark:bg-black/40 border border-emerald-500/5 rounded-xl flex items-center px-4 font-mono text-[10px] font-bold text-foreground/80 overflow-hidden shadow-inner group-hover/row:border-emerald-500/20 transition-colors">
+                            <div className="h-11 bg-white/40 dark:bg-background border border-emerald-500/5 rounded-xl flex items-center px-4 font-mono text-[10px] font-bold text-foreground/80 overflow-hidden shadow-inner group-hover/row:border-emerald-500/20 transition-colors">
                               <span className="truncate">{item.val}</span>
                             </div>
                           </div>
@@ -776,7 +776,7 @@ export default function ImageToLinkPage() {
                               alt=""
                               className="w-full h-full object-cover group-hover/row:scale-105 transition-transform"
                             />
-                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover/row:opacity-100 transition-opacity">
+                            <div className="absolute inset-0 bg-background flex items-center justify-center opacity-0 group-hover/row:opacity-100 transition-opacity">
                               <Eye className="w-4 h-4 text-white/60" />
                             </div>
                           </div>
@@ -840,7 +840,7 @@ export default function ImageToLinkPage() {
                       </div>
 
                       {expandedId === item.id && (
-                        <div className="px-5 pb-8 pt-2 border-t border-white/5 bg-black/20 animate-in slide-in-from-top-2 duration-500">
+                        <div className="px-5 pb-8 pt-2 border-t border-white/5 bg-background animate-in slide-in-from-top-2 duration-500">
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-6">
                             {[
                               {
@@ -895,7 +895,7 @@ export default function ImageToLinkPage() {
                                       : "Copy"}
                                   </button>
                                 </div>
-                                <div className="h-10 bg-black/40 border border-white/5 rounded-xl flex items-center px-4 font-mono text-[9px] font-bold text-foreground/40 overflow-hidden shadow-inner group-hover/sub:border-primary/20 transition-all">
+                                <div className="h-10 bg-background border border-white/5 rounded-xl flex items-center px-4 font-mono text-[9px] font-bold text-foreground/40 overflow-hidden shadow-inner group-hover/sub:border-primary/20 transition-all">
                                   <span className="truncate">{sub.val}</span>
                                 </div>
                               </div>

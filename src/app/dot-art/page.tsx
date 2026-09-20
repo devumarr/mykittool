@@ -1,12 +1,12 @@
-"use client"
+"use client";
 
-import React, { useState, useRef, useCallback } from 'react';
-import { 
-  Grid3X3, 
-  Copy, 
-  Trash2, 
-  Sparkles, 
-  Download, 
+import React, { useState, useRef, useCallback } from "react";
+import {
+  Grid3X3,
+  Copy,
+  Trash2,
+  Sparkles,
+  Download,
   Info,
   CheckCircle2,
   Maximize,
@@ -22,26 +22,32 @@ import {
   RefreshCcw,
   Upload,
   Activity,
-  ArrowDownCircle
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Slider } from '@/components/ui/slider';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useToast } from '@/hooks/use-toast';
-import { cn } from '@/lib/utils';
-import { GetHelp } from '@/components/mykittool/get-help';
+  ArrowDownCircle,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
+import { GetHelp } from "@/components/mykittool/get-help";
 
 export default function DotArtPage() {
   const { toast } = useToast();
   const [image, setImage] = useState<string | null>(null);
-  const [output, setOutput] = useState('');
+  const [output, setOutput] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
 
   // Settings
-  const [mode, setMode] = useState<'standard' | 'edges'>('standard');
+  const [mode, setMode] = useState<"standard" | "edges">("standard");
   const [detail, setDetail] = useState(60); // Width in characters
   const [darkness, setDarkness] = useState(128); // Threshold
   const [sensitivity, setSensitivity] = useState(50); // Edge sensitivity
@@ -53,120 +59,150 @@ export default function DotArtPage() {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 10 * 1024 * 1024) {
-        toast({ variant: "destructive", title: "File Too Large", description: "Standard limit is 10MB." });
+        toast({
+          variant: "destructive",
+          title: "File Too Large",
+          description: "Standard limit is 10MB.",
+        });
         return;
       }
       const reader = new FileReader();
       reader.onloadend = () => {
         setImage(reader.result as string);
-        toast({ title: "Image Imported", description: "Ready for high-fidelity synthesis." });
+        toast({
+          title: "Image Imported",
+          description: "Ready for high-fidelity synthesis.",
+        });
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const processBraille = useCallback((img: HTMLImageElement, targetWidthChars: number) => {
-    const charWidth = 2;
-    const charHeight = 4;
-    const outputWidth = targetWidthChars * charWidth;
-    
-    const outputHeight = Math.round(((img.height / img.width) * outputWidth) / 2) * 2; 
-    const finalHeight = Math.ceil(outputHeight / 4) * 4;
-    
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d', { willReadFrequently: true });
-    if (!ctx) return '';
+  const processBraille = useCallback(
+    (img: HTMLImageElement, targetWidthChars: number) => {
+      const charWidth = 2;
+      const charHeight = 4;
+      const outputWidth = targetWidthChars * charWidth;
 
-    canvas.width = outputWidth;
-    canvas.height = finalHeight;
-    
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
-    ctx.drawImage(img, 0, 0, outputWidth, finalHeight);
+      const outputHeight =
+        Math.round(((img.height / img.width) * outputWidth) / 2) * 2;
+      const finalHeight = Math.ceil(outputHeight / 4) * 4;
 
-    const imageData = ctx.getImageData(0, 0, outputWidth, finalHeight);
-    const data = imageData.data;
-    
-    const pixels = new Uint8ClampedArray(outputWidth * finalHeight);
-    const grayBuffer = new Float32Array(outputWidth * finalHeight);
-    let minGray = 255;
-    let maxGray = 0;
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d", { willReadFrequently: true });
+      if (!ctx) return "";
 
-    for (let i = 0; i < data.length; i += 4) {
-      const g = (data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114);
-      grayBuffer[i / 4] = g;
-      if (g < minGray) minGray = g;
-      if (g > maxGray) maxGray = g;
-    }
+      canvas.width = outputWidth;
+      canvas.height = finalHeight;
 
-    const range = maxGray - minGray || 1;
-    const contrastFactor = 1.35;
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
+      ctx.drawImage(img, 0, 0, outputWidth, finalHeight);
 
-    for (let i = 0; i < grayBuffer.length; i++) {
-      let val = ((grayBuffer[i] - minGray) / range) * 255;
-      val = (val - 128) * contrastFactor + 128;
-      pixels[i] = Math.max(0, Math.min(255, val));
-    }
+      const imageData = ctx.getImageData(0, 0, outputWidth, finalHeight);
+      const data = imageData.data;
 
-    let processedPixels = pixels;
+      const pixels = new Uint8ClampedArray(outputWidth * finalHeight);
+      const grayBuffer = new Float32Array(outputWidth * finalHeight);
+      let minGray = 255;
+      let maxGray = 0;
 
-    if (mode === 'edges') {
-      const edgePixels = new Uint8ClampedArray(outputWidth * finalHeight);
-      const sensValue = (100 - sensitivity) * 1.8;
-      for (let y = 1; y < finalHeight - 1; y++) {
-        for (let x = 1; x < outputWidth - 1; x++) {
-          const idx = y * outputWidth + x;
-          const gx = -1 * pixels[idx - outputWidth - 1] + 1 * pixels[idx - outputWidth + 1] + -2 * pixels[idx - 1] + 2 * pixels[idx + 1] + -1 * pixels[idx + outputWidth - 1] + 1 * pixels[idx + outputWidth + 1];
-          const gy = -1 * pixels[idx - outputWidth - 1] - 2 * pixels[idx - outputWidth] - 1 * (pixels[idx - outputWidth + 1] || 0) + 1 * (pixels[idx + outputWidth - 1] || 0) + 2 * (pixels[idx + outputWidth] || 0) + 1 * (pixels[idx + outputWidth + 1] || 0);
-          const mag = Math.sqrt(gx * gx + gy * gy);
-          edgePixels[idx] = mag > sensValue ? 0 : 255;
-        }
+      for (let i = 0; i < data.length; i += 4) {
+        const g = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
+        grayBuffer[i / 4] = g;
+        if (g < minGray) minGray = g;
+        if (g > maxGray) maxGray = g;
       }
-      if (thickness > 1) {
-        const thickPixels = new Uint8ClampedArray(edgePixels);
+
+      const range = maxGray - minGray || 1;
+      const contrastFactor = 1.35;
+
+      for (let i = 0; i < grayBuffer.length; i++) {
+        let val = ((grayBuffer[i] - minGray) / range) * 255;
+        val = (val - 128) * contrastFactor + 128;
+        pixels[i] = Math.max(0, Math.min(255, val));
+      }
+
+      let processedPixels = pixels;
+
+      if (mode === "edges") {
+        const edgePixels = new Uint8ClampedArray(outputWidth * finalHeight);
+        const sensValue = (100 - sensitivity) * 1.8;
         for (let y = 1; y < finalHeight - 1; y++) {
           for (let x = 1; x < outputWidth - 1; x++) {
-            if (edgePixels[y * outputWidth + x] === 0) {
-              for (let dy = -1; dy <= 1; dy++) {
-                for (let dx = -1; dx <= 1; dx++) {
-                  const ty = y + dy; const tx = x + dx;
-                  if (ty >= 0 && ty < finalHeight && tx >= 0 && tx < outputWidth) thickPixels[ty * outputWidth + tx] = 0;
+            const idx = y * outputWidth + x;
+            const gx =
+              -1 * pixels[idx - outputWidth - 1] +
+              1 * pixels[idx - outputWidth + 1] +
+              -2 * pixels[idx - 1] +
+              2 * pixels[idx + 1] +
+              -1 * pixels[idx + outputWidth - 1] +
+              1 * pixels[idx + outputWidth + 1];
+            const gy =
+              -1 * pixels[idx - outputWidth - 1] -
+              2 * pixels[idx - outputWidth] -
+              1 * (pixels[idx - outputWidth + 1] || 0) +
+              1 * (pixels[idx + outputWidth - 1] || 0) +
+              2 * (pixels[idx + outputWidth] || 0) +
+              1 * (pixels[idx + outputWidth + 1] || 0);
+            const mag = Math.sqrt(gx * gx + gy * gy);
+            edgePixels[idx] = mag > sensValue ? 0 : 255;
+          }
+        }
+        if (thickness > 1) {
+          const thickPixels = new Uint8ClampedArray(edgePixels);
+          for (let y = 1; y < finalHeight - 1; y++) {
+            for (let x = 1; x < outputWidth - 1; x++) {
+              if (edgePixels[y * outputWidth + x] === 0) {
+                for (let dy = -1; dy <= 1; dy++) {
+                  for (let dx = -1; dx <= 1; dx++) {
+                    const ty = y + dy;
+                    const tx = x + dx;
+                    if (
+                      ty >= 0 &&
+                      ty < finalHeight &&
+                      tx >= 0 &&
+                      tx < outputWidth
+                    )
+                      thickPixels[ty * outputWidth + tx] = 0;
+                  }
                 }
               }
             }
           }
+          processedPixels = thickPixels;
+        } else {
+          processedPixels = edgePixels;
         }
-        processedPixels = thickPixels;
-      } else {
-        processedPixels = edgePixels;
       }
-    }
 
-    let result = '';
-    for (let y = 0; y < finalHeight; y += charHeight) {
-      for (let x = 0; x < outputWidth; x += charWidth) {
-        let byte = 0;
-        const checkPixel = (dx: number, dy: number) => {
-          const px = x + dx;
-          const py = y + dy;
-          if (px >= outputWidth || py >= finalHeight) return false;
-          const val = processedPixels[py * outputWidth + px];
-          return mode === 'edges' ? val === 0 : val < darkness;
-        };
-        if (checkPixel(0, 0)) byte += 1;
-        if (checkPixel(0, 1)) byte += 2;
-        if (checkPixel(0, 2)) byte += 4;
-        if (checkPixel(1, 0)) byte += 8;
-        if (checkPixel(1, 1)) byte += 16;
-        if (checkPixel(1, 2)) byte += 32;
-        if (checkPixel(0, 3)) byte += 64;
-        if (checkPixel(1, 3)) byte += 128;
-        result += String.fromCharCode(0x2800 + byte);
+      let result = "";
+      for (let y = 0; y < finalHeight; y += charHeight) {
+        for (let x = 0; x < outputWidth; x += charWidth) {
+          let byte = 0;
+          const checkPixel = (dx: number, dy: number) => {
+            const px = x + dx;
+            const py = y + dy;
+            if (px >= outputWidth || py >= finalHeight) return false;
+            const val = processedPixels[py * outputWidth + px];
+            return mode === "edges" ? val === 0 : val < darkness;
+          };
+          if (checkPixel(0, 0)) byte += 1;
+          if (checkPixel(0, 1)) byte += 2;
+          if (checkPixel(0, 2)) byte += 4;
+          if (checkPixel(1, 0)) byte += 8;
+          if (checkPixel(1, 1)) byte += 16;
+          if (checkPixel(1, 2)) byte += 32;
+          if (checkPixel(0, 3)) byte += 64;
+          if (checkPixel(1, 3)) byte += 128;
+          result += String.fromCharCode(0x2800 + byte);
+        }
+        result += "\n";
       }
-      result += '\n';
-    }
-    return result;
-  }, [mode, darkness, sensitivity, thickness]);
+      return result;
+    },
+    [mode, darkness, sensitivity, thickness],
+  );
 
   const generateDotArt = () => {
     if (!image) return;
@@ -179,7 +215,10 @@ export default function DotArtPage() {
       const result = processBraille(img, detail);
       setOutput(result);
       setIsProcessing(false);
-      toast({ title: "Art Generated", description: "Matrix synchronized with visual data." });
+      toast({
+        title: "Art Generated",
+        description: "Matrix synchronized with visual data.",
+      });
     };
   };
 
@@ -189,59 +228,68 @@ export default function DotArtPage() {
     img.crossOrigin = "anonymous";
     img.src = image;
     img.onload = () => {
-      const chatWidth = 30; 
+      const chatWidth = 30;
       const result = processBraille(img, chatWidth);
-      const sanitizedResult = result.split('\n').map(line => line.replace(/ /g, ' ')).join('\n');
+      const sanitizedResult = result
+        .split("\n")
+        .map((line) => line.replace(/ /g, " "))
+        .join("\n");
       const finalPayload = "```\n" + sanitizedResult.trim() + "\n```";
-      
+
       navigator.clipboard.writeText(finalPayload);
       setIsCopied(true);
-      toast({ title: "Chat Safe Art Copied", description: "Identity preserved for mobile sharing." });
+      toast({
+        title: "Chat Safe Art Copied",
+        description: "Identity preserved for mobile sharing.",
+      });
       setTimeout(() => setIsCopied(false), 2000);
     };
   };
 
   const handleExportAsImage = () => {
     if (!output) return;
-    const lines = output.split('\n');
-    const fontSize = 24; 
+    const lines = output.split("\n");
+    const fontSize = 24;
     const lineHeight = 26;
     const padding = 60;
 
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
     ctx.font = `${fontSize}px "Courier New", monospace`;
-    const textWidth = ctx.measureText(lines[0] || '').width;
-    
-    canvas.width = textWidth + (padding * 2);
-    canvas.height = (lines.length * lineHeight) + (padding * 2);
+    const textWidth = ctx.measureText(lines[0] || "").width;
 
-    ctx.fillStyle = '#0a0a0c';
+    canvas.width = textWidth + padding * 2;
+    canvas.height = lines.length * lineHeight + padding * 2;
+
+    ctx.fillStyle = "#0a0a0c";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    ctx.fillStyle = '#3b82f6';
+    ctx.fillStyle = "#3b82f6";
     ctx.font = `${fontSize}px "Courier New", monospace`;
-    ctx.textBaseline = 'top';
+    ctx.textBaseline = "top";
 
     lines.forEach((line, i) => {
-      ctx.fillText(line, padding, padding + (i * lineHeight));
+      ctx.fillText(line, padding, padding + i * lineHeight);
     });
 
-    const dataUrl = canvas.toDataURL('image/png', 1.0);
-    const link = document.createElement('a');
+    const dataUrl = canvas.toDataURL("image/png", 1.0);
+    const link = document.createElement("a");
     link.href = dataUrl;
     link.download = `mykit-dot-art-master-${Date.now()}.png`;
     link.click();
-    
-    toast({ title: "Image Master Exported", description: "High-contrast visual saved." });
+
+    toast({
+      title: "Image Master Exported",
+      description: "High-contrast visual saved.",
+    });
   };
 
   const handleClear = () => {
     setImage(null);
-    setOutput('');
-    if (fileInputRef.current) fileInputRef.current.value = '';
+    setOutput("");
+    if (fileInputRef.current) fileInputRef.current.value = "";
     toast({ title: "Studio Reset" });
   };
 
@@ -252,17 +300,19 @@ export default function DotArtPage() {
           <Grid3X3 className="w-3.5 h-3.5" /> Creative Suite
         </div>
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-           <div>
-              <h1 className="text-3xl md:text-5xl font-headline font-black text-foreground uppercase tracking-tight">
-                Image to <span className="text-primary italic">Dot Art</span>
-              </h1>
-              <p className="text-foreground/40 text-sm md:text-base font-medium mt-4 max-w-2xl leading-relaxed">
-                Transform photographs into professional Braille Unicode art. High-fidelity pixel-to-dot re-matricing optimized for profile READMEs and mobile messaging.
-              </p>
-           </div>
-           <div className="flex items-center gap-3">
-              <GetHelp toolId="dot-art" />
-           </div>
+          <div>
+            <h1 className="text-3xl md:text-5xl font-headline font-black text-foreground uppercase tracking-tight">
+              Image to <span className="text-primary italic">Dot Art</span>
+            </h1>
+            <p className="text-foreground/40 text-sm md:text-base font-medium mt-4 max-w-2xl leading-relaxed">
+              Transform photographs into professional Braille Unicode art.
+              High-fidelity pixel-to-dot re-matricing optimized for profile
+              READMEs and mobile messaging.
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <GetHelp toolId="dot-art" />
+          </div>
         </div>
       </div>
 
@@ -271,35 +321,43 @@ export default function DotArtPage() {
         <div className="lg:col-span-5 space-y-8 animate-in fade-in slide-in-from-left-6 duration-700">
           <Card className="glass-card border-border shadow-2xl overflow-hidden relative group">
             <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
-            
+
             <CardHeader className="pb-8 border-b border-border bg-secondary/30">
               <CardTitle className="text-xl font-headline flex items-center gap-4 text-foreground">
                 <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary ring-1 ring-primary/40 shadow-inner group-hover:scale-110 transition-transform">
                   <ImageIcon className="w-6 h-6" />
                 </div>
-                Matrix Parameters
+                Matrix Preview
               </CardTitle>
             </CardHeader>
-            
+
             <CardContent className="pt-10 space-y-10">
               <div className="space-y-4">
-                <Label className="text-[10px] font-black text-foreground/50 uppercase tracking-[0.2em] ml-1">Visual Intake</Label>
-                <div 
+                <Label className="text-[10px] font-black text-foreground/50 uppercase tracking-[0.2em] ml-1">
+                  Visual Intake
+                </Label>
+                <div
                   onClick={() => !isProcessing && fileInputRef.current?.click()}
                   className={cn(
                     "relative group/upload h-48 rounded-[2rem] border-2 border-dashed border-border hover:border-primary/40 transition-all flex flex-col items-center justify-center bg-secondary/30 overflow-hidden cursor-pointer",
                     image && "border-solid border-primary/20",
-                    isProcessing && "opacity-50 cursor-not-allowed"
+                    isProcessing && "opacity-50 cursor-not-allowed",
                   )}
                 >
                   {image ? (
                     <>
-                      <img src={image} alt="Preview" className="absolute inset-0 w-full h-full object-contain p-4 opacity-50 group-hover:opacity-80 transition-opacity" />
+                      <img
+                        src={image}
+                        alt="Preview"
+                        className="absolute inset-0 w-full h-full object-contain p-4 opacity-50 group-hover:opacity-80 transition-opacity"
+                      />
                       <div className="relative z-10 flex flex-col items-center">
-                         <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary mb-2 shadow-lg backdrop-blur-md">
-                           <CheckCircle2 className="w-5 h-5" />
-                         </div>
-                         <p className="text-[10px] font-black uppercase text-primary tracking-widest">Image Matrix Buffered</p>
+                        <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary mb-2 shadow-lg backdrop-blur-md">
+                          <CheckCircle2 className="w-5 h-5" />
+                        </div>
+                        <p className="text-[10px] font-black uppercase text-primary tracking-widest">
+                          Image Matrix Buffered
+                        </p>
                       </div>
                     </>
                   ) : (
@@ -307,60 +365,114 @@ export default function DotArtPage() {
                       <div className="w-12 h-12 rounded-2xl bg-background border border-border flex items-center justify-center text-foreground/20 group-hover:text-primary group-hover:scale-110 transition-all mb-4 shadow-xl">
                         <Upload className="w-6 h-6" />
                       </div>
-                      <p className="text-[10px] font-black uppercase text-foreground/40 tracking-widest group-hover:text-primary transition-colors text-center px-8">Drop Imagery or Click to Browse</p>
+                      <p className="text-[10px] font-black uppercase text-foreground/40 tracking-widest group-hover:text-primary transition-colors text-center px-8">
+                        Drop Imagery or Click to Browse
+                      </p>
                     </>
                   )}
-                  <input type="file" accept="image/*" ref={fileInputRef} onChange={handleFileUpload} className="hidden" />
+                  <input
+                    type="file"
+                    accept="image/*"
+                    ref={fileInputRef}
+                    onChange={handleFileUpload}
+                    className="hidden"
+                  />
                 </div>
               </div>
 
               <div className="space-y-8">
                 <div className="grid grid-cols-2 gap-6">
                   <div className="space-y-4">
-                    <Label className="text-[10px] font-black text-foreground/50 uppercase tracking-[0.2em] ml-1">Linguistic Mode</Label>
-                    <Select value={mode} onValueChange={(val: any) => setMode(val)}>
+                    <Label className="text-[10px] font-black text-foreground/50 uppercase tracking-[0.2em] ml-1">
+                      Linguistic Mode
+                    </Label>
+                    <Select
+                      value={mode}
+                      onValueChange={(val: any) => setMode(val)}
+                    >
                       <SelectTrigger className="h-12 bg-secondary border-border rounded-xl text-foreground font-bold">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="glass-card">
-                        <SelectItem value="standard" className="text-xs font-bold uppercase">Standard (Greyscale)</SelectItem>
-                        <SelectItem value="edges" className="text-xs font-bold uppercase">Edge Trace (Lines)</SelectItem>
+                        <SelectItem
+                          value="standard"
+                          className="text-xs font-bold uppercase"
+                        >
+                          Standard (Greyscale)
+                        </SelectItem>
+                        <SelectItem
+                          value="edges"
+                          className="text-xs font-bold uppercase"
+                        >
+                          Edge Trace (Lines)
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-4">
-                    <Label className="text-[10px] font-black text-foreground/50 uppercase tracking-[0.2em] ml-1">Resolution Detail</Label>
+                    <Label className="text-[10px] font-black text-foreground/50 uppercase tracking-[0.2em] ml-1">
+                      Resolution Detail
+                    </Label>
                     <div className="flex items-center gap-4">
-                      <Slider value={[detail]} min={20} max={120} step={1} onValueChange={(v) => setDetail(v[0])} className="flex-1" />
-                      <span className="text-[10px] font-mono font-black text-primary w-8">{detail}</span>
+                      <Slider
+                        value={[detail]}
+                        min={20}
+                        max={120}
+                        step={1}
+                        onValueChange={(v) => setDetail(v[0])}
+                        className="flex-1"
+                      />
+                      <span className="text-[10px] font-mono font-black text-primary w-8">
+                        {detail}
+                      </span>
                     </div>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="space-y-4">
-                    <Label className="text-[10px] font-black text-foreground/50 uppercase tracking-[0.2em] ml-1">Darkness Threshold</Label>
-                    <Slider value={[darkness]} min={0} max={255} step={1} onValueChange={(v) => setDarkness(v[0])} />
+                    <Label className="text-[10px] font-black text-foreground/50 uppercase tracking-[0.2em] ml-1">
+                      Darkness Threshold
+                    </Label>
+                    <Slider
+                      value={[darkness]}
+                      min={0}
+                      max={255}
+                      step={1}
+                      onValueChange={(v) => setDarkness(v[0])}
+                    />
                   </div>
-                  {mode === 'edges' && (
+                  {mode === "edges" && (
                     <div className="space-y-4">
-                      <Label className="text-[10px] font-black text-foreground/50 uppercase tracking-[0.2em] ml-1">Edge Sensitivity</Label>
-                      <Slider value={[sensitivity]} min={1} max={100} step={1} onValueChange={(v) => setSensitivity(v[0])} />
+                      <Label className="text-[10px] font-black text-foreground/50 uppercase tracking-[0.2em] ml-1">
+                        Edge Sensitivity
+                      </Label>
+                      <Slider
+                        value={[sensitivity]}
+                        min={1}
+                        max={100}
+                        step={1}
+                        onValueChange={(v) => setSensitivity(v[0])}
+                      />
                     </div>
                   )}
                 </div>
               </div>
 
               <div className="flex gap-4 pt-4">
-                <Button 
+                <Button
                   onClick={generateDotArt}
                   disabled={isProcessing || !image}
                   className="flex-1 h-16 bg-primary hover:bg-primary/90 text-primary-foreground font-black rounded-2xl flex items-center justify-center gap-4 text-lg shadow-xl shadow-primary/30 transition-all active:scale-95 group/btn"
                 >
-                  {isProcessing ? <Loader2 className="w-6 h-6 animate-spin" /> : <Sparkles className="w-6 h-6 group-hover:rotate-12 transition-transform" />}
+                  {isProcessing ? (
+                    <Loader2 className="w-6 h-6 animate-spin" />
+                  ) : (
+                    <Sparkles className="w-6 h-6 group-hover:rotate-12 transition-transform" />
+                  )}
                   Generate
                 </Button>
-                <Button 
+                <Button
                   variant="outline"
                   onClick={handleClear}
                   className="w-16 h-16 rounded-2xl border-border bg-secondary hover:bg-secondary/80 text-foreground/40 hover:text-destructive transition-all active:scale-95"
@@ -374,9 +486,13 @@ export default function DotArtPage() {
           <div className="p-6 rounded-[2.5rem] bg-primary/5 border border-primary/10 flex items-start gap-5">
             <Info className="w-6 h-6 text-primary mt-1 shrink-0" />
             <div className="space-y-2">
-              <h4 className="text-[11px] font-black text-primary uppercase tracking-widest">Master Protocol</h4>
+              <h4 className="text-[11px] font-black text-primary uppercase tracking-widest">
+                Master Protocol
+              </h4>
               <p className="text-[11px] text-foreground/40 leading-relaxed font-medium uppercase">
-                The studio utilizes a 2x4 bitstream mapping protocol. Preprocessing includes automatic contrast stretching and luminosity calibration for 1:1 hardware fidelity.
+                The studio utilizes a 2x4 bitstream mapping protocol.
+                Preprocessing includes automatic contrast stretching and
+                luminosity calibration for 1:1 hardware fidelity.
               </p>
             </div>
           </div>
@@ -392,37 +508,45 @@ export default function DotArtPage() {
                   <Activity className="w-3.5 h-3.5" /> Identity Output
                 </CardTitle>
                 {output && (
-                   <div className="px-3 py-1 rounded-lg bg-primary/10 border border-primary/20 text-[9px] font-black text-primary uppercase tracking-widest animate-pulse">Signal Active</div>
+                  <div className="px-3 py-1 rounded-lg bg-primary/10 border border-primary/20 text-[9px] font-black text-primary uppercase tracking-widest animate-pulse">
+                    Signal Active
+                  </div>
                 )}
               </div>
             </CardHeader>
             <CardContent className="pt-10 space-y-8 flex-1 flex flex-col">
               <div className="flex-1 relative group/output min-h-[350px]">
-                <textarea 
+                <textarea
                   readOnly
                   value={output}
                   placeholder="Output matrix will appear here..."
-                  className="w-full h-full min-h-[350px] bg-white dark:bg-black/20 border-border text-foreground font-mono rounded-[2.5rem] p-8 text-[8px] sm:text-[10px] leading-[1.0] resize-none shadow-inner custom-scrollbar transition-all overflow-auto whitespace-pre tracking-normal"
+                  className="w-full h-full min-h-[350px] bg-white dark:bg-background border-border text-foreground font-mono rounded-[2.5rem] p-8 text-[8px] sm:text-[10px] leading-[1.0] resize-none shadow-inner custom-scrollbar transition-all overflow-auto whitespace-pre tracking-normal"
                 />
                 {!output && (
                   <div className="absolute inset-0 flex flex-col items-center justify-center opacity-10 group-hover:opacity-20 transition-opacity pointer-events-none">
                     <Grid3X3 className="w-20 h-20 text-primary mb-4" />
-                    <p className="text-xs font-black uppercase tracking-[0.3em]">Awaiting Linguistic Sync</p>
+                    <p className="text-xs font-black uppercase tracking-[0.3em]">
+                      Awaiting Linguistic Sync
+                    </p>
                   </div>
                 )}
               </div>
 
               <div className="space-y-6">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Button 
+                  <Button
                     onClick={handleCopyChatSafe}
                     disabled={!output}
                     className="h-16 bg-primary text-white font-black rounded-2xl flex items-center justify-center gap-3 text-xs uppercase tracking-widest shadow-xl active:scale-95 transition-all"
                   >
-                    {isCopied ? <CheckCircle2 className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
+                    {isCopied ? (
+                      <CheckCircle2 className="w-5 h-5" />
+                    ) : (
+                      <Copy className="w-5 h-5" />
+                    )}
                     Copy
                   </Button>
-                  <Button 
+                  <Button
                     onClick={handleExportAsImage}
                     disabled={!output}
                     variant="outline"
@@ -432,7 +556,7 @@ export default function DotArtPage() {
                     Export
                   </Button>
                 </div>
-                
+
                 <div className="p-5 rounded-2xl bg-primary/5 border border-primary/10 text-center animate-in slide-in-from-bottom-2">
                   <p className="text-[10px] text-foreground/40 font-bold uppercase tracking-wider flex items-center justify-center gap-3">
                     <Zap className="w-4 h-4 text-primary animate-pulse" />
@@ -442,40 +566,55 @@ export default function DotArtPage() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-white/5">
-                 <div className="flex items-start gap-4 p-5 rounded-2xl bg-secondary border border-border group hover:bg-secondary/80 transition-all">
-                    <Maximize2 className="w-5 h-5 text-primary mt-0.5 shrink-0" />
-                    <div className="space-y-1">
-                       <p className="text-[10px] font-black text-foreground uppercase tracking-widest">High Fidelity</p>
-                       <p className="text-[9px] text-foreground/40 font-medium leading-relaxed uppercase">
-                         Image export renders at 2x hardware scale for sharp dot definitions on high-DPI displays.
-                       </p>
-                    </div>
-                 </div>
-                 <div className="flex items-start gap-4 p-5 rounded-2xl bg-secondary border border-border group hover:bg-secondary/80 transition-all">
-                    <ShieldCheck className="w-5 h-5 text-primary mt-0.5 shrink-0" />
-                    <div className="space-y-1">
-                       <h4 className="text-[10px] font-black text-foreground uppercase tracking-widest">Privacy Sovereign</h4>
-                       <p className="text-[9px] text-foreground/40 font-medium leading-relaxed uppercase">
-                         Linguistic synthesis occurs 100% in local memory. Visual identifiers are never transmitted or stored.
-                       </p>
-                    </div>
-                 </div>
+                <div className="flex items-start gap-4 p-5 rounded-2xl bg-secondary border border-border group hover:bg-secondary/80 transition-all">
+                  <Maximize2 className="w-5 h-5 text-primary mt-0.5 shrink-0" />
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-black text-foreground uppercase tracking-widest">
+                      High Fidelity
+                    </p>
+                    <p className="text-[9px] text-foreground/40 font-medium leading-relaxed uppercase">
+                      Image export renders at 2x hardware scale for sharp dot
+                      definitions on high-DPI displays.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-4 p-5 rounded-2xl bg-secondary border border-border group hover:bg-secondary/80 transition-all">
+                  <ShieldCheck className="w-5 h-5 text-primary mt-0.5 shrink-0" />
+                  <div className="space-y-1">
+                    <h4 className="text-[10px] font-black text-foreground uppercase tracking-widest">
+                      Privacy Sovereign
+                    </h4>
+                    <p className="text-[9px] text-foreground/40 font-medium leading-relaxed uppercase">
+                      Linguistic synthesis occurs 100% in local memory. Visual
+                      identifiers are never transmitted or stored.
+                    </p>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
         </div>
       </div>
-      
+
       <style jsx global>{`
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-track { @apply bg-transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { @apply bg-primary/20 rounded-full; }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          @apply bg-transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          @apply bg-primary/20 rounded-full;
+        }
+        .no-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
         .bg-checkered {
-          background-image: linear-gradient(45deg, #111113 25%, transparent 25%), 
-                            linear-gradient(-45deg, #111113 25%, transparent 25%), 
-                            linear-gradient(45deg, transparent 75%, #111113 75%), 
-                            linear-gradient(-45deg, transparent 75%, #111113 75%);
+          background-image:
+            linear-gradient(45deg, #111113 25%, transparent 25%),
+            linear-gradient(-45deg, #111113 25%, transparent 25%),
+            linear-gradient(45deg, transparent 75%, #111113 75%),
+            linear-gradient(-45deg, transparent 75%, #111113 75%);
           background-size: 20px 20px;
         }
       `}</style>

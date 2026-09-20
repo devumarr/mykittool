@@ -454,7 +454,7 @@ export function QrScannerModal({ isOpen, onClose }: QrScannerModalProps) {
 
               {/* Viewfinder Column */}
               <div className="lg:col-span-7 p-6 sm:p-10 bg-[#060608] flex flex-col items-center justify-center order-1 lg:order-2">
-                <div className="w-full max-w-sm mx-auto relative aspect-square rounded-[3rem] overflow-hidden border-2 border-primary/20 bg-black/40 shadow-[0_0_50px_-10px_rgba(59,130,246,0.3)]">
+                <div className="w-full max-w-sm mx-auto relative aspect-square rounded-[3rem] overflow-hidden border-2 border-primary/20 bg-background shadow-[0_0_50px_-10px_rgba(59,130,246,0.3)]">
                   <div
                     id={scannerContainerId}
                     className="w-full h-full [&_video]:object-cover [&_video]:w-full [&_video]:h-full"
@@ -478,7 +478,7 @@ export function QrScannerModal({ isOpen, onClose }: QrScannerModalProps) {
                     )}
 
                   {isPaused && (
-                    <div className="absolute inset-0 bg-black/60 backdrop-blur-md flex flex-col items-center justify-center gap-3 animate-in fade-in">
+                    <div className="absolute inset-0 bg-background/60 backdrop-blur-md flex flex-col items-center justify-center gap-3 animate-in fade-in">
                       <div className="w-16 h-16 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500">
                         <Pause className="w-8 h-8 fill-current" />
                       </div>
@@ -572,7 +572,7 @@ export function QrScannerModal({ isOpen, onClose }: QrScannerModalProps) {
                       ].map((item) => (
                         <div
                           key={item.label}
-                          className="p-5 bg-black/40 rounded-3xl border border-white/5 flex items-center justify-between gap-6 hover:border-primary/20 transition-all group/item"
+                          className="p-5 bg-background rounded-3xl border border-white/5 flex items-center justify-between gap-6 hover:border-primary/20 transition-all group/item"
                         >
                           <div className="flex items-center gap-4 min-w-0">
                             <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center text-primary/40 group-hover/item:text-primary transition-colors shrink-0 shadow-inner">
@@ -631,7 +631,7 @@ export function QrScannerModal({ isOpen, onClose }: QrScannerModalProps) {
                       ))}
                     </div>
                   ) : (
-                    <div className="p-10 bg-black/40 rounded-[2.5rem] border border-white/5 max-h-[300px] overflow-auto custom-scrollbar shadow-inner relative z-10">
+                    <div className="p-10 bg-background rounded-[2.5rem] border border-white/5 max-h-[300px] overflow-auto custom-scrollbar shadow-inner relative z-10">
                       <p className="text-xl sm:text-2xl font-mono font-bold text-foreground/90 break-all leading-relaxed tracking-tight">
                         {scanResult}
                       </p>

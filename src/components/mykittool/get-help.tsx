@@ -30,7 +30,7 @@ const DEFAULT_HELP: HelpContent = {
     "This professional utility is designed for local-only data processing.",
   steps: [
     "Import or enter your data payload in the designated fields.",
-    "Configure the technical parameters to match your requirements.",
+    "Configure the technical Preview to match your requirements.",
     "Review the live preview for immediate visual verification.",
     "Execute the final synthesis or conversion protocol.",
     "Save the resulting asset directly to your local storage.",

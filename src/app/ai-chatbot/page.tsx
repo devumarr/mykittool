@@ -1038,7 +1038,7 @@ export default function AIChatbotPage() {
         {isConfigOpen && (
           <>
             <div
-              className="fixed inset-0 z-40 bg-black/20"
+              className="fixed inset-0 z-40 bg-background"
               onClick={() => setIsConfigOpen(false)}
             />
             <Card className="absolute top-4 right-6 z-50 flex max-h-[calc(100%-32px)] w-80 flex-col border-border bg-background shadow-2xl">

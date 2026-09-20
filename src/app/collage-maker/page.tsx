@@ -234,7 +234,7 @@ export default function CollageMakerPage() {
 
             <CardHeader className="pb-8 border-b border-border bg-secondary/30">
               <CardTitle className="text-[10px] font-black uppercase tracking-[0.3em] flex items-center gap-4 text-foreground">
-                <Settings2 className="w-5 h-5 text-primary" /> Matrix Parameters
+                <Settings2 className="w-5 h-5 text-primary" /> Matrix Preview
               </CardTitle>
             </CardHeader>
 
@@ -266,7 +266,7 @@ export default function CollageMakerPage() {
                       />
                       <button
                         onClick={() => removeImage(img.id)}
-                        className="absolute top-2 right-2 w-7 h-7 rounded-lg bg-black/60 text-white flex items-center justify-center opacity-0 group/img-hover group-hover/img:opacity-100 transition-all backdrop-blur-md"
+                        className="absolute top-2 right-2 w-7 h-7 rounded-lg bg-background/60 text-white flex items-center justify-center opacity-0 group/img-hover group-hover/img:opacity-100 transition-all backdrop-blur-md"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -420,7 +420,7 @@ export default function CollageMakerPage() {
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="flex-1 flex items-center justify-center p-6 sm:p-10 bg-white/20 dark:bg-black/20">
+            <CardContent className="flex-1 flex items-center justify-center p-6 sm:p-10 bg-white/20 dark:bg-background">
               <div className="relative w-full max-w-[600px] aspect-square rounded-3xl overflow-hidden shadow-2xl ring-1 ring-border bg-checkered">
                 <canvas
                   ref={canvasRef}

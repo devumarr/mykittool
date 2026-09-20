@@ -1,13 +1,13 @@
-"use client"
+"use client";
 
-import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { 
-  Braces, 
-  FileJson, 
-  Copy, 
-  Download, 
-  Trash2, 
-  CheckCircle2, 
+import React, { useState, useMemo, useRef, useEffect } from "react";
+import {
+  Braces,
+  FileJson,
+  Copy,
+  Download,
+  Trash2,
+  CheckCircle2,
   Info,
   Maximize2,
   Minimize2,
@@ -26,46 +26,66 @@ import {
   ChevronRight,
   ChevronDown,
   ArrowRight,
-  ShieldCheck
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Switch } from '@/components/ui/switch';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useToast } from '@/hooks/use-toast';
-import { cn } from '@/lib/utils';
-import { GetHelp } from '@/components/mykittool/get-help';
+  ShieldCheck,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
+import { GetHelp } from "@/components/mykittool/get-help";
 
 // --- Recursive Tree Component ---
-const JsonTreeNode = ({ data, label, depth = 0, initialExpanded = true, searchQuery = '' }: { 
-  data: any, 
-  label?: string, 
-  depth?: number, 
-  initialExpanded?: boolean,
-  searchQuery?: string 
+const JsonTreeNode = ({
+  data,
+  label,
+  depth = 0,
+  initialExpanded = true,
+  searchQuery = "",
+}: {
+  data: any;
+  label?: string;
+  depth?: number;
+  initialExpanded?: boolean;
+  searchQuery?: string;
 }) => {
   const [isExpanded, setIsExpanded] = useState(initialExpanded || depth < 2);
-  const isObject = typeof data === 'object' && data !== null;
+  const isObject = typeof data === "object" && data !== null;
   const isArray = Array.isArray(data);
-  const type = isArray ? 'array' : typeof data;
+  const type = isArray ? "array" : typeof data;
 
   const renderValue = (val: any) => {
-    if (val === null) return <span className="text-red-400 font-bold">null</span>;
-    if (typeof val === 'boolean') return <span className="text-orange-400 font-bold">{val.toString()}</span>;
-    if (typeof val === 'number') return <span className="text-blue-400 font-mono">{val}</span>;
-    
+    if (val === null)
+      return <span className="text-red-400 font-bold">null</span>;
+    if (typeof val === "boolean")
+      return (
+        <span className="text-orange-400 font-bold">{val.toString()}</span>
+      );
+    if (typeof val === "number")
+      return <span className="text-blue-400 font-mono">{val}</span>;
+
     const str = String(val);
-    const shouldHighlight = searchQuery && str.toLowerCase().includes(searchQuery.toLowerCase());
-    
+    const shouldHighlight =
+      searchQuery && str.toLowerCase().includes(searchQuery.toLowerCase());
+
     return (
-      <span className={cn(
-        "text-emerald-400 break-all",
-        shouldHighlight && "bg-primary/30 text-white px-0.5 rounded"
-      )}>
+      <span
+        className={cn(
+          "text-emerald-400 break-all",
+          shouldHighlight && "bg-primary/30 text-white px-0.5 rounded",
+        )}
+      >
         "{str}"
       </span>
     );
@@ -75,30 +95,39 @@ const JsonTreeNode = ({ data, label, depth = 0, initialExpanded = true, searchQu
   const isEmpty = isObject && keys.length === 0;
 
   return (
-    <div className={cn("pl-4 border-l border-white/5", depth === 0 && "pl-0 border-none")}>
+    <div
+      className={cn(
+        "pl-4 border-l border-white/5",
+        depth === 0 && "pl-0 border-none",
+      )}
+    >
       <div className="flex items-start gap-2 py-0.5 group">
         {isObject && !isEmpty && (
-          <button 
+          <button
             onClick={() => setIsExpanded(!isExpanded)}
             className="mt-1 text-white/20 hover:text-primary transition-colors"
           >
-            {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+            {isExpanded ? (
+              <ChevronDown className="w-3 h-3" />
+            ) : (
+              <ChevronRight className="w-3 h-3" />
+            )}
           </button>
         )}
-        
+
         <div className="flex flex-wrap gap-1.5 text-xs font-mono">
-          {label && (
-            <span className="text-white/40 font-bold">
-              {label}: 
-            </span>
-          )}
-          
+          {label && <span className="text-white/40 font-bold">{label}:</span>}
+
           {!isObject ? (
             renderValue(data)
           ) : (
             <span className="text-white/20">
               {isArray ? `Array[${data.length}]` : `Object{${keys.length}}`}
-              {!isExpanded && <span className="ml-2 text-[9px] bg-white/5 px-1.5 py-0.5 rounded italic">...</span>}
+              {!isExpanded && (
+                <span className="ml-2 text-[9px] bg-white/5 px-1.5 py-0.5 rounded italic">
+                  ...
+                </span>
+              )}
             </span>
           )}
         </div>
@@ -106,15 +135,25 @@ const JsonTreeNode = ({ data, label, depth = 0, initialExpanded = true, searchQu
 
       {isObject && isExpanded && (
         <div className="space-y-0.5">
-          {isArray ? (
-            data.map((item, i) => (
-              <JsonTreeNode key={i} data={item} label={i.toString()} depth={depth + 1} searchQuery={searchQuery} />
-            ))
-          ) : (
-            keys.map((key) => (
-              <JsonTreeNode key={key} data={data[key]} label={key} depth={depth + 1} searchQuery={searchQuery} />
-            ))
-          )}
+          {isArray
+            ? data.map((item, i) => (
+                <JsonTreeNode
+                  key={i}
+                  data={item}
+                  label={i.toString()}
+                  depth={depth + 1}
+                  searchQuery={searchQuery}
+                />
+              ))
+            : keys.map((key) => (
+                <JsonTreeNode
+                  key={key}
+                  data={data[key]}
+                  label={key}
+                  depth={depth + 1}
+                  searchQuery={searchQuery}
+                />
+              ))}
         </div>
       )}
     </div>
@@ -124,13 +163,17 @@ const JsonTreeNode = ({ data, label, depth = 0, initialExpanded = true, searchQu
 // --- Page Logic ---
 export default function JsonFormatterPage() {
   const { toast } = useToast();
-  const [input, setInput] = useState('');
-  const [output, setOutput] = useState('');
-  const [viewMode, setViewMode] = useState<'text' | 'tree'>('text');
+  const [input, setInput] = useState("");
+  const [output, setOutput] = useState("");
+  const [viewMode, setViewMode] = useState<"text" | "tree">("text");
   const [indent, setIndent] = useState<2 | 4>(2);
   const [isCopied, setIsCopied] = useState(false);
-  const [error, setError] = useState<{ message: string, line?: number, col?: number } | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [error, setError] = useState<{
+    message: string;
+    line?: number;
+    col?: number;
+  } | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
   const [parsedData, setParsedData] = useState<any>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -139,7 +182,7 @@ export default function JsonFormatterPage() {
     if (!val.trim()) {
       setError(null);
       setParsedData(null);
-      setOutput('');
+      setOutput("");
       return;
     }
 
@@ -155,7 +198,7 @@ export default function JsonFormatterPage() {
       const posMatch = message.match(/at position (\d+)/);
       if (posMatch) {
         const pos = parseInt(posMatch[1]);
-        const linesBefore = val.substring(0, pos).split('\n');
+        const linesBefore = val.substring(0, pos).split("\n");
         line = linesBefore.length;
         col = linesBefore[linesBefore.length - 1].length + 1;
       }
@@ -165,34 +208,42 @@ export default function JsonFormatterPage() {
     }
   };
 
-  const formatJson = (mode: 'pretty' | 'minify' | 'sort') => {
+  const formatJson = (mode: "pretty" | "minify" | "sort") => {
     const data = handleValidation(input);
     if (!data) return;
 
     let result = data;
-    if (mode === 'sort') {
+    if (mode === "sort") {
       const sortObject = (obj: any): any => {
-        if (typeof obj !== 'object' || obj === null) return obj;
+        if (typeof obj !== "object" || obj === null) return obj;
         if (Array.isArray(obj)) return obj.map(sortObject);
-        return Object.keys(obj).sort().reduce((acc: any, key) => {
-          acc[key] = sortObject(obj[key]);
-          return acc;
-        }, {});
+        return Object.keys(obj)
+          .sort()
+          .reduce((acc: any, key) => {
+            acc[key] = sortObject(obj[key]);
+            return acc;
+          }, {});
       };
       result = sortObject(data);
     }
 
-    const outputStr = JSON.stringify(result, null, mode === 'minify' ? 0 : indent);
+    const outputStr = JSON.stringify(
+      result,
+      null,
+      mode === "minify" ? 0 : indent,
+    );
     setOutput(outputStr);
-    if (mode !== 'sort') {
-      toast({ title: mode === 'minify' ? "Matrix Minified" : "Matrix Formatted" });
+    if (mode !== "sort") {
+      toast({
+        title: mode === "minify" ? "Matrix Minified" : "Matrix Formatted",
+      });
     }
   };
 
-  const handleEscape = (mode: 'escape' | 'unescape') => {
+  const handleEscape = (mode: "escape" | "unescape") => {
     if (!input.trim()) return;
     try {
-      if (mode === 'escape') {
+      if (mode === "escape") {
         setOutput(JSON.stringify(input));
       } else {
         // Try to unescape by parsing it as a JSON string
@@ -202,7 +253,11 @@ export default function JsonFormatterPage() {
       }
       toast({ title: "String Protocol Executed" });
     } catch (e) {
-      toast({ variant: "destructive", title: "Escape Error", description: "Malformed string literal." });
+      toast({
+        variant: "destructive",
+        title: "Escape Error",
+        description: "Malformed string literal.",
+      });
     }
   };
 
@@ -227,11 +282,11 @@ export default function JsonFormatterPage() {
       config: {
         theme: "obsidian",
         version: 7.2,
-        features: ["wasm", "local-storage", "aes-256"]
+        features: ["wasm", "local-storage", "aes-256"],
       },
       metrics: [12.5, 44.2, 98.1],
       meta: null,
-      internal: true
+      internal: true,
     };
     const str = JSON.stringify(sample, null, 2);
     setInput(str);
@@ -243,16 +298,19 @@ export default function JsonFormatterPage() {
     if (output) {
       navigator.clipboard.writeText(output);
       setIsCopied(true);
-      toast({ title: "Copied", description: "JSON payload saved to clipboard." });
+      toast({
+        title: "Copied",
+        description: "JSON payload saved to clipboard.",
+      });
       setTimeout(() => setIsCopied(false), 2000);
     }
   };
 
   const handleDownload = () => {
     if (!output) return;
-    const blob = new Blob([output], { type: 'application/json' });
+    const blob = new Blob([output], { type: "application/json" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
     a.download = `mykit_formatted_${Date.now()}.json`;
     a.click();
@@ -269,17 +327,32 @@ export default function JsonFormatterPage() {
             JSON <span className="text-primary">Formatter PRO</span>
           </h1>
           <p className="text-foreground/40 text-sm md:text-base font-medium mt-4 max-w-2xl leading-relaxed">
-            Professional-grade structuralization engine. Validate, beautify, and minify complex data structures locally with interactive tree visualization and clinical error reporting.
+            Professional-grade structuralization engine. Validate, beautify, and
+            minify complex data structures locally with interactive tree
+            visualization and clinical error reporting.
           </p>
         </div>
         <div className="flex flex-wrap gap-3 shrink-0 pb-2">
-           <GetHelp toolId="json-formatter" />
-           <Button variant="outline" onClick={loadSample} className="h-11 px-6 rounded-xl border-border bg-secondary/50 text-[9px] font-black uppercase tracking-widest hover:text-primary transition-all">
-              <Zap className="w-4 h-4 mr-2" /> Sample
-           </Button>
-           <Button variant="outline" onClick={() => { setInput(''); setOutput(''); setError(null); setParsedData(null); }} className="h-11 px-6 rounded-xl border-border bg-secondary/50 text-[9px] font-black uppercase tracking-widest hover:text-destructive transition-all">
-              <Trash2 className="w-4 h-4 mr-2" /> Clear
-           </Button>
+          <GetHelp toolId="json-formatter" />
+          <Button
+            variant="outline"
+            onClick={loadSample}
+            className="h-11 px-6 rounded-xl border-border bg-secondary/50 text-[9px] font-black uppercase tracking-widest hover:text-primary transition-all"
+          >
+            <Zap className="w-4 h-4 mr-2" /> Sample
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => {
+              setInput("");
+              setOutput("");
+              setError(null);
+              setParsedData(null);
+            }}
+            className="h-11 px-6 rounded-xl border-border bg-secondary/50 text-[9px] font-black uppercase tracking-widest hover:text-destructive transition-all"
+          >
+            <Trash2 className="w-4 h-4 mr-2" /> Clear
+          </Button>
         </div>
       </div>
 
@@ -296,26 +369,34 @@ export default function JsonFormatterPage() {
                 Inbound Payload
               </CardTitle>
               <div className="flex items-center gap-3">
-                 <Button 
-                   variant="outline" 
-                   size="sm" 
-                   onClick={() => fileInputRef.current?.click()}
-                   className="h-9 px-4 rounded-xl border-white/5 bg-white/5 text-foreground/40 hover:text-primary text-[9px] font-black uppercase tracking-widest"
-                 >
-                   <Upload className="w-3.5 h-3.5 mr-2" /> Upload .json
-                 </Button>
-                 <input type="file" ref={fileInputRef} accept=".json,.txt" onChange={handleFileUpload} className="hidden" />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="h-9 px-4 rounded-xl border-white/5 bg-white/5 text-foreground/40 hover:text-primary text-[9px] font-black uppercase tracking-widest"
+                >
+                  <Upload className="w-3.5 h-3.5 mr-2" /> Upload .json
+                </Button>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  accept=".json,.txt"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
               </div>
             </CardHeader>
             <CardContent className="p-0 flex-1 flex flex-col overflow-hidden">
               <div className="relative flex-1 flex overflow-hidden">
-                <div className="w-12 bg-black/20 border-r border-white/5 pt-8 flex flex-col items-center text-[10px] font-mono text-white/10 select-none no-scrollbar overflow-hidden">
+                <div className="w-12 bg-background border-r border-white/5 pt-8 flex flex-col items-center text-[10px] font-mono text-white/10 select-none no-scrollbar overflow-hidden">
                   {Array.from({ length: 50 }).map((_, i) => (
-                    <div key={i} className="h-6 leading-6">{i + 1}</div>
+                    <div key={i} className="h-6 leading-6">
+                      {i + 1}
+                    </div>
                   ))}
                 </div>
-                <textarea 
-                  placeholder='Paste raw JSON matrix here...'
+                <textarea
+                  placeholder="Paste raw JSON matrix here..."
                   value={input}
                   onChange={(e) => {
                     setInput(e.target.value);
@@ -327,36 +408,49 @@ export default function JsonFormatterPage() {
               </div>
 
               <div className="p-6 border-t border-border bg-secondary/20 grid grid-cols-2 md:grid-cols-4 gap-3">
-                <Button 
-                  onClick={() => formatJson('pretty')} 
+                <Button
+                  onClick={() => formatJson("pretty")}
                   disabled={!input.trim()}
                   className="h-11 bg-primary text-white font-black text-[9px] uppercase tracking-widest rounded-xl"
                 >
                   <Maximize2 className="w-3.5 h-3.5 mr-2" /> Beautify
                 </Button>
-                <Button 
-                  onClick={() => formatJson('minify')} 
+                <Button
+                  onClick={() => formatJson("minify")}
                   disabled={!input.trim()}
                   variant="outline"
                   className="h-11 border-white/10 bg-background text-[9px] font-black uppercase tracking-widest rounded-xl"
                 >
                   <Minimize2 className="w-3.5 h-3.5 mr-2" /> Minify
                 </Button>
-                <Button 
-                  onClick={() => formatJson('sort')} 
+                <Button
+                  onClick={() => formatJson("sort")}
                   disabled={!input.trim()}
                   variant="outline"
                   className="h-11 border-white/10 bg-background text-[9px] font-black uppercase tracking-widest rounded-xl"
                 >
                   <SortAsc className="w-3.5 h-3.5 mr-2" /> Sort Keys
                 </Button>
-                <Select value={indent.toString()} onValueChange={(v) => setIndent(parseInt(v) as any)}>
+                <Select
+                  value={indent.toString()}
+                  onValueChange={(v) => setIndent(parseInt(v) as any)}
+                >
                   <SelectTrigger className="h-11 bg-background border-white/10 text-[9px] font-black uppercase rounded-xl">
                     <SelectValue placeholder="Indent" />
                   </SelectTrigger>
                   <SelectContent className="glass-card">
-                    <SelectItem value="2" className="text-[9px] font-black uppercase">2 Spaces</SelectItem>
-                    <SelectItem value="4" className="text-[9px] font-black uppercase">4 Spaces</SelectItem>
+                    <SelectItem
+                      value="2"
+                      className="text-[9px] font-black uppercase"
+                    >
+                      2 Spaces
+                    </SelectItem>
+                    <SelectItem
+                      value="4"
+                      className="text-[9px] font-black uppercase"
+                    >
+                      4 Spaces
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -367,26 +461,40 @@ export default function JsonFormatterPage() {
             <div className="p-6 rounded-[2.5rem] bg-destructive/10 border border-destructive/20 flex items-start gap-5 animate-in shake duration-500 shadow-xl shadow-destructive/5">
               <AlertCircle className="w-8 h-8 text-destructive shrink-0 mt-1" />
               <div className="space-y-1">
-                <h4 className="text-[11px] font-black text-destructive uppercase tracking-widest">Matrix Alignment Error</h4>
-                <p className="text-[11px] text-foreground/50 leading-relaxed font-bold uppercase">{error.message}</p>
+                <h4 className="text-[11px] font-black text-destructive uppercase tracking-widest">
+                  Matrix Alignment Error
+                </h4>
+                <p className="text-[11px] text-foreground/50 leading-relaxed font-bold uppercase">
+                  {error.message}
+                </p>
                 {error.line && (
                   <div className="flex gap-4 mt-2">
-                    <span className="text-[10px] bg-destructive/20 px-2 py-0.5 rounded text-destructive font-mono">Line: {error.line}</span>
-                    <span className="text-[10px] bg-destructive/20 px-2 py-0.5 rounded text-destructive font-mono">Col: {error.col}</span>
+                    <span className="text-[10px] bg-destructive/20 px-2 py-0.5 rounded text-destructive font-mono">
+                      Line: {error.line}
+                    </span>
+                    <span className="text-[10px] bg-destructive/20 px-2 py-0.5 rounded text-destructive font-mono">
+                      Col: {error.col}
+                    </span>
                   </div>
                 )}
               </div>
             </div>
-          ) : input.trim() && (
-            <div className="p-6 rounded-[2.5rem] bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-5 shadow-xl shadow-emerald-500/5 animate-in zoom-in duration-300">
-               <div className="w-10 h-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-lg">
+          ) : (
+            input.trim() && (
+              <div className="p-6 rounded-[2.5rem] bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-5 shadow-xl shadow-emerald-500/5 animate-in zoom-in duration-300">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-lg">
                   <CheckCircle2 className="w-6 h-6" />
-               </div>
-               <div className="space-y-0.5">
-                  <h4 className="text-[11px] font-black text-emerald-500 uppercase tracking-widest">Protocol Verified</h4>
-                  <p className="text-[10px] text-foreground/40 font-medium uppercase">Input matrix is syntactically valid JSON.</p>
-               </div>
-            </div>
+                </div>
+                <div className="space-y-0.5">
+                  <h4 className="text-[11px] font-black text-emerald-500 uppercase tracking-widest">
+                    Protocol Verified
+                  </h4>
+                  <p className="text-[10px] text-foreground/40 font-medium uppercase">
+                    Input matrix is syntactically valid JSON.
+                  </p>
+                </div>
+              </div>
+            )
           )}
         </div>
 
@@ -395,23 +503,37 @@ export default function JsonFormatterPage() {
             <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
             <CardHeader className="py-6 border-b border-border bg-secondary/30 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
               <div className="flex items-center gap-3">
-                <Tabs value={viewMode} onValueChange={(v: any) => setViewMode(v)} className="w-full">
+                <Tabs
+                  value={viewMode}
+                  onValueChange={(v: any) => setViewMode(v)}
+                  className="w-full"
+                >
                   <TabsList className="bg-background border border-white/5 p-1 rounded-2xl h-11">
-                    <TabsTrigger value="text" className="rounded-xl text-[9px] font-black uppercase tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white">Text View</TabsTrigger>
-                    <TabsTrigger value="tree" className="rounded-xl text-[9px] font-black uppercase tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white">Tree Map</TabsTrigger>
+                    <TabsTrigger
+                      value="text"
+                      className="rounded-xl text-[9px] font-black uppercase tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white"
+                    >
+                      Text View
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="tree"
+                      className="rounded-xl text-[9px] font-black uppercase tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white"
+                    >
+                      Tree Map
+                    </TabsTrigger>
                   </TabsList>
                 </Tabs>
               </div>
               <div className="flex items-center gap-4">
-                 <div className="relative group/search">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-foreground/20 group-focus-within/search:text-primary transition-colors" />
-                    <Input 
-                      placeholder="Search..." 
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="h-10 pl-9 bg-background/50 border-white/10 rounded-xl text-[10px] font-bold w-[120px] focus:w-[180px] transition-all"
-                    />
-                 </div>
+                <div className="relative group/search">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-foreground/20 group-focus-within/search:text-primary transition-colors" />
+                  <Input
+                    placeholder="Search..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="h-10 pl-9 bg-background/50 border-white/10 rounded-xl text-[10px] font-bold w-[120px] focus:w-[180px] transition-all"
+                  />
+                </div>
               </div>
             </CardHeader>
             <CardContent className="flex-1 flex flex-col p-0 overflow-hidden">
@@ -419,27 +541,36 @@ export default function JsonFormatterPage() {
                 {!output && !parsedData ? (
                   <div className="flex-1 flex flex-col items-center justify-center opacity-10 py-32 space-y-4">
                     <Activity className="w-20 h-20 text-primary mx-auto" />
-                    <p className="text-xs font-black uppercase tracking-[0.3em]">Studio Standby</p>
+                    <p className="text-xs font-black uppercase tracking-[0.3em]">
+                      Studio Standby
+                    </p>
                   </div>
-                ) : viewMode === 'text' ? (
+                ) : viewMode === "text" ? (
                   <div className="flex-1 overflow-hidden flex">
-                    <div className="w-12 bg-black/20 border-r border-white/5 pt-8 flex flex-col items-center text-[10px] font-mono text-white/5 select-none no-scrollbar overflow-hidden">
-                      {output.split('\n').map((_, i) => (
-                        <div key={i} className="h-6 leading-6">{i + 1}</div>
+                    <div className="w-12 bg-background border-r border-white/5 pt-8 flex flex-col items-center text-[10px] font-mono text-white/5 select-none no-scrollbar overflow-hidden">
+                      {output.split("\n").map((_, i) => (
+                        <div key={i} className="h-6 leading-6">
+                          {i + 1}
+                        </div>
                       ))}
                     </div>
-                    <textarea 
+                    <textarea
                       readOnly
                       value={output}
                       className="flex-1 p-8 bg-transparent text-sm font-mono text-foreground leading-6 resize-none focus:outline-none custom-scrollbar overflow-auto whitespace-pre"
                     />
                   </div>
                 ) : (
-                  <div className="flex-1 overflow-auto p-8 custom-scrollbar bg-black/10">
+                  <div className="flex-1 overflow-auto p-8 custom-scrollbar bg-background/10">
                     {parsedData ? (
-                      <JsonTreeNode data={parsedData} searchQuery={searchQuery} />
+                      <JsonTreeNode
+                        data={parsedData}
+                        searchQuery={searchQuery}
+                      />
                     ) : (
-                      <div className="h-full flex items-center justify-center text-[10px] font-black uppercase text-foreground/20 italic">Invalid Matrix for Mapping</div>
+                      <div className="h-full flex items-center justify-center text-[10px] font-black uppercase text-foreground/20 italic">
+                        Invalid Matrix for Mapping
+                      </div>
                     )}
                   </div>
                 )}
@@ -447,15 +578,19 @@ export default function JsonFormatterPage() {
 
               <div className="p-6 border-t border-border bg-[#0a0a0c] flex flex-col gap-6">
                 <div className="grid grid-cols-2 gap-4">
-                   <Button 
+                  <Button
                     onClick={handleCopy}
                     disabled={!output}
                     className="h-14 bg-primary hover:bg-primary/90 text-white font-black rounded-2xl flex items-center justify-center gap-4 text-[10px] uppercase tracking-widest shadow-xl active:scale-95"
                   >
-                    {isCopied ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                    {isCopied ? (
+                      <CheckCircle2 className="w-4 h-4" />
+                    ) : (
+                      <Copy className="w-4 h-4" />
+                    )}
                     Copy Master
                   </Button>
-                  <Button 
+                  <Button
                     onClick={handleDownload}
                     disabled={!output}
                     variant="outline"
@@ -467,20 +602,40 @@ export default function JsonFormatterPage() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                   <div className="p-4 rounded-xl bg-secondary/50 border border-border space-y-4">
-                      <Label className="text-[8px] font-black text-foreground/30 uppercase tracking-widest block">String Transforms</Label>
-                      <div className="flex gap-2">
-                        <Button variant="ghost" onClick={() => handleEscape('escape')} size="sm" className="flex-1 text-[9px] font-black uppercase bg-background border border-white/5">Escape</Button>
-                        <Button variant="ghost" onClick={() => handleEscape('unescape')} size="sm" className="flex-1 text-[9px] font-black uppercase bg-background border border-white/5">Unescape</Button>
-                      </div>
-                   </div>
-                   <div className="p-5 rounded-2xl bg-secondary border border-border flex items-start gap-4">
-                      <ShieldCheck className="w-5 h-5 text-primary mt-0.5 shrink-0" />
-                      <div className="space-y-1">
-                        <p className="text-[9px] font-black text-foreground uppercase tracking-widest leading-none">Privacy Guaranteed</p>
-                        <p className="text-[9px] text-foreground/40 font-medium leading-relaxed">Processing occurs 100% in local memory.</p>
-                      </div>
-                   </div>
+                  <div className="p-4 rounded-xl bg-secondary/50 border border-border space-y-4">
+                    <Label className="text-[8px] font-black text-foreground/30 uppercase tracking-widest block">
+                      String Transforms
+                    </Label>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="ghost"
+                        onClick={() => handleEscape("escape")}
+                        size="sm"
+                        className="flex-1 text-[9px] font-black uppercase bg-background border border-white/5"
+                      >
+                        Escape
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        onClick={() => handleEscape("unescape")}
+                        size="sm"
+                        className="flex-1 text-[9px] font-black uppercase bg-background border border-white/5"
+                      >
+                        Unescape
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="p-5 rounded-2xl bg-secondary border border-border flex items-start gap-4">
+                    <ShieldCheck className="w-5 h-5 text-primary mt-0.5 shrink-0" />
+                    <div className="space-y-1">
+                      <p className="text-[9px] font-black text-foreground uppercase tracking-widest leading-none">
+                        Privacy Guaranteed
+                      </p>
+                      <p className="text-[9px] text-foreground/40 font-medium leading-relaxed">
+                        Processing occurs 100% in local memory.
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -489,10 +644,18 @@ export default function JsonFormatterPage() {
       </div>
 
       <style jsx global>{`
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-track { @apply bg-transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { @apply bg-primary/20 rounded-full; }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          @apply bg-transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          @apply bg-primary/20 rounded-full;
+        }
+        .no-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
       `}</style>
     </div>
   );

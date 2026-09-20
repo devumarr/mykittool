@@ -1,11 +1,11 @@
-"use client"
+"use client";
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { 
-  Pipette, 
-  Upload, 
-  Copy, 
-  Trash2, 
+import React, { useState, useRef, useEffect, useCallback } from "react";
+import {
+  Pipette,
+  Upload,
+  Copy,
+  Trash2,
   Info,
   CheckCircle2,
   RotateCcw,
@@ -15,13 +15,13 @@ import {
   CopyCheck,
   Languages,
   Zap,
-  Loader2
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { useToast } from '@/hooks/use-toast';
-import { cn } from '@/lib/utils';
+  Loader2,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
 type ColorData = {
   hex: string;
@@ -36,28 +36,47 @@ export default function ColorPickerPage() {
   const [pickedColor, setPickedColor] = useState<ColorData | null>(null);
   const [history, setHistory] = useState<string[]>([]);
   const [isCopied, setIsCopied] = useState<string | null>(null);
-  const [magnifierData, setMagnifierData] = useState<{ x: number, y: number, show: boolean }>({ x: 0, y: 0, show: false });
+  const [magnifierData, setMagnifierData] = useState<{
+    x: number;
+    y: number;
+    show: boolean;
+  }>({ x: 0, y: 0, show: false });
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const magnifierCanvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const rgbToHex = (r: number, g: number, b: number) => {
-    return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase();
+    return (
+      "#" +
+      ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase()
+    );
   };
 
   const rgbToHsl = (r: number, g: number, b: number) => {
-    r /= 255; g /= 255; b /= 255;
-    const max = Math.max(r, g, b), min = Math.min(r, g, b);
-    let h = 0, s, l = (max + min) / 2;
-    if (max === min) { h = s = 0; }
-    else {
+    r /= 255;
+    g /= 255;
+    b /= 255;
+    const max = Math.max(r, g, b),
+      min = Math.min(r, g, b);
+    let h = 0,
+      s,
+      l = (max + min) / 2;
+    if (max === min) {
+      h = s = 0;
+    } else {
       const d = max - min;
       s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
       switch (max) {
-        case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-        case g: h = (b - r) / d + 2; break;
-        case b: h = (r - g) / d + 4; break;
+        case r:
+          h = (g - b) / d + (g < b ? 6 : 0);
+          break;
+        case g:
+          h = (b - r) / d + 2;
+          break;
+        case b:
+          h = (r - g) / d + 4;
+          break;
       }
       h /= 6;
     }
@@ -71,7 +90,7 @@ export default function ColorPickerPage() {
       img.onload = () => {
         const canvas = canvasRef.current;
         if (!canvas) return;
-        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        const ctx = canvas.getContext("2d", { willReadFrequently: true });
         if (!ctx) return;
 
         // Set canvas size based on image but capped for UI performance
@@ -79,7 +98,7 @@ export default function ColorPickerPage() {
         const scale = Math.min(1, maxWidth / img.width);
         canvas.width = img.width * scale;
         canvas.height = img.height * scale;
-        
+
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
         setIsProcessing(false);
@@ -96,26 +115,37 @@ export default function ColorPickerPage() {
       reader.onload = (event) => {
         const src = event.target?.result as string;
         setImage(src);
-        toast({ title: "Asset Loaded", description: "Studio ready for chromatic sampling." });
+        toast({
+          title: "Asset Loaded",
+          description: "Studio ready for chromatic sampling.",
+        });
       };
       reader.onerror = () => {
         setIsProcessing(false);
-        toast({ variant: "destructive", title: "Load Error", description: "Failed to read the visual asset." });
+        toast({
+          variant: "destructive",
+          title: "Load Error",
+          description: "Failed to read the visual asset.",
+        });
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const pickColor = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+  const pickColor = (
+    e:
+      | React.MouseEvent<HTMLCanvasElement>
+      | React.TouchEvent<HTMLCanvasElement>,
+  ) => {
     if (!canvasRef.current) return;
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
     if (!ctx) return;
 
     const rect = canvas.getBoundingClientRect();
     let x, y;
 
-    if ('touches' in e) {
+    if ("touches" in e) {
       x = e.touches[0].clientX - rect.left;
       y = e.touches[0].clientY - rect.top;
     } else {
@@ -135,7 +165,7 @@ export default function ColorPickerPage() {
 
       const newColor = { hex, rgb, hsl };
       setPickedColor(newColor);
-      setHistory(prev => [hex, ...prev.filter(c => c !== hex)].slice(0, 8));
+      setHistory((prev) => [hex, ...prev.filter((c) => c !== hex)].slice(0, 8));
     } catch (err) {
       console.error("Sampling error", err);
     }
@@ -145,8 +175,8 @@ export default function ColorPickerPage() {
     if (!canvasRef.current || !magnifierCanvasRef.current) return;
     const canvas = canvasRef.current;
     const magCanvas = magnifierCanvasRef.current;
-    const ctx = canvas.getContext('2d', { willReadFrequently: true });
-    const magCtx = magCanvas.getContext('2d');
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    const magCtx = magCanvas.getContext("2d");
     if (!ctx || !magCtx) return;
 
     const rect = canvas.getBoundingClientRect();
@@ -165,22 +195,41 @@ export default function ColorPickerPage() {
     magCtx.clearRect(0, 0, magCanvas.width, magCanvas.height);
     magCtx.drawImage(
       canvas,
-      actualX - size / 2, actualY - size / 2, size, size,
-      0, 0, magCanvas.width, magCanvas.height
+      actualX - size / 2,
+      actualY - size / 2,
+      size,
+      size,
+      0,
+      0,
+      magCanvas.width,
+      magCanvas.height,
     );
 
     // Crosshair in magnifier
-    magCtx.strokeStyle = 'white';
+    magCtx.strokeStyle = "white";
     magCtx.lineWidth = 1;
-    magCtx.strokeRect(magCanvas.width / 2 - zoom / 2, magCanvas.height / 2 - zoom / 2, zoom, zoom);
-    magCtx.strokeStyle = 'rgba(0,0,0,0.5)';
-    magCtx.strokeRect(magCanvas.width / 2 - zoom / 2 - 1, magCanvas.height / 2 - zoom / 2 - 1, zoom + 2, zoom + 2);
+    magCtx.strokeRect(
+      magCanvas.width / 2 - zoom / 2,
+      magCanvas.height / 2 - zoom / 2,
+      zoom,
+      zoom,
+    );
+    magCtx.strokeStyle = "rgba(0,0,0,0.5)";
+    magCtx.strokeRect(
+      magCanvas.width / 2 - zoom / 2 - 1,
+      magCanvas.height / 2 - zoom / 2 - 1,
+      zoom + 2,
+      zoom + 2,
+    );
   };
 
   const handleCopy = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
     setIsCopied(label);
-    toast({ title: `${label} Copied`, description: "Chromatic data saved to clipboard." });
+    toast({
+      title: `${label} Copied`,
+      description: "Chromatic data saved to clipboard.",
+    });
     setTimeout(() => setIsCopied(null), 2000);
   };
 
@@ -188,7 +237,7 @@ export default function ColorPickerPage() {
     setImage(null);
     setPickedColor(null);
     setMagnifierData({ ...magnifierData, show: false });
-    if (fileInputRef.current) fileInputRef.current.value = '';
+    if (fileInputRef.current) fileInputRef.current.value = "";
     toast({ title: "Studio Reset", description: "All visuals purged." });
   };
 
@@ -202,7 +251,8 @@ export default function ColorPickerPage() {
           Color <span className="text-primary italic">Picker Studio</span>
         </h1>
         <p className="text-foreground/40 text-sm md:text-base font-medium mt-4 max-w-2xl">
-          Extract precise chromatic data from any image. Professional HEX, RGB, and HSL matrix sampling with integrated pixel-magnification.
+          Extract precise chromatic data from any image. Professional HEX, RGB,
+          and HSL matrix sampling with integrated pixel-magnification.
         </p>
       </div>
 
@@ -211,7 +261,7 @@ export default function ColorPickerPage() {
         <div className="lg:col-span-8 space-y-8 animate-in fade-in slide-in-from-left-6 duration-700">
           <Card className="glass-card border-border shadow-2xl overflow-hidden relative group min-h-[480px]">
             <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
-            
+
             <CardHeader className="pb-8 border-b border-border bg-secondary/30 flex flex-row items-center justify-between">
               <CardTitle className="text-xl font-headline flex items-center gap-4 text-foreground">
                 <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary ring-1 ring-primary/40 shadow-inner group-hover:scale-110 transition-transform">
@@ -220,57 +270,85 @@ export default function ColorPickerPage() {
                 Visual Matrix
               </CardTitle>
               {!image && (
-                 <div className="px-3 py-1 rounded-lg bg-primary/10 border border-primary/20 text-[8px] font-black text-primary uppercase tracking-widest">Awaiting Import</div>
+                <div className="px-3 py-1 rounded-lg bg-primary/10 border border-primary/20 text-[8px] font-black text-primary uppercase tracking-widest">
+                  Awaiting Import
+                </div>
               )}
             </CardHeader>
-            
+
             <CardContent className="pt-10 h-full flex flex-col justify-center">
               {!image ? (
-                <div 
+                <div
                   onClick={() => fileInputRef.current?.click()}
                   className="relative group/upload h-[400px] rounded-[2.5rem] border-2 border-dashed border-border hover:border-primary/40 transition-all flex flex-col items-center justify-center bg-secondary/30 overflow-hidden cursor-pointer"
                 >
                   <div className="w-16 h-16 rounded-[1.5rem] bg-background border border-border flex items-center justify-center text-foreground/20 group-hover:text-primary group-hover:scale-110 transition-all mb-6 shadow-xl">
-                    {isProcessing ? <Loader2 className="w-8 h-8 animate-spin" /> : <Upload className="w-8 h-8" />}
+                    {isProcessing ? (
+                      <Loader2 className="w-8 h-8 animate-spin" />
+                    ) : (
+                      <Upload className="w-8 h-8" />
+                    )}
                   </div>
                   <p className="text-[10px] font-black uppercase text-foreground/40 tracking-widest group-hover:text-primary transition-colors text-center px-10 leading-relaxed">
-                    {isProcessing ? "Analyzing Binary Matrix..." : "Drop high-res imagery or click to browse"}<br />
-                    <span className="text-[8px] opacity-60">(JPG, PNG, WebP)</span>
+                    {isProcessing
+                      ? "Analyzing Binary Matrix..."
+                      : "Drop high-res imagery or click to browse"}
+                    <br />
+                    <span className="text-[8px] opacity-60">
+                      (JPG, PNG, WebP)
+                    </span>
                   </p>
-                  <input type="file" ref={fileInputRef} accept="image/*" onChange={handleFileUpload} className="hidden" />
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    accept="image/*"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                  />
                 </div>
               ) : (
                 <div className="relative cursor-crosshair overflow-hidden rounded-2xl bg-secondary shadow-inner border border-border">
-                  <canvas 
-                    ref={canvasRef} 
+                  <canvas
+                    ref={canvasRef}
                     onClick={pickColor}
                     onMouseMove={updateMagnifier}
-                    onMouseLeave={() => setMagnifierData({ ...magnifierData, show: false })}
+                    onMouseLeave={() =>
+                      setMagnifierData({ ...magnifierData, show: false })
+                    }
                     className="max-w-full h-auto mx-auto block"
                   />
-                  
+
                   {/* Magnifier Follower */}
                   {magnifierData.show && (
-                    <div 
+                    <div
                       className="absolute pointer-events-none w-32 h-32 rounded-full border-4 border-white shadow-2xl overflow-hidden z-20 bg-background ring-1 ring-black/10"
-                      style={{ 
-                        left: magnifierData.x, 
-                        top: magnifierData.y, 
-                        transform: 'translate(-50%, -150%)' 
+                      style={{
+                        left: magnifierData.x,
+                        top: magnifierData.y,
+                        transform: "translate(-50%, -150%)",
                       }}
                     >
-                      <canvas ref={magnifierCanvasRef} width={150} height={150} className="w-full h-full" />
+                      <canvas
+                        ref={magnifierCanvasRef}
+                        width={150}
+                        height={150}
+                        className="w-full h-full"
+                      />
                     </div>
                   )}
 
                   <div className="absolute bottom-4 left-4 right-4 flex justify-between items-center pointer-events-none">
-                     <div className="px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/20 flex items-center gap-2 text-[8px] font-black text-white uppercase tracking-widest">
-                       <MousePointer2 className="w-3 h-3 text-primary" /> Sampling Active
-                     </div>
-                     <Button 
-                      variant="destructive" 
-                      size="sm" 
-                      onClick={(e) => { e.stopPropagation(); handleClear(); }} 
+                    <div className="px-3 py-1.5 rounded-full bg-background/60 backdrop-blur-md border border-white/20 flex items-center gap-2 text-[8px] font-black text-white uppercase tracking-widest">
+                      <MousePointer2 className="w-3 h-3 text-primary" />{" "}
+                      Sampling Active
+                    </div>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleClear();
+                      }}
                       className="h-8 px-3 rounded-full pointer-events-auto bg-red-500/80 hover:bg-red-600 text-[8px] font-black uppercase tracking-widest shadow-lg"
                     >
                       <Trash2 className="w-3 h-3 mr-2" /> Purge Matrix
@@ -284,9 +362,13 @@ export default function ColorPickerPage() {
           <div className="p-6 rounded-[2.5rem] bg-primary/5 border border-primary/10 flex items-start gap-5">
             <Info className="w-6 h-6 text-primary mt-1 shrink-0" />
             <div className="space-y-2">
-              <h4 className="text-[11px] font-black text-primary uppercase tracking-widest">Chromatic Intel</h4>
+              <h4 className="text-[11px] font-black text-primary uppercase tracking-widest">
+                Chromatic Intel
+              </h4>
               <p className="text-[11px] text-foreground/40 leading-relaxed font-medium">
-                Our sampler uses 1:1 pixel mapping. High-resolution visuals are rendered precisely for hardware sampling. Processing occurs entirely within your browser session for maximum security.
+                Our sampler uses 1:1 pixel mapping. High-resolution visuals are
+                rendered precisely for hardware sampling. Processing occurs
+                entirely within your browser session for maximum security.
               </p>
             </div>
           </div>
@@ -304,11 +386,16 @@ export default function ColorPickerPage() {
             <CardContent className="pt-10 space-y-10">
               {/* Color Preview */}
               <div className="space-y-4">
-                <div className="w-full h-40 rounded-[2.5rem] shadow-2xl border-4 border-white dark:border-white/10 ring-1 ring-border transition-all duration-500" style={{ backgroundColor: pickedColor?.hex || '#f3f4f6' }}>
+                <div
+                  className="w-full h-40 rounded-[2.5rem] shadow-2xl border-4 border-white dark:border-white/10 ring-1 ring-border transition-all duration-500"
+                  style={{ backgroundColor: pickedColor?.hex || "#f3f4f6" }}
+                >
                   {!pickedColor && (
                     <div className="w-full h-full flex flex-col items-center justify-center opacity-10">
                       <Palette className="w-12 h-12 mb-2" />
-                      <p className="text-[9px] font-black uppercase tracking-widest">No Sample</p>
+                      <p className="text-[9px] font-black uppercase tracking-widest">
+                        No Sample
+                      </p>
                     </div>
                   )}
                 </div>
@@ -317,27 +404,46 @@ export default function ColorPickerPage() {
               {/* Data Fields */}
               <div className="space-y-6">
                 {[
-                  { label: 'HEX', value: pickedColor?.hex || '#000000', icon: Languages },
-                  { label: 'RGB', value: pickedColor?.rgb || 'rgb(0, 0, 0)', icon: Zap },
-                  { label: 'HSL', value: pickedColor?.hsl || 'hsl(0, 0%, 0%)', icon: RotateCcw }
+                  {
+                    label: "HEX",
+                    value: pickedColor?.hex || "#000000",
+                    icon: Languages,
+                  },
+                  {
+                    label: "RGB",
+                    value: pickedColor?.rgb || "rgb(0, 0, 0)",
+                    icon: Zap,
+                  },
+                  {
+                    label: "HSL",
+                    value: pickedColor?.hsl || "hsl(0, 0%, 0%)",
+                    icon: RotateCcw,
+                  },
                 ].map((field) => (
                   <div key={field.label} className="space-y-2 group/field">
-                    <Label className="text-[10px] font-black text-foreground/40 uppercase tracking-[0.2em] ml-1">{field.label} Protocol</Label>
+                    <Label className="text-[10px] font-black text-foreground/40 uppercase tracking-[0.2em] ml-1">
+                      {field.label} Protocol
+                    </Label>
                     <div className="flex gap-2">
                       <div className="flex-1 h-12 bg-secondary border border-border rounded-xl flex items-center px-4 font-mono text-xs font-bold text-foreground overflow-hidden truncate">
                         {field.value}
                       </div>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         disabled={!pickedColor}
                         onClick={() => handleCopy(field.value, field.label)}
                         className={cn(
                           "h-12 w-12 rounded-xl bg-secondary border border-border hover:bg-primary hover:text-primary-foreground transition-all shrink-0",
-                          isCopied === field.label && "bg-primary text-primary-foreground"
+                          isCopied === field.label &&
+                            "bg-primary text-primary-foreground",
                         )}
                       >
-                        {isCopied === field.label ? <CopyCheck className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                        {isCopied === field.label ? (
+                          <CopyCheck className="w-4 h-4" />
+                        ) : (
+                          <Copy className="w-4 h-4" />
+                        )}
                       </Button>
                     </div>
                   </div>
@@ -348,8 +454,15 @@ export default function ColorPickerPage() {
               {history.length > 0 && (
                 <div className="pt-8 border-t border-border space-y-4">
                   <div className="flex justify-between items-center">
-                    <Label className="text-[10px] font-black text-foreground/40 uppercase tracking-[0.2em] ml-1">Recent Samples</Label>
-                    <button onClick={() => setHistory([])} className="text-[9px] font-black text-primary/60 uppercase hover:text-primary transition-colors">Reset</button>
+                    <Label className="text-[10px] font-black text-foreground/40 uppercase tracking-[0.2em] ml-1">
+                      Recent Samples
+                    </Label>
+                    <button
+                      onClick={() => setHistory([])}
+                      className="text-[9px] font-black text-primary/60 uppercase hover:text-primary transition-colors"
+                    >
+                      Reset
+                    </button>
                   </div>
                   <div className="grid grid-cols-4 gap-3">
                     {history.map((color, i) => (
@@ -362,7 +475,7 @@ export default function ColorPickerPage() {
                           setPickedColor({
                             hex: color,
                             rgb: `rgb(${r}, ${g}, ${b})`,
-                            hsl: rgbToHsl(r, g, b)
+                            hsl: rgbToHsl(r, g, b),
                           });
                         }}
                         className="aspect-square rounded-xl border border-white dark:border-white/10 shadow-lg ring-1 ring-border transition-transform hover:scale-110 active:scale-95"
@@ -376,8 +489,10 @@ export default function ColorPickerPage() {
 
               {!pickedColor && (
                 <div className="p-6 rounded-2xl bg-secondary border border-border text-center space-y-2">
-                   <Pipette className="w-6 h-6 text-foreground/10 mx-auto" />
-                   <p className="text-[9px] font-black text-foreground/30 uppercase tracking-widest">Select a pixel to begin</p>
+                  <Pipette className="w-6 h-6 text-foreground/10 mx-auto" />
+                  <p className="text-[9px] font-black text-foreground/30 uppercase tracking-widest">
+                    Select a pixel to begin
+                  </p>
                 </div>
               )}
             </CardContent>

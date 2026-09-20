@@ -1,55 +1,61 @@
-"use client"
+"use client";
 
-import React, { useState } from 'react';
-import { 
-  Type, 
-  Repeat, 
-  Copy, 
-  Trash2, 
-  Sparkles, 
+import React, { useState } from "react";
+import {
+  Type,
+  Repeat,
+  Copy,
+  Trash2,
+  Sparkles,
   AlertCircle,
   CheckCircle2,
   ChevronRight,
   Split,
   CornerDownLeft,
-  Space
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useToast } from '@/hooks/use-toast';
-import { cn } from '@/lib/utils';
+  Space,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
 export default function TextRepeaterPage() {
   const { toast } = useToast();
-  const [inputText, setInputText] = useState('');
-  const [separator, setSeparator] = useState('');
+  const [inputText, setInputText] = useState("");
+  const [separator, setSeparator] = useState("");
   const [times, setTimes] = useState(5);
-  const [outputText, setOutputText] = useState('');
+  const [outputText, setOutputText] = useState("");
   const [isCopied, setIsCopied] = useState(false);
 
-  const wordCount = inputText.trim() === '' ? 0 : inputText.trim().split(/\s+/).length;
+  const wordCount =
+    inputText.trim() === "" ? 0 : inputText.trim().split(/\s+/).length;
   const charCount = inputText.length;
 
   const handleRepeat = () => {
     if (!inputText) {
-      toast({ variant: "destructive", title: "Missing Input", description: "Please enter some text or an emoji to repeat." });
+      toast({
+        variant: "destructive",
+        title: "Missing Input",
+        description: "Please enter some text or an emoji to repeat.",
+      });
       return;
     }
 
     if (times > 5000) {
-      toast({ 
-        variant: "destructive", 
-        title: "Limit Exceeded", 
-        description: "For stability, production is capped at 5,000 repetitions per batch." 
+      toast({
+        variant: "destructive",
+        title: "Limit Exceeded",
+        description:
+          "For stability, production is capped at 5,000 repetitions per batch.",
       });
       return;
     }
 
     const count = Math.max(1, times);
-    
+
     try {
       const repeated = new Array(count).fill(inputText).join(separator);
       setOutputText(repeated);
@@ -58,10 +64,11 @@ export default function TextRepeaterPage() {
         description: `Generated ${count.toLocaleString()} instances.`,
       });
     } catch (e) {
-      toast({ 
-        variant: "destructive", 
-        title: "Repetition Error", 
-        description: "The requested volume exceeds browser memory limits. Please try a smaller number." 
+      toast({
+        variant: "destructive",
+        title: "Repetition Error",
+        description:
+          "The requested volume exceeds browser memory limits. Please try a smaller number.",
       });
     }
   };
@@ -70,16 +77,19 @@ export default function TextRepeaterPage() {
     if (outputText) {
       navigator.clipboard.writeText(outputText);
       setIsCopied(true);
-      toast({ title: "Copied!", description: "Repeated content saved to clipboard." });
+      toast({
+        title: "Copied!",
+        description: "Repeated content saved to clipboard.",
+      });
       setTimeout(() => setIsCopied(false), 2000);
     }
   };
 
   const handleClear = () => {
-    setInputText('');
-    setSeparator('');
+    setInputText("");
+    setSeparator("");
     setTimes(5);
-    setOutputText('');
+    setOutputText("");
     toast({ title: "Cleared", description: "All fields have been reset." });
   };
 
@@ -95,7 +105,8 @@ export default function TextRepeaterPage() {
           Text & <span className="text-primary italic">Emoji Repeater</span>
         </h1>
         <p className="text-foreground/40 text-sm md:text-base font-medium mt-4 max-w-2xl">
-          Instantly multiply text or emojis for social media, testing, or creative design. Professional formatting with custom separators.
+          Instantly multiply text or emojis for social media, testing, or
+          creative design. Professional formatting with custom separators.
         </p>
       </div>
 
@@ -113,14 +124,16 @@ export default function TextRepeaterPage() {
             <CardContent className="pt-10 space-y-8">
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
-                  <Label className="text-[10px] font-black text-foreground/50 uppercase tracking-[0.2em]">Source Content</Label>
+                  <Label className="text-[10px] font-black text-foreground/50 uppercase tracking-[0.2em]">
+                    Source Content
+                  </Label>
                   <div className="flex items-center gap-3 px-3 py-1 rounded-lg bg-secondary border border-border text-[9px] font-black text-primary uppercase tracking-widest shadow-sm">
                     <span>Words: {wordCount}</span>
                     <span className="opacity-20">|</span>
                     <span>Characters: {charCount}</span>
                   </div>
                 </div>
-                <Textarea 
+                <Textarea
                   placeholder="Enter text or paste emojis here..."
                   value={inputText}
                   onChange={(e) => setInputText(e.target.value)}
@@ -130,10 +143,12 @@ export default function TextRepeaterPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-4">
-                  <Label className="text-[10px] font-black text-foreground/50 uppercase tracking-[0.2em]">Separator Settings</Label>
-                  <Input 
+                  <Label className="text-[10px] font-black text-foreground/50 uppercase tracking-[0.2em]">
+                    Separator Settings
+                  </Label>
+                  <Input
                     placeholder="Enter custom separator..."
-                    value={separator === '\n' ? '↵ [New Line]' : separator}
+                    value={separator === "\n" ? "↵ [New Line]" : separator}
                     onChange={(e) => setSeparator(e.target.value)}
                     className="h-14 bg-secondary border-border rounded-2xl text-foreground"
                   />
@@ -141,10 +156,12 @@ export default function TextRepeaterPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setSeparator(' ')}
+                      onClick={() => setSeparator(" ")}
                       className={cn(
                         "h-9 flex-1 text-[9px] font-black uppercase tracking-widest rounded-xl border-border",
-                        separator === ' ' ? "bg-primary text-primary-foreground border-primary" : "bg-background text-foreground/40 hover:text-primary"
+                        separator === " "
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-background text-foreground/40 hover:text-primary",
                       )}
                     >
                       <Space className="w-3.5 h-3.5 mr-1.5" /> Space
@@ -152,10 +169,12 @@ export default function TextRepeaterPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setSeparator('\n')}
+                      onClick={() => setSeparator("\n")}
                       className={cn(
                         "h-9 flex-1 text-[9px] font-black uppercase tracking-widest rounded-xl border-border",
-                        separator === '\n' ? "bg-primary text-primary-foreground border-primary" : "bg-background text-foreground/40 hover:text-primary"
+                        separator === "\n"
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-background text-foreground/40 hover:text-primary",
                       )}
                     >
                       <CornerDownLeft className="w-3.5 h-3.5 mr-1.5" /> New Line
@@ -163,8 +182,10 @@ export default function TextRepeaterPage() {
                   </div>
                 </div>
                 <div className="space-y-4">
-                  <Label className="text-[10px] font-black text-foreground/50 uppercase tracking-[0.2em]">Repeat Count (Max 5000)</Label>
-                  <Input 
+                  <Label className="text-[10px] font-black text-foreground/50 uppercase tracking-[0.2em]">
+                    Repeat Count (Max 5000)
+                  </Label>
+                  <Input
                     type="number"
                     min="1"
                     max="5000"
@@ -176,7 +197,9 @@ export default function TextRepeaterPage() {
               </div>
 
               <div className="space-y-4">
-                <Label className="text-[10px] font-black text-foreground/50 uppercase tracking-[0.2em]">Volume Presets</Label>
+                <Label className="text-[10px] font-black text-foreground/50 uppercase tracking-[0.2em]">
+                  Volume Presets
+                </Label>
                 <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
                   {volumePresets.map((p) => (
                     <button
@@ -184,7 +207,9 @@ export default function TextRepeaterPage() {
                       onClick={() => setTimes(p)}
                       className={cn(
                         "h-10 rounded-xl border flex items-center justify-center text-[10px] font-black tracking-widest transition-all",
-                        times === p ? "bg-primary text-primary-foreground border-primary" : "bg-background border-border text-foreground/40 hover:text-primary"
+                        times === p
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-background border-border text-foreground/40 hover:text-primary",
                       )}
                     >
                       {p}x
@@ -194,14 +219,14 @@ export default function TextRepeaterPage() {
               </div>
 
               <div className="flex gap-4 pt-4">
-                <Button 
+                <Button
                   onClick={handleRepeat}
                   className="flex-1 h-16 bg-primary hover:bg-primary/90 text-primary-foreground font-black rounded-2xl flex items-center justify-center gap-4 text-lg shadow-xl shadow-primary/30 transition-all active:scale-95 group/btn"
                 >
                   <Sparkles className="w-6 h-6 group-hover:rotate-12 transition-transform" />
                   Repeat Text
                 </Button>
-                <Button 
+                <Button
                   variant="outline"
                   onClick={handleClear}
                   className="w-16 h-16 rounded-2xl border-border bg-secondary hover:bg-secondary/80 text-foreground/40 hover:text-destructive transition-all active:scale-95"
@@ -231,38 +256,47 @@ export default function TextRepeaterPage() {
             </CardHeader>
             <CardContent className="pt-10 space-y-8">
               <div className="relative group/output">
-                <Textarea 
+                <Textarea
                   readOnly
                   value={outputText}
                   placeholder="Result will appear here..."
-                  className="min-h-[300px] bg-white dark:bg-black/20 border-border text-foreground rounded-[2.5rem] p-8 text-lg leading-relaxed resize-none shadow-inner custom-scrollbar transition-all"
+                  className="min-h-[300px] bg-white dark:bg-background border-border text-foreground rounded-[2.5rem] p-8 text-lg leading-relaxed resize-none shadow-inner custom-scrollbar transition-all"
                 />
                 {!outputText && (
                   <div className="absolute inset-0 flex flex-col items-center justify-center opacity-10 group-hover:opacity-20 transition-opacity pointer-events-none">
                     <Repeat className="w-20 h-20 text-primary mb-4" />
-                    <p className="text-xs font-black uppercase tracking-[0.3em]">Standby</p>
+                    <p className="text-xs font-black uppercase tracking-[0.3em]">
+                      Standby
+                    </p>
                   </div>
                 )}
               </div>
 
-              <Button 
+              <Button
                 onClick={handleCopy}
                 disabled={!outputText}
                 className={cn(
                   "w-full h-16 bg-secondary border border-border hover:bg-secondary/80 text-foreground font-black rounded-2xl flex items-center justify-center gap-4 text-xl shadow-lg transition-all active:scale-95",
-                  outputText ? "text-primary border-primary/20" : "opacity-50"
+                  outputText ? "text-primary border-primary/20" : "opacity-50",
                 )}
               >
-                {isCopied ? <CheckCircle2 className="w-6 h-6 text-primary" /> : <Copy className="w-6 h-6 text-primary" />}
-                {isCopied ? 'Copied to Clipboard' : 'Copy All Text'}
+                {isCopied ? (
+                  <CheckCircle2 className="w-6 h-6 text-primary" />
+                ) : (
+                  <Copy className="w-6 h-6 text-primary" />
+                )}
+                {isCopied ? "Copied to Clipboard" : "Copy All Text"}
               </Button>
 
               <div className="p-6 rounded-2xl bg-primary/5 border border-primary/10 flex items-start gap-4 group-hover:bg-primary/10 transition-colors">
                 <AlertCircle className="w-5 h-5 text-primary mt-0.5 shrink-0" />
                 <div className="space-y-1">
-                  <p className="text-[10px] font-black text-primary uppercase tracking-widest">Stability Protection</p>
+                  <p className="text-[10px] font-black text-primary uppercase tracking-widest">
+                    Stability Protection
+                  </p>
                   <p className="text-[10px] text-foreground/40 font-medium leading-relaxed">
-                    Output is capped at 5,000 repetitions per operation to ensure optimal browser performance and responsiveness.
+                    Output is capped at 5,000 repetitions per operation to
+                    ensure optimal browser performance and responsiveness.
                   </p>
                 </div>
               </div>
