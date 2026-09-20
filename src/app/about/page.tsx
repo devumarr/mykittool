@@ -1,9 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
-  User,
-  Mail,
   Copy,
   CheckCircle2,
   ShieldCheck,
@@ -18,27 +16,17 @@ import {
   Wand2,
   ArrowRight,
   Shield,
-  SmartphoneIcon,
   MessageSquare,
   Sword,
   QrCode,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
+import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 
-interface Project {
-  name: string;
-  url: string;
-  desc: string;
-  icon: any;
-  color: string;
-}
-
-const PROJECTS: Project[] = [
+const PROJECTS = [
   {
     name: "Vortex Reach",
     url: "https://vortexreach.vercel.app/",
@@ -56,49 +44,49 @@ const PROJECTS: Project[] = [
   {
     name: "Countora",
     url: "https://countora.vercel.app/",
-    desc: "Efficient shop accounts and ledger manager.",
+    desc: "Shop accounts and ledger manager.",
     icon: LayoutGrid,
     color: "text-emerald-500 bg-emerald-500/10",
   },
   {
     name: "Fitt Pic",
     url: "https://fittpic.vercel.app/",
-    desc: "High-fidelity WhatsApp DP optimization.",
+    desc: "WhatsApp DP optimization.",
     icon: Smartphone,
     color: "text-cyan-500 bg-cyan-500/10",
   },
   {
     name: "APK Vault",
     url: "https://apkvault.vercel.app/",
-    desc: "Secure Android application library.",
+    desc: "Secure Android app library.",
     icon: Box,
     color: "text-orange-500 bg-orange-500/10",
   },
   {
     name: "LootPro",
     url: "https://lootpro.vercel.app/",
-    desc: "Curated deals and loot project.",
+    desc: "Curated deals and loot.",
     icon: Gamepad2,
     color: "text-rose-500 bg-rose-500/10",
   },
   {
     name: "Name Pix",
     url: "https://namepix.vercel.app/",
-    desc: "Free stylish names for Free Fire, PUBG, BGMI, CODM, Roblox & Minecraft. Fonts + symbols, copy ready.",
+    desc: "Stylish names for games. Fonts + symbols.",
     icon: Sword,
     color: "text-yellow-500 bg-yellow-500/10",
   },
   {
     name: "OMAR CHEAT CODE",
     url: "https://omarcheatscode.vercel.app/",
-    desc: "Advanced gaming optimization and script repository.",
+    desc: "Gaming scripts and optimization.",
     icon: Zap,
     color: "text-red-500 bg-red-500/10",
   },
   {
     name: "MY KIT TOOL",
     url: "https://qrcode-amber-ten.vercel.app/",
-    desc: "High-performance artistic QR code generation engine.",
+    desc: "Artistic QR code generator.",
     icon: QrCode,
     color: "text-blue-500 bg-blue-500/10",
   },
@@ -112,28 +100,63 @@ export default function AboutPage() {
   const handleCopyEmail = () => {
     navigator.clipboard.writeText(email);
     setIsCopied(true);
-    toast({
-      title: "Identity Copied",
-      description: "Email saved to clipboard.",
-    });
+    toast({ title: "Copied", description: "Email saved to clipboard." });
     setTimeout(() => setIsCopied(false), 2000);
   };
 
   const scrollTo = (id: string) => {
-    const el = document.getElementById(id);
-    if (el) el.scrollIntoView({ behavior: "smooth" });
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
   };
+  function CountUp({ end, suffix = "" }: { end: number; suffix?: string }) {
+    const [n, setN] = useState(0);
+    const [on, setOn] = useState(false);
+    const ref = React.useRef<HTMLSpanElement>(null);
+
+    useEffect(() => {
+      const el = ref.current;
+      if (!el) return;
+      const io = new IntersectionObserver(
+        ([entry]) => setOn(entry.isIntersecting),
+        { threshold: 0.4 },
+      );
+      io.observe(el);
+      return () => io.disconnect();
+    }, []);
+
+    useEffect(() => {
+      if (!on) {
+        setN(0);
+        return;
+      }
+      let frame = 0;
+      const total = 40;
+      let id = 0;
+      const tick = () => {
+        frame++;
+        setN(Math.round((end * frame) / total));
+        if (frame < total) id = requestAnimationFrame(tick);
+      };
+      id = requestAnimationFrame(tick);
+      return () => cancelAnimationFrame(id);
+    }, [on, end]);
+
+    return (
+      <span ref={ref}>
+        {n}
+        {suffix}
+      </span>
+    );
+  }
 
   return (
-    <div className="flex flex-col w-full pb-32 selection:bg-primary/20">
-      {/* Sticky Mini-Nav Matrix */}
-      <div className="sticky top-16 z-40 w-full flex justify-center pt-6 pointer-events-none">
-        <div className="pointer-events-auto glass-card px-6 py-2.5 rounded-full border-white/10 shadow-2xl flex items-center gap-8 backdrop-blur-3xl">
+    <div className="w-full bg-background pb-24 text-foreground">
+      <div className="sticky top-16 z-40 flex justify-center pt-5">
+        <div className="flex gap-6 rounded-full border border-black/5 bg-white/90 px-6 py-2.5 shadow-lg backdrop-blur dark:border-white/10 dark:bg-white/5">
           {["about", "work", "contact"].map((item) => (
             <button
               key={item}
               onClick={() => scrollTo(item)}
-              className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground/40 hover:text-primary transition-all"
+              className="text-xs font-semibold capitalize text-foreground/50 hover:text-primary"
             >
               {item}
             </button>
@@ -141,189 +164,200 @@ export default function AboutPage() {
         </div>
       </div>
 
-      {/* Hero Section */}
       <section
         id="about"
-        className="container mx-auto px-6 pt-32 pb-40 relative overflow-hidden"
+        className="container mx-auto px-6 pb-24 pt-20 text-center"
       >
-        <div
-          className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full opacity-5 pointer-events-none"
-          style={{
-            backgroundImage:
-              "radial-gradient(circle at 2px 2px, rgba(255,255,255,0.15) 1px, transparent 0)",
-            backgroundSize: "60px 60px",
-          }}
-        />
-
-        <div className="max-w-4xl mx-auto text-center space-y-10 animate-reveal">
-          <div className="space-y-4">
-            <h1 className="text-6xl md:text-9xl font-headline font-black text-foreground uppercase tracking-tighter leading-none">
-              Umar <span className="text-primary italic">Farooq</span>
-            </h1>
-            <div className="h-1.5 w-24 bg-gradient-to-r from-transparent via-primary to-transparent mx-auto rounded-full" />
-            <p className="text-lg md:text-xl font-black text-foreground/40 uppercase tracking-[0.3em]">
-              Builder of free browser tools
-            </p>
-          </div>
-
-          <p className="text-lg md:text-xl text-foreground/50 max-w-2xl mx-auto leading-relaxed font-medium uppercase tracking-tighter">
-            I build small digital products to make daily work easier — even if
-            they never go viral. My mission is high-fidelity utilities that
-            respect your privacy and operate with zero friction.
-          </p>
-
-          <div className="flex flex-wrap justify-center gap-4">
-            <Button
-              onClick={() => scrollTo("contact")}
-              className="h-14 px-8 rounded-xl bg-primary text-white shadow-xl shadow-primary/20 active:scale-95 transition-all"
-            >
-              Email Support
-            </Button>
-            <Button
-              asChild
-              variant="outline"
-              className="h-14 px-8 rounded-xl border-white/10 bg-white/5 hover:bg-white/10 transition-all"
-            >
-              <Link href="/donate">Buy me a coffee</Link>
-            </Button>
-            <Button
-              asChild
-              variant="ghost"
-              className="h-14 px-8 rounded-xl text-foreground/40 hover:text-primary transition-all"
-            >
-              <Link href="/">
-                Explore tools <ArrowRight className="w-4 h-4 ml-2" />
-              </Link>
-            </Button>
-          </div>
+        <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.28em] text-primary">
+          About
+        </p>
+        <h1 className="text-5xl font-black tracking-tight md:text-7xl">
+          Umar <span className="text-[#2563eb]">Farooq</span>
+        </h1>
+        <div className="mx-auto mt-4 h-1 w-20 rounded-full bg-gradient-to-r from-[#2563eb] to-orange-400" />
+        <p className="mt-4 text-sm font-medium text-foreground/55">
+          Builder of free browser tools
+        </p>
+        <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-foreground/70">
+          I build small digital products to make daily work easier. Privacy
+          first. Zero friction. Free forever.
+        </p>
+        <div className="mt-8 flex flex-wrap justify-center gap-3">
+          <Button
+            onClick={() => scrollTo("contact")}
+            className="h-12 rounded-2xl bg-[#2563eb] px-6 text-white shadow-lg shadow-blue-500/25 transition-transform hover:scale-105"
+          >
+            Email support
+          </Button>
+          <Button asChild variant="outline" className="h-12 rounded-2xl px-6">
+            <Link href="/donate">Buy me a coffee</Link>
+          </Button>
+          <Button asChild variant="ghost" className="h-12 rounded-2xl px-6">
+            <Link href="/">
+              Explore tools <ArrowRight className="ml-2 h-4 w-4" />
+            </Link>
+          </Button>
         </div>
       </section>
 
-      {/* Metrics Matrix */}
-      <section className="container mx-auto px-6 mb-40">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+      <section className="container mx-auto mb-24 px-6">
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           {[
-            { label: "Studio Units", val: "200+", icon: LayoutGrid },
-            { label: "Other Projects", val: "9", icon: Zap },
-            { label: "Hardware Logic", val: "100%", icon: ShieldCheck },
-            { label: "Access", val: "Free", icon: Heart },
-          ].map((stat, i) => (
+            {
+              label: "Studio tools",
+              end: 200,
+              suffix: "+",
+              icon: LayoutGrid,
+              from: "from-[#2563eb]",
+              to: "to-[#60a5fa]",
+            },
+            {
+              label: "Other projects",
+              end: 9,
+              suffix: "",
+              icon: Zap,
+              from: "from-orange-400",
+              to: "to-amber-300",
+            },
+            {
+              label: "Privacy first",
+              end: 100,
+              suffix: "%",
+              icon: ShieldCheck,
+              from: "from-emerald-500",
+              to: "to-teal-400",
+            },
+            {
+              label: "Access",
+              end: 1,
+              suffix: "",
+              icon: Heart,
+              from: "from-rose-500",
+              to: "to-pink-400",
+              text: "Free",
+            },
+          ].map((stat) => (
             <div
-              key={i}
-              className="glass-card p-10 rounded-[2.5rem] border-white/5 flex flex-col items-center text-center gap-4 hover:border-primary/20 transition-all duration-700 animate-in slide-in-from-bottom-6 group"
+              key={stat.label}
+              className="group rounded-[1.6rem] border border-black/5 bg-white p-8 text-center shadow-[0_12px_40px_rgba(0,0,0,0.05)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_20px_50px_rgba(37,99,235,0.14)] dark:border-white/10 dark:bg-white/[0.04]"
             >
-              <div className="w-12 h-12 rounded-2xl bg-secondary flex items-center justify-center text-primary/40 group-hover:text-primary transition-all border border-white/5 shadow-xl">
-                <stat.icon className="w-6 h-6" />
+              <div
+                className={cn(
+                  "mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br text-white shadow-md transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6",
+                  stat.from,
+                  stat.to,
+                )}
+              >
+                <stat.icon className="h-5 w-5" />
               </div>
-              <div className="space-y-1">
-                <p className="text-3xl font-headline font-black text-foreground">
-                  {stat.val}
-                </p>
-                <p className="text-[10px] font-black uppercase text-foreground/20 tracking-widest">
-                  {stat.label}
-                </p>
-              </div>
+              <p className="text-3xl font-black">
+                {stat.text || <CountUp end={stat.end} suffix={stat.suffix} />}
+              </p>
+              <p className="mt-1 text-xs text-foreground/50">{stat.label}</p>
             </div>
           ))}
         </div>
       </section>
 
-      {/* Philosophy Section */}
-      <section className="container mx-auto px-6 pb-40 space-y-20">
-        <div className="text-center space-y-4">
-          <p className="text-[10px] font-black text-primary uppercase tracking-[0.4em]">
-            The Production Standard
+      <section className="container mx-auto px-6 pb-24">
+        <div className="mb-12 text-center">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-primary">
+            Standard
           </p>
-          <h2 className="text-4xl md:text-6xl font-headline font-black text-foreground uppercase tracking-tight">
-            How I <span className="text-primary italic">Help</span>
+          <h2 className="mt-2 text-4xl font-black tracking-tight">
+            How I help
           </h2>
         </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
           {[
             {
               icon: Wand2,
-              title: "Free Forever",
-              desc: "No subscriptions or paywalls. Every unit is open for professional use.",
+              title: "Free forever",
+              desc: "No subscriptions. Every tool stays open.",
+              from: "from-[#2563eb]",
+              to: "to-[#60a5fa]",
             },
             {
               icon: Shield,
-              title: "Privacy First",
-              desc: "Most logic runs entirely on your device. Your data belongs to you.",
+              title: "Privacy first",
+              desc: "Most work runs on your device.",
+              from: "from-emerald-500",
+              to: "to-teal-400",
             },
             {
-              icon: SmartphoneIcon,
-              title: "Zero Friction",
-              desc: "Fast, mobile-friendly units optimized for instant production work.",
+              icon: Smartphone,
+              title: "Zero friction",
+              desc: "Fast, mobile-friendly, instant use.",
+              from: "from-orange-400",
+              to: "to-amber-300",
             },
             {
               icon: MessageSquare,
-              title: "Pro Support",
-              desc: "Clinical documentation and direct email uplink for every project.",
+              title: "Direct support",
+              desc: "Email reply, usually within 24 hours.",
+              from: "from-violet-500",
+              to: "to-fuchsia-400",
             },
-          ].map((card, i) => (
+          ].map((card) => (
             <div
-              key={i}
-              className="glass-card p-8 rounded-[2.5rem] border-white/5 space-y-6 group hover:border-primary/20 transition-all"
+              key={card.title}
+              className="group rounded-[1.6rem] border border-black/5 bg-white p-7 shadow-[0_12px_40px_rgba(0,0,0,0.05)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_20px_50px_rgba(37,99,235,0.14)] dark:border-white/10 dark:bg-white/[0.04]"
             >
-              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform border border-primary/20 shadow-inner">
-                <card.icon className="w-6 h-6" />
+              <div
+                className={cn(
+                  "mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br text-white shadow-md transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6",
+                  card.from,
+                  card.to,
+                )}
+              >
+                <card.icon className="h-5 w-5" />
               </div>
-              <div className="space-y-2">
-                <h3 className="text-sm font-black uppercase tracking-widest text-foreground">
-                  {card.title}
-                </h3>
-                <p className="text-xs text-foreground/40 leading-relaxed font-medium uppercase tracking-tighter">
-                  {card.desc}
-                </p>
-              </div>
+              <h3 className="text-sm font-semibold">{card.title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-foreground/60">
+                {card.desc}
+              </p>
             </div>
           ))}
         </div>
       </section>
 
-      {/* Projects Grid */}
-      <section id="work" className="container mx-auto px-6 pb-40 space-y-20">
-        <div className="text-center space-y-4">
-          <p className="text-[10px] font-black text-foreground/20 uppercase tracking-[0.4em]">
-            The Digital Ecosystem
+      <section id="work" className="container mx-auto px-6 pb-24">
+        <div className="mb-12 text-center">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-foreground/45">
+            Ecosystem
           </p>
-          <h2 className="text-4xl md:text-6xl font-headline font-black text-foreground uppercase tracking-tight">
-            Other <span className="text-primary italic">Projects</span>
+          <h2 className="mt-2 text-4xl font-black tracking-tight">
+            Other <span className="text-[#2563eb]">projects</span>
           </h2>
         </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {PROJECTS.map((project, i) => (
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {PROJECTS.map((project) => (
             <div
-              key={i}
-              className="glass-card p-10 rounded-[3rem] border-white/5 hover:bg-secondary/30 hover:border-primary/30 hover:-translate-y-2 transition-all duration-500 group flex flex-col h-full relative overflow-hidden"
+              key={project.name}
+              className="group relative flex h-full flex-col overflow-hidden rounded-[1.8rem] border border-black/5 bg-white p-8 shadow-[0_12px_40px_rgba(0,0,0,0.05)] transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_24px_60px_rgba(37,99,235,0.16)] dark:border-white/10 dark:bg-white/[0.04]"
             >
-              <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#2563eb] via-[#60a5fa] to-orange-400 opacity-70" />
               <div
                 className={cn(
-                  "w-14 h-14 rounded-2xl flex items-center justify-center mb-10 border border-white/5 shadow-2xl transition-transform group-hover:scale-110 group-hover:rotate-3",
+                  "mb-6 flex h-14 w-14 items-center justify-center rounded-2xl shadow-md transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6",
                   project.color,
                 )}
               >
-                <project.icon className="w-7 h-7" />
+                <project.icon className="h-7 w-7" />
               </div>
-              <div className="space-y-4 mb-10 flex-1">
-                <h3 className="text-2xl font-headline font-black text-foreground uppercase tracking-tight">
-                  {project.name}
-                </h3>
-                <p className="text-sm text-foreground/40 font-medium leading-relaxed uppercase tracking-tighter">
-                  {project.desc}
-                </p>
-              </div>
+              <h3 className="text-xl font-black tracking-tight">
+                {project.name}
+              </h3>
+              <p className="mb-8 mt-2 flex-1 text-sm leading-relaxed text-foreground/60">
+                {project.desc}
+              </p>
               <Button
                 asChild
                 variant="outline"
-                className="w-full h-14 rounded-xl border-white/10 bg-white/2 hover:bg-primary hover:text-white hover:border-primary transition-all uppercase text-[10px] font-black tracking-widest"
+                className="h-12 w-full rounded-2xl transition-all group-hover:bg-[#2563eb] group-hover:text-white"
               >
                 <a href={project.url} target="_blank" rel="noopener noreferrer">
-                  Visit Project{" "}
-                  <ExternalLink className="w-3.5 h-3.5 ml-2 opacity-40" />
+                  Visit <ExternalLink className="ml-2 h-3.5 w-3.5" />
                 </a>
               </Button>
             </div>
@@ -331,74 +365,57 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* Support Hub */}
-      <section id="contact" className="container mx-auto px-6 pb-40">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
-          <Card className="glass-card p-10 sm:p-16 rounded-[3.5rem] border-white/10 flex flex-col justify-center gap-10 relative overflow-hidden group">
-            <div className="absolute top-0 left-0 w-64 h-64 bg-primary/5 rounded-full blur-[100px] opacity-0 group-hover:opacity-100 transition-opacity" />
-            <div className="space-y-4 relative z-10">
-              <p className="text-[10px] font-black text-primary uppercase tracking-[0.4em]">
-                Uplink Matrix
-              </p>
-              <h3 className="text-4xl md:text-6xl font-headline font-black text-foreground uppercase tracking-tighter leading-[0.9]">
-                Support & <span className="text-primary italic">Feedback</span>
-              </h3>
-              <p className="text-sm md:text-base text-foreground/40 font-medium uppercase tracking-tighter leading-relaxed">
-                Technical issue or project request? Reach out directly via the
-                linguistic uplink. I typically respond within 24 hours.
-              </p>
-            </div>
-
-            <div className="space-y-4 relative z-10">
-              <Label className="text-[10px] font-black text-foreground/40 uppercase tracking-[0.2em] ml-2">
-                Secure Email Protocol
-              </Label>
-              <div className="flex flex-col sm:flex-row gap-3">
-                <div className="flex-1 h-16 bg-secondary border border-border rounded-2xl flex items-center px-6 font-mono text-xs font-bold text-foreground overflow-hidden shadow-inner group-hover:border-primary/20 transition-colors">
-                  {email}
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    onClick={handleCopyEmail}
-                    className="h-16 w-16 rounded-2xl bg-primary shadow-xl shadow-primary/20 shrink-0"
-                  >
-                    {isCopied ? (
-                      <CheckCircle2 className="w-6 h-6" />
-                    ) : (
-                      <Copy className="w-6 h-6" />
-                    )}
-                  </Button>
-                  <Button
-                    asChild
-                    variant="outline"
-                    className="h-16 px-6 rounded-2xl border-white/10 bg-white/5 uppercase text-[10px] font-black tracking-widest active:scale-95 transition-all"
-                  >
-                    <a href={`mailto:${email}`}>
-                      <ExternalLink className="w-4 h-4 mr-2" /> Open Mail
-                    </a>
-                  </Button>
-                </div>
+      <section id="contact" className="container mx-auto px-6">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <Card className="group overflow-hidden rounded-[1.8rem] border-black/5 bg-white p-8 shadow-[0_12px_40px_rgba(0,0,0,0.05)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_24px_60px_rgba(37,99,235,0.14)] dark:border-white/10 dark:bg-white/[0.04] md:p-12">
+            <div className="mb-6 h-[3px] rounded-full bg-gradient-to-r from-[#2563eb] to-[#60a5fa]" />
+            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-primary">
+              Support
+            </p>
+            <h3 className="mt-2 text-3xl font-black tracking-tight md:text-4xl">
+              Feedback & <span className="text-[#2563eb]">email</span>
+            </h3>
+            <p className="mt-3 text-sm text-foreground/60">
+              Issue or request? I usually reply within 24 hours.
+            </p>
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <div className="flex h-14 flex-1 items-center overflow-hidden rounded-2xl bg-secondary px-4 font-mono text-xs">
+                {email}
               </div>
+              <Button
+                onClick={handleCopyEmail}
+                className="h-14 w-14 shrink-0 rounded-2xl bg-[#2563eb] text-white shadow-lg shadow-blue-500/25 transition-transform hover:scale-105"
+              >
+                {isCopied ? (
+                  <CheckCircle2 className="h-5 w-5" />
+                ) : (
+                  <Copy className="h-5 w-5" />
+                )}
+              </Button>
+              <Button
+                asChild
+                variant="outline"
+                className="h-14 rounded-2xl px-5 hover:bg-[#2563eb] hover:text-white"
+              >
+                <a href={`mailto:${email}`}>Open mail</a>
+              </Button>
             </div>
           </Card>
 
-          <Card className="glass-card p-10 sm:p-16 rounded-[3.5rem] border-white/10 flex flex-col items-center justify-center text-center gap-10 relative overflow-hidden group">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-[100px] opacity-0 group-hover:opacity-100 transition-opacity" />
-            <div className="w-20 h-20 rounded-[2rem] bg-primary/10 flex items-center justify-center text-primary shadow-2xl ring-1 ring-primary/20 relative z-10 transition-transform group-hover:scale-110">
-              <Coffee className="w-10 h-10" />
+          <Card className="group flex flex-col items-center overflow-hidden rounded-[1.8rem] border-black/5 bg-white p-8 text-center shadow-[0_12px_40px_rgba(0,0,0,0.05)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_24px_60px_rgba(249,115,22,0.16)] dark:border-white/10 dark:bg-white/[0.04] md:p-12">
+            <div className="mb-6 h-[3px] w-full rounded-full bg-gradient-to-r from-orange-400 to-amber-300" />
+            <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-400 to-amber-300 text-white shadow-lg transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6">
+              <Coffee className="h-8 w-8" />
             </div>
-            <div className="space-y-4 relative z-10">
-              <h3 className="text-4xl md:text-6xl font-headline font-black text-foreground uppercase tracking-tight leading-none">
-                Fuel the <span className="text-primary italic">Studio</span>
-              </h3>
-              <p className="text-xs text-foreground/40 font-medium uppercase leading-relaxed tracking-widest max-sm mx-auto">
-                Donations directly support server costs and the production of
-                new free tools. Strictly optional, always appreciated.
-              </p>
-            </div>
+            <h3 className="text-3xl font-black tracking-tight">
+              Fuel the <span className="text-orange-500">studio</span>
+            </h3>
+            <p className="mt-3 max-w-sm text-sm text-foreground/60">
+              Optional support for servers and new free tools.
+            </p>
             <Button
               asChild
-              className="w-full max-w-sm h-16 rounded-2xl bg-primary text-white font-black uppercase text-[11px] tracking-[0.3em] shadow-xl shadow-primary/30 relative z-10 active:scale-95 transition-all"
+              className="mt-8 h-12 w-full max-w-sm rounded-2xl bg-gradient-to-r from-orange-500 to-amber-400 text-white shadow-lg shadow-orange-500/25 transition-transform hover:scale-[1.02]"
             >
               <Link href="/donate">Buy me a coffee</Link>
             </Button>
