@@ -3,18 +3,11 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
-  User,
   Mail,
-  Lock,
-  Calendar,
-  ShieldCheck,
   LogOut,
-  Edit3,
-  CheckCircle2,
   ArrowLeft,
   KeyRound,
-  Fingerprint,
-  Activity,
+  ShieldCheck,
   BadgeCheck,
   Shield,
   Clock,
@@ -22,22 +15,12 @@ import {
   Settings2,
   Smartphone,
   Save,
-  Trash2,
-  ChevronRight,
   Globe,
-  Bell,
-  Cpu,
+  Activity,
   Zap,
-  MoreVertical,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -53,20 +36,14 @@ export default function AccountPage() {
   const router = useRouter();
   const auth = useAuth();
   const { user, loading } = useUser();
-
-  // Edit State
   const [displayName, setDisplayName] = useState("");
   const [newPass, setNewPass] = useState("");
   const [confirmPass, setConfirmPass] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
 
   useEffect(() => {
-    if (!loading && !user) {
-      router.replace("/login?redirect=/account");
-    }
-    if (user) {
-      setDisplayName(user.displayName || "");
-    }
+    if (!loading && !user) router.replace("/login?redirect=/account");
+    if (user) setDisplayName(user.displayName || "");
   }, [user, loading, router]);
 
   const handleUpdateProfile = async () => {
@@ -74,16 +51,9 @@ export default function AccountPage() {
     setIsUpdating(true);
     try {
       await updateProfile(user, { displayName });
-      toast({
-        title: "Name Updated",
-        description: "Your profile has been updated.",
-      });
-    } catch (err) {
-      toast({
-        variant: "destructive",
-        title: "Update Failed",
-        description: "Failed to update profile name.",
-      });
+      toast({ title: "Name updated", description: "Your profile is saved." });
+    } catch {
+      toast({ variant: "destructive", title: "Update failed" });
     } finally {
       setIsUpdating(false);
     }
@@ -92,37 +62,25 @@ export default function AccountPage() {
   const handleChangePassword = async () => {
     if (!user || !newPass) return;
     if (newPass !== confirmPass) {
-      toast({
-        variant: "destructive",
-        title: "Mismatch",
-        description: "Passwords do not match.",
-      });
+      toast({ variant: "destructive", title: "Passwords do not match" });
       return;
     }
-
     setIsUpdating(true);
     try {
       await updatePassword(user, newPass);
       setNewPass("");
       setConfirmPass("");
-      toast({
-        title: "Password Changed",
-        description: "Your password has been updated.",
-      });
+      toast({ title: "Password changed" });
     } catch (err: any) {
-      if (err.code === "auth/requires-recent-login") {
-        toast({
-          variant: "destructive",
-          title: "Login Required",
-          description: "Please log out and back in to change your password.",
-        });
-      } else {
-        toast({
-          variant: "destructive",
-          title: "Failed",
-          description: err.message,
-        });
-      }
+      toast({
+        variant: "destructive",
+        title:
+          err.code === "auth/requires-recent-login" ? "Login again" : "Failed",
+        description:
+          err.code === "auth/requires-recent-login"
+            ? "Log out and back in to change password."
+            : err.message,
+      });
     } finally {
       setIsUpdating(false);
     }
@@ -132,16 +90,16 @@ export default function AccountPage() {
     if (auth) {
       await signOut(auth);
       router.push("/");
-      toast({ title: "Logged Out" });
+      toast({ title: "Logged out" });
     }
   };
 
   if (loading || !user) {
     return (
-      <div className="min-h-[70vh] flex flex-col items-center justify-center gap-6 bg-[#0a0a0c]">
-        <Loader2 className="w-10 h-10 text-primary animate-spin" />
-        <p className="text-[10px] font-black uppercase tracking-[0.4em] text-primary">
-          Loading Profile...
+      <div className="flex min-h-[70vh] flex-col items-center justify-center gap-4 bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="text-xs font-semibold tracking-widest text-primary">
+          Loading profile
         </p>
       </div>
     );
@@ -155,248 +113,214 @@ export default function AccountPage() {
     : "Unknown";
 
   return (
-    <div className="min-h-screen bg-[#0a0a0c] selection:bg-primary/20">
-      <div className="container mx-auto px-4 md:px-6 py-12 md:py-16 max-w-5xl">
-        {/* Header */}
-        <div className="mb-12 animate-reveal">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.2em] text-foreground/30 hover:text-primary transition-all mb-10 group"
-          >
-            <ArrowLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-1" />{" "}
-            Back to Studio
-          </Link>
+    <div className="min-h-screen bg-background text-foreground">
+      <div className="container mx-auto max-w-5xl px-4 py-12 md:px-6 md:py-16">
+        <Link
+          href="/"
+          className="mb-8 inline-flex items-center gap-2 text-xs font-semibold text-foreground/50 hover:text-primary"
+        >
+          <ArrowLeft className="h-4 w-4" /> Back
+        </Link>
 
-          <div className="flex flex-col md:flex-row items-center gap-8 md:gap-12">
-            <div className="relative group/avatar">
-              <div className="absolute -inset-6 bg-primary/10 blur-[60px] rounded-full opacity-40 group-hover/avatar:opacity-100 transition-opacity duration-1000" />
-              <div className="relative p-1 bg-gradient-to-br from-primary/30 to-transparent rounded-[2.5rem] shadow-2xl ring-1 ring-white/5">
-                <Avatar className="w-24 h-24 sm:w-32 sm:h-32 rounded-[2.3rem] border-[4px] border-[#0a0a0c] bg-secondary relative z-10 shadow-inner">
-                  <AvatarImage
-                    src={`https://picsum.photos/seed/${user.uid}/300/300`}
-                    className="object-cover"
-                  />
-                  <AvatarFallback className="bg-secondary text-3xl font-headline font-black text-primary">
-                    {user.email?.charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-              </div>
-              <div className="absolute -bottom-1 -right-1 bg-primary text-white w-10 h-10 rounded-[1.2rem] flex items-center justify-center shadow-xl border-[4px] border-[#0a0a0c] z-20">
-                <BadgeCheck className="w-5 h-5" />
-              </div>
+        <div className="relative mb-10 overflow-hidden rounded-[2rem] border border-black/5 bg-white shadow-[0_16px_50px_rgba(37,99,235,0.10)] dark:border-white/10 dark:bg-white/[0.04]">
+          <div className="h-[3px] bg-gradient-to-r from-[#2563eb] via-[#60a5fa] to-orange-400" />
+          <div className="pointer-events-none absolute right-[-40px] top-[-40px] h-48 w-48 rounded-full bg-[#2563eb]/10 blur-3xl" />
+          <div className="flex flex-col items-center gap-8 p-8 md:flex-row md:items-center md:p-10">
+            <div className="relative">
+              <div className="absolute -inset-2 rounded-[1.8rem] bg-gradient-to-br from-[#2563eb] to-orange-400 opacity-30 blur-md" />
+              <Avatar className="relative h-28 w-28 rounded-[1.6rem] border-4 border-white shadow-xl dark:border-background md:h-32 md:w-32">
+                <AvatarImage
+                  src={
+                    user.photoURL ||
+                    `https://picsum.photos/seed/${user.uid}/300/300`
+                  }
+                  className="object-cover"
+                />
+                <AvatarFallback className="bg-secondary text-3xl font-black text-primary">
+                  {user.email?.charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <span className="absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-xl border-4 border-white bg-[#2563eb] text-white dark:border-background">
+                <BadgeCheck className="h-3.5 w-3.5" />
+              </span>
             </div>
-
-            <div className="text-center md:text-left space-y-4 flex-1 min-w-0">
-              <div className="space-y-2">
-                <h1 className="text-3xl sm:text-5xl font-headline font-black text-foreground uppercase tracking-tighter leading-none truncate">
-                  {user.displayName || "Member"}
-                </h1>
-                <div className="flex flex-wrap justify-center md:justify-start items-center gap-4">
-                  <p className="text-primary font-black uppercase text-[10px] tracking-[0.3em]">
-                    {user.email}
-                  </p>
-                  <Badge
-                    variant="outline"
-                    className="bg-primary/10 text-primary border-primary/20 text-[8px] font-black uppercase px-3 py-1 rounded-full"
-                  >
-                    Studio Member
-                  </Badge>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap justify-center md:justify-start gap-x-8 gap-y-2">
-                <div className="flex items-center gap-2 text-[9px] font-bold text-foreground/20 uppercase tracking-widest">
-                  <Clock className="w-3.5 h-3.5 text-primary/30" />
-                  Joined: {creationDate}
-                </div>
-                <div className="flex items-center gap-2 text-[9px] font-bold text-foreground/20 uppercase tracking-widest">
-                  <Smartphone className="w-3.5 h-3.5 text-primary/30" />
-                  User ID: {user.uid.substring(0, 8).toUpperCase()}
-                </div>
+            <div className="min-w-0 flex-1 text-center md:text-left">
+              <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-[#2563eb]">
+                Account
+              </p>
+              <h1 className="truncate text-4xl font-black tracking-tight text-foreground md:text-5xl">
+                {user.displayName || "Member"}
+              </h1>
+              <p className="mt-2 text-sm text-foreground/65">{user.email}</p>
+              <div className="mt-5 flex flex-wrap justify-center gap-2 md:justify-start">
+                <Badge className="rounded-full border-0 bg-[#2563eb] px-3 py-1 text-white">
+                  Studio member
+                </Badge>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-3 py-1.5 text-xs text-foreground/65">
+                  <Clock className="h-3.5 w-3.5 text-[#2563eb]" />{" "}
+                  {creationDate}
+                </span>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-3 py-1.5 text-xs text-foreground/65">
+                  <Smartphone className="h-3.5 w-3.5 text-[#2563eb]" />{" "}
+                  {user.uid.substring(0, 8).toUpperCase()}
+                </span>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          {/* Main Controls */}
-          <div className="lg:col-span-8 space-y-6 animate-in fade-in slide-in-from-left-6 duration-1000">
-            <Card className="glass-card border-white/5 shadow-2xl overflow-hidden relative rounded-[2.5rem]">
-              <CardHeader className="p-6 sm:p-8 border-b border-white/5 bg-secondary/10">
-                <CardTitle className="text-[10px] font-black uppercase tracking-[0.3em] flex items-center gap-3 text-foreground">
-                  <Settings2 className="w-4 h-4 text-primary" /> Profile
-                  Settings
+        <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
+          <div className="space-y-6 lg:col-span-8">
+            <Card className="group overflow-hidden rounded-[1.8rem] border-black/5 bg-white shadow-[0_12px_40px_rgba(0,0,0,0.06)] transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_24px_60px_rgba(37,99,235,0.14)] dark:border-white/10 dark:bg-white/[0.04]">
+              <div className="h-[3px] bg-gradient-to-r from-[#2563eb] via-[#60a5fa] to-orange-400" />
+              <CardHeader className="border-b border-black/5 bg-[#2563eb]/5">
+                <CardTitle className="flex items-center gap-3 text-sm">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#2563eb] to-[#60a5fa] text-white shadow-md">
+                    <Settings2 className="h-4 w-4" />
+                  </span>
+                  Profile settings
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-6 sm:p-8 space-y-8">
-                <div className="space-y-8">
-                  <div className="space-y-4">
-                    <Label className="text-[9px] font-black text-foreground/30 uppercase tracking-[0.3em] ml-1">
-                      Full Name
-                    </Label>
-                    <div className="flex flex-col sm:flex-row gap-3">
-                      <Input
-                        value={displayName}
-                        onChange={(e) => setDisplayName(e.target.value)}
-                        placeholder="Your name..."
-                        className="h-12 bg-background border-white/5 rounded-xl text-sm font-bold px-6 focus:ring-primary/20 uppercase flex-1"
-                      />
-                      <Button
-                        onClick={handleUpdateProfile}
-                        disabled={isUpdating}
-                        className="h-12 px-6 rounded-xl bg-primary text-[10px] shadow-lg shadow-primary/20 active:scale-95 transition-all"
-                      >
-                        {isUpdating ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <div className="flex items-center gap-2">
-                            <Save className="w-4 h-4" /> Save
-                          </div>
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="pt-8 border-t border-white/5 space-y-6">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shadow-inner">
-                        <KeyRound className="w-5 h-5" />
-                      </div>
-                      <div className="space-y-0.5">
-                        <Label className="text-[10px] font-black text-foreground uppercase tracking-[0.3em]">
-                          Change Password
-                        </Label>
-                        <p className="text-[8px] font-bold text-foreground/20 uppercase tracking-widest">
-                          Update your account password
-                        </p>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <Input
-                        type="password"
-                        value={newPass}
-                        onChange={(e) => setNewPass(e.target.value)}
-                        placeholder="New Password"
-                        className="h-12 bg-background border-white/5 rounded-xl text-xs font-bold px-6"
-                      />
-                      <Input
-                        type="password"
-                        value={confirmPass}
-                        onChange={(e) => setConfirmPass(e.target.value)}
-                        placeholder="Confirm Password"
-                        className="h-12 bg-background border-white/5 rounded-xl text-xs font-bold px-6"
-                      />
-                    </div>
+              <CardContent className="space-y-8 p-6 sm:p-8">
+                <div className="space-y-3">
+                  <Label className="text-xs text-foreground/55">
+                    Full name
+                  </Label>
+                  <div className="flex flex-col gap-3 sm:flex-row">
+                    <Input
+                      value={displayName}
+                      onChange={(e) => setDisplayName(e.target.value)}
+                      placeholder="Your name"
+                      className="h-12 flex-1 rounded-2xl border-black/5 bg-secondary/60"
+                    />
                     <Button
-                      onClick={handleChangePassword}
-                      disabled={isUpdating || !newPass}
-                      variant="outline"
-                      className="w-full h-12 rounded-xl border-white/10 bg-white/5 text-[9px] font-black uppercase tracking-[0.3em] hover:bg-primary hover:text-white transition-all"
+                      onClick={handleUpdateProfile}
+                      disabled={isUpdating}
+                      className="h-12 rounded-2xl bg-[#2563eb] px-6 shadow-lg shadow-blue-500/25 transition-transform hover:scale-105"
                     >
                       {isUpdating ? (
-                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                        <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
-                        <Zap className="w-4 h-4 mr-2" />
+                        <>
+                          <Save className="mr-2 h-4 w-4" /> Save
+                        </>
                       )}
-                      Update Password
                     </Button>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-
-            <div className="p-6 rounded-[2.5rem] bg-secondary/20 border border-white/5 flex items-start gap-6 group hover:bg-secondary/30 transition-all shadow-xl">
-              <div className="w-12 h-12 rounded-2xl bg-background border border-white/5 flex items-center justify-center text-primary shrink-0 shadow-lg group-hover:scale-110 transition-transform">
-                <ShieldCheck className="w-6 h-6" />
-              </div>
-              <div className="space-y-1">
-                <h4 className="text-[11px] font-black text-foreground uppercase tracking-[0.2em] leading-none">
-                  Security Guaranteed
-                </h4>
-                <p className="text-[11px] text-foreground/40 leading-relaxed font-medium uppercase tracking-tight">
-                  Your account details and passwords are encrypted and managed
-                  securely via Firebase.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Metadata Sidebar */}
-          <div className="lg:col-span-4 space-y-6 animate-in fade-in slide-in-from-right-6 duration-1000">
-            <Card className="glass-card border-white/5 shadow-2xl overflow-hidden bg-background/10 rounded-[2.5rem]">
-              <CardHeader className="p-6 sm:p-8 border-b border-white/5 bg-secondary/10">
-                <CardTitle className="text-[9px] font-black uppercase tracking-[0.4em] flex items-center gap-3 text-foreground">
-                  <Activity className="w-4 h-4 text-primary" /> Session Details
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-6 sm:p-8 space-y-8">
-                <div className="space-y-6">
-                  {[
-                    { label: "Email Address", val: user.email, icon: Mail },
-                    {
-                      label: "Login Method",
-                      val:
-                        user.providerData[0]?.providerId === "password"
-                          ? "Email/Password"
-                          : "SSO",
-                      icon: Globe,
-                    },
-                    {
-                      label: "Account Status",
-                      val: user.emailVerified ? "VERIFIED" : "PENDING",
-                      icon: Shield,
-                      color: user.emailVerified
-                        ? "text-green-500"
-                        : "text-amber-500",
-                    },
-                  ].map((item, i) => (
-                    <div key={i} className="flex gap-4 group/item">
-                      <div className="w-9 h-9 rounded-lg bg-secondary border border-white/5 flex items-center justify-center text-primary/30 shrink-0 group-hover/item:text-primary transition-all shadow-inner">
-                        <item.icon className="w-4 h-4" />
-                      </div>
-                      <div className="min-w-0 flex-1 flex flex-col justify-center">
-                        <p className="text-[8px] font-black uppercase text-foreground/20 tracking-[0.2em] mb-0.5">
-                          {item.label}
-                        </p>
-                        <h4
-                          className={cn(
-                            "text-[10px] font-bold truncate uppercase tracking-tight",
-                            item.color || "text-foreground/70",
-                          )}
-                        >
-                          {item.val}
-                        </h4>
-                      </div>
+                <div className="space-y-5 rounded-2xl border border-black/5 bg-secondary/30 p-5">
+                  <div className="flex items-center gap-4">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-[#2563eb] to-[#60a5fa] text-white shadow-md">
+                      <KeyRound className="h-5 w-5" />
                     </div>
-                  ))}
-                </div>
-
-                <div className="pt-6 border-t border-white/5 space-y-4">
+                    <div>
+                      <p className="text-sm font-semibold">Change password</p>
+                      <p className="text-xs text-foreground/55">
+                        Update your account password
+                      </p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <Input
+                      type="password"
+                      value={newPass}
+                      onChange={(e) => setNewPass(e.target.value)}
+                      placeholder="New password"
+                      className="h-12 rounded-2xl bg-background"
+                    />
+                    <Input
+                      type="password"
+                      value={confirmPass}
+                      onChange={(e) => setConfirmPass(e.target.value)}
+                      placeholder="Confirm password"
+                      className="h-12 rounded-2xl bg-background"
+                    />
+                  </div>
                   <Button
-                    onClick={handleLogout}
+                    onClick={handleChangePassword}
+                    disabled={isUpdating || !newPass}
                     variant="outline"
-                    className="w-full h-12 rounded-xl border-white/10 bg-white/5 text-red-500/60 hover:text-red-500 hover:bg-red-500/10 font-black uppercase tracking-[0.3em] text-[9px] transition-all"
+                    className="h-12 w-full rounded-2xl border-[#2563eb]/20 hover:bg-[#2563eb] hover:text-white"
                   >
-                    <LogOut className="w-4 h-4 mr-2" /> Logout
+                    {isUpdating ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Zap className="mr-2 h-4 w-4" />
+                    )}
+                    Update password
                   </Button>
                 </div>
               </CardContent>
             </Card>
 
-            <div className="p-6 rounded-[2rem] bg-secondary/10 border border-white/5 flex items-start gap-4 group hover:bg-secondary/20 transition-all shadow-xl">
-              <div className="w-10 h-10 rounded-xl bg-background border border-border flex items-center justify-center text-primary shrink-0 shadow-lg group-hover:scale-110 transition-transform">
-                <Zap className="w-5 h-5" />
+            <div className="flex items-start gap-4 rounded-[1.6rem] border border-border bg-muted/30 p-6">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-background text-primary shadow">
+                <ShieldCheck className="h-5 w-5" />
               </div>
-              <div className="space-y-1">
-                <h4 className="text-[9px] font-black text-foreground uppercase tracking-[0.2em] leading-none">
-                  Always Synced
-                </h4>
-                <p className="text-[9px] text-foreground/40 leading-relaxed font-medium uppercase tracking-tight">
-                  Changes to your profile are reflected across all your devices
-                  immediately.
+              <div>
+                <h4 className="text-sm font-semibold">Security guaranteed</h4>
+                <p className="mt-1 text-sm text-foreground/60">
+                  Account details are encrypted and managed with Firebase.
                 </p>
               </div>
             </div>
+          </div>
+
+          <div className="space-y-6 lg:col-span-4">
+            <Card className="overflow-hidden rounded-[1.8rem] border-border shadow-xl">
+              <CardHeader className="border-b border-border bg-muted/40">
+                <CardTitle className="flex items-center gap-3 text-sm">
+                  <Activity className="h-4 w-4 text-primary" /> Session
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6 p-6">
+                {[
+                  { label: "Email", val: user.email, icon: Mail },
+                  {
+                    label: "Login",
+                    val:
+                      user.providerData[0]?.providerId === "password"
+                        ? "Email / password"
+                        : "SSO",
+                    icon: Globe,
+                  },
+                  {
+                    label: "Status",
+                    val: user.emailVerified ? "Verified" : "Pending",
+                    icon: Shield,
+                    color: user.emailVerified
+                      ? "text-emerald-500"
+                      : "text-amber-500",
+                  },
+                ].map((item) => (
+                  <div key={item.label} className="flex gap-3">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted text-primary">
+                      <item.icon className="h-4 w-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[11px] text-foreground/50">
+                        {item.label}
+                      </p>
+                      <p
+                        className={cn(
+                          "truncate text-sm font-semibold",
+                          item.color,
+                        )}
+                      >
+                        {item.val}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+                <Button
+                  onClick={handleLogout}
+                  variant="outline"
+                  className="h-12 w-full rounded-xl text-red-500 hover:bg-red-500/10 hover:text-red-500"
+                >
+                  <LogOut className="mr-2 h-4 w-4" /> Logout
+                </Button>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>
