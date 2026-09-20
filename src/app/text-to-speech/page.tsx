@@ -361,7 +361,7 @@ export default function TextToSpeechPage() {
                     <Type className="w-5 h-5" />
                   </div>
                   <CardTitle className="text-[10px] font-black uppercase tracking-[0.3em] text-foreground">
-                    Linguistic Input
+                    Input
                   </CardTitle>
                 </div>
                 <div className="flex items-center gap-4">

@@ -11,6 +11,17 @@ export function NavSearch() {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const box = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState({ top: 56, left: 8, width: 300 });
+
+  useEffect(() => {
+    if (!open) return;
+    const r = box.current?.getBoundingClientRect();
+    if (!r) return;
+    const width = Math.min(320, window.innerWidth - 16);
+    let left = r.right - width;
+    if (left < 8) left = 8;
+    setPos({ top: r.bottom + 8, left, width });
+  }, [open]);
   const input = useRef<HTMLInputElement>(null);
 
   const hits = useMemo(() => searchTools(TOOLS as any, q, 6).slice(0, 5), [q]);
@@ -38,14 +49,22 @@ export function NavSearch() {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex h-9 w-9 items-center justify-center rounded-full text-foreground/70 hover:bg-secondary hover:text-primary"
+        className="flex h-9 w-9 items-center justify-center rounded-full text-foreground/70 hover:bg-secondary"
         aria-label="Search tools"
       >
         <Search className="h-4 w-4" />
       </button>
 
       {open && (
-        <div className="absolute right-0 top-[calc(100%+10px)] z-50 w-[min(92vw,320px)] overflow-hidden rounded-2xl border border-black/5 bg-white shadow-[0_20px_50px_rgba(0,0,0,0.15)] dark:border-white/10 dark:bg-[#121214]">
+        <div
+          style={{
+            position: "fixed",
+            top: pos.top,
+            left: pos.left,
+            width: pos.width,
+          }}
+          className="z-50 overflow-hidden rounded-2xl border border-black/5 bg-white shadow-[0_20px_50px_rgba(0,0,0,0.15)] dark:border-white/10 dark:bg-[#121214]"
+        >
           <div className="flex items-center gap-2 border-b border-black/5 px-3 py-2 dark:border-white/10">
             <Search className="h-4 w-4 text-[#2563eb]" />
             <input
