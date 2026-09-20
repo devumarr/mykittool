@@ -24,6 +24,7 @@ import {
   Heart,
   Fingerprint,
 } from "lucide-react";
+import { NavSearch } from "@/components/mykittool/nav-search";
 import { cn } from "@/lib/utils";
 import { useUser, useAuth } from "@/firebase";
 import { signOut } from "firebase/auth";
@@ -134,7 +135,7 @@ export function Navbar() {
           </Link>
           <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
             {/* Secondary Utilities */}
-
+            <NavSearch />
             <ThemeToggle />
 
             <button
