@@ -142,7 +142,11 @@ export default function TextToSpeechPage() {
         setHistory(JSON.parse(saved));
       } catch (e) {}
 
+    window.speechSynthesis.onvoiceschanged = loadVoices;
+    window.speechSynthesis.cancel();
+
     return () => {
+      window.speechSynthesis.onvoiceschanged = null;
       window.speechSynthesis.cancel();
     };
   }, [selectedVoiceName]);
@@ -157,11 +161,11 @@ export default function TextToSpeechPage() {
 
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
-
-    if (currentVoice) {
-      utterance.voice = currentVoice;
-      localStorage.setItem("mykit_tts_last_voice", currentVoice.name);
-    }
+    utterance.onerror = (e) => {
+      if (e.error === "canceled" || e.error === "interrupted") return;
+      toast({ title: "Voice failed", description: "Try another voice." });
+      setIsSpeaking(false);
+    };
 
     utterance.rate = rate;
     utterance.pitch = pitch;
