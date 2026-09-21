@@ -2,7 +2,7 @@
 
 import React from "react";
 import { usePathname } from "next/navigation";
-import { Coffee } from "lucide-react";
+import { Coffee, Mail, MapPin } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
@@ -58,6 +58,30 @@ export function Footer() {
               Free browser tools for PDF, images and AI. Most work stays on your
               device.
             </p>
+
+            <div className="mt-6 space-y-3">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Contact
+              </p>
+              <a
+                href="mailto:support.mykittool@gmail.com"
+                className="group flex w-fit items-center gap-3 text-sm text-foreground/85 transition-colors hover:text-primary"
+              >
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/12 text-primary shadow-[0_8px_20px_rgba(37,99,235,0.18)] ring-1 ring-primary/20">
+                  <Mail className="h-4 w-4" />
+                </span>
+                support.mykittool@gmail.com
+              </a>
+              <div className="flex items-center gap-3 text-sm text-foreground/85">
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/12 text-emerald-500 shadow-[0_8px_20px_rgba(16,185,129,0.16)] ring-1 ring-emerald-500/20">
+                  <MapPin className="h-4 w-4" />
+                </span>
+                Based in Pakistan
+              </div>
+              <p className="pl-12 text-xs text-muted-foreground">
+                We reply within 1–2 days.
+              </p>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-10 md:col-span-7 md:grid-cols-3">

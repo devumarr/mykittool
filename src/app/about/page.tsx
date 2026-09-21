@@ -95,7 +95,7 @@ const PROJECTS = [
 export default function AboutPage() {
   const { toast } = useToast();
   const [isCopied, setIsCopied] = useState(false);
-  const email = "ummarfarooq38990@gmail.com";
+  const email = "support.mykittool@gmail.com";
 
   const handleCopyEmail = () => {
     navigator.clipboard.writeText(email);
