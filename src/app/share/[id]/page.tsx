@@ -176,10 +176,10 @@ export default function SharePage() {
           {status === "connecting" && (
             <div className="flex flex-col items-center gap-6 py-10">
               <Loader2 className="w-12 h-12 text-primary animate-spin" />
-              <p className="text-[10px] font-black uppercase text-white/30 tracking-[0.2em]">
+              <p className="text-[10px] font-black uppercase bg-background/20 tracking-[0.2em]">
                 Searching for sender...
               </p>
-              <p className="text-[9px] text-white/10 uppercase text-center max-w-xs">
+              <p className="text-[9px] bg-background/20 uppercase text-center max-w-xs">
                 Keep this page and the sender's page open.
               </p>
             </div>
@@ -194,10 +194,10 @@ export default function SharePage() {
                   <FileIcon className="w-8 h-8 text-primary/40" />
                 )}
                 <div className="text-left overflow-hidden">
-                  <p className="text-sm font-bold text-white truncate uppercase">
+                  <p className="text-sm font-bold bg-background/20 truncate uppercase">
                     {meta.name}
                   </p>
-                  <p className="text-[9px] text-white/20 font-black uppercase">
+                  <p className="text-[9px] bg-background/20 font-black uppercase">
                     {formatSize(meta.size)}
                   </p>
                 </div>

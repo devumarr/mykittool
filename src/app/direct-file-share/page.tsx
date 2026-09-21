@@ -478,7 +478,7 @@ export default function DirectFileSharePage() {
                       {Object.values(connections).length > 0 && (
                         <div className="space-y-4 pt-4 animate-in slide-in-from-bottom-2">
                           <div className="flex items-center justify-between px-2">
-                            <h4 className="text-[10px] font-black uppercase text-white/40 tracking-widest">
+                            <h4 className="text-[10px] font-black uppercase bg-backgroung/20 tracking-widest">
                               Active Transfers
                             </h4>
                             <span className="text-[9px] font-bold text-green-500">
@@ -496,7 +496,7 @@ export default function DirectFileSharePage() {
                                     <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary">
                                       <Activity className="w-4 h-4" />
                                     </div>
-                                    <span className="text-[10px] font-black text-white uppercase">
+                                    <span className="text-[10px] font-black bg-background/20 uppercase">
                                       {c.status}
                                     </span>
                                   </div>
@@ -505,7 +505,7 @@ export default function DirectFileSharePage() {
                                   </span>
                                 </div>
                                 <div className="space-y-2">
-                                  <div className="flex justify-between text-[8px] font-black uppercase text-white/40">
+                                  <div className="flex justify-between text-[8px] font-black uppercase bg-background/20">
                                     <span>Progress</span>
                                     <span>{c.progress}%</span>
                                   </div>
