@@ -43,14 +43,9 @@ export default function SharePage() {
   // State
   const [meta, setMeta] = useState<MetaData | null>(null);
   const [status, setStatus] = useState<
-    | "connecting"
-    | "verifying"
-    | "receiving"
-    | "complete"
-    | "error"
-    | "not-found"
+    "connecting" | "receiving" | "complete" | "error" | "not-found"
   >("connecting");
-  const [pin, setPin] = useState("");
+
   const [progress, setProgress] = useState(0);
   const [receivedChunks, setReceivedChunks] = useState<ArrayBuffer[]>([]);
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
@@ -72,7 +67,6 @@ export default function SharePage() {
         connRef.current = conn;
 
         conn.on("open", () => {
-          setStatus("verifying");
           toast({ title: "Connecting..." });
         });
 
@@ -83,16 +77,7 @@ export default function SharePage() {
         const chunks: ArrayBuffer[] = [];
 
         conn.on("data", (data: any) => {
-          if (data.type === "auth-required") {
-            setStatus("verifying");
-          } else if (data.type === "auth-ok") {
-            toast({
-              title: "Identity Verified",
-              description: "Waiting for sender metadata...",
-            });
-          } else if (data.type === "auth-fail") {
-            toast({ variant: "destructive", title: "Incorrect PIN" });
-          } else if (data.type === "meta") {
+          if (data.type === "meta") {
             incomingMeta = data;
             setMeta(data);
             setStatus("receiving");
@@ -100,7 +85,6 @@ export default function SharePage() {
             chunks.push(data.data);
             bytesReceived += data.data.byteLength;
 
-            // Speed logic
             const now = Date.now();
             if (now - lastTime > 1000) {
               const diff = bytesReceived - lastBytes;
@@ -158,12 +142,6 @@ export default function SharePage() {
     };
   }, [id]);
 
-  const verifyPin = () => {
-    if (connRef.current && pin.trim()) {
-      connRef.current.send({ type: "auth-verify", pin: pin.trim() });
-    }
-  };
-
   const handleDownload = () => {
     if (!downloadUrl) return;
     const a = document.createElement("a");
@@ -195,39 +173,6 @@ export default function SharePage() {
       <Card className="glass-card border-border shadow-2xl overflow-hidden relative w-full max-w-xl bg-secondary/10">
         <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
         <CardContent className="p-8 sm:p-16 flex flex-col items-center gap-12">
-          {status === "verifying" && (
-            <div className="w-full space-y-8 animate-in fade-in">
-              <div className="flex flex-col items-center gap-6">
-                <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-xl ring-1 ring-primary/40">
-                  <Lock className="w-8 h-8" />
-                </div>
-                <div className="text-center space-y-2">
-                  <h3 className="text-lg font-headline font-black uppercase text-foreground">
-                    Protected Transfer
-                  </h3>
-                  <p className="text-[10px] text-foreground/40 font-bold uppercase tracking-widest">
-                    Enter the 4-8 digit access PIN
-                  </p>
-                </div>
-              </div>
-              <div className="space-y-4">
-                <Input
-                  value={pin}
-                  onChange={(e) => setPin(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && verifyPin()}
-                  placeholder="••••"
-                  className="h-16 bg-background border-border rounded-2xl text-center text-2xl font-bold tracking-[0.5em] focus:ring-primary/40"
-                />
-                <Button
-                  onClick={verifyPin}
-                  className="w-full h-14 bg-primary text-white font-black rounded-2xl uppercase tracking-widest shadow-xl shadow-primary/30"
-                >
-                  Authorize
-                </Button>
-              </div>
-            </div>
-          )}
-
           {status === "connecting" && (
             <div className="flex flex-col items-center gap-6 py-10">
               <Loader2 className="w-12 h-12 text-primary animate-spin" />

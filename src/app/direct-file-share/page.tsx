@@ -69,7 +69,14 @@ export default function DirectFileSharePage() {
   // File State
   const [files, setFiles] = useState<QueuedFile[]>([]);
   const [shouldZip, setShouldZip] = useState(false);
-  const [pin, setPin] = useState("");
+  const filesRef = useRef(files);
+  const shouldZipRef = useRef(shouldZip);
+  useEffect(() => {
+    filesRef.current = files;
+  }, [files]);
+  useEffect(() => {
+    shouldZipRef.current = shouldZip;
+  }, [shouldZip]);
 
   // Connection State
   const [peerId, setPeerId] = useState("");
@@ -112,26 +119,7 @@ export default function DirectFileSharePage() {
         }));
 
         conn.on("open", () => {
-          if (pin.trim()) {
-            conn.send({ type: "auth-required" });
-            setConnections((prev) => ({
-              ...prev,
-              [connId]: { ...prev[connId], status: "verifying" },
-            }));
-          } else {
-            startTransfer(conn);
-          }
-        });
-
-        conn.on("data", (data: any) => {
-          if (data.type === "auth-verify") {
-            if (data.pin === pin.trim()) {
-              conn.send({ type: "auth-ok" });
-              startTransfer(conn);
-            } else {
-              conn.send({ type: "auth-fail" });
-            }
-          }
+          startTransfer(conn);
         });
 
         conn.on("close", () => {
@@ -148,10 +136,22 @@ export default function DirectFileSharePage() {
     return () => {
       if (p) p.destroy();
     };
-  }, [pin]);
+  }, []);
 
   // 2. Transfer Logic
   const startTransfer = async (conn: any) => {
+    const currentFiles = (filesRef.current || []).filter(
+      (f) => f && f.file && (f.file instanceof File || f.file instanceof Blob),
+    );
+
+    if (!currentFiles.length) {
+      toast({
+        title: "No files selected",
+        description: "Sender page par pehle file add karo, phir link kholo.",
+      });
+      return;
+    }
+
     const connId = conn.peer;
     setConnections((prev) => ({
       ...prev,
@@ -162,21 +162,26 @@ export default function DirectFileSharePage() {
     let fileName: string;
     let fileType: string;
 
-    if (shouldZip && files.length > 0) {
-      const zip = new JSZip();
-      files.forEach((f) => zip.file(f.name, f.file));
-      payload = await zip.generateAsync({ type: "blob" });
-      fileName = `bundle_${Date.now()}.zip`;
-      fileType = "application/zip";
-    } else {
-      // For multiple files without zip, we send the first one in this MVP
-      // A more complex loop could handle the rest
-      const f = files[0];
-      payload = f.file;
-      fileName = f.name;
-      fileType = f.type;
+    try {
+      if (shouldZipRef.current && currentFiles.length > 1) {
+        const zip = new JSZip();
+        currentFiles.forEach((f) => zip.file(f.name || "file", f.file));
+        payload = await zip.generateAsync({ type: "blob" });
+        fileName = `bundle_${Date.now()}.zip`;
+        fileType = "application/zip";
+      } else {
+        const f = currentFiles[0];
+        payload = f.file;
+        fileName = f.name;
+        fileType = f.type || "application/octet-stream";
+      }
+    } catch (err) {
+      toast({
+        title: "Could not prepare file",
+        description: "File dubara add karo, phir link share karo.",
+      });
+      return;
     }
-
     conn.send({
       type: "meta",
       name: fileName,
@@ -307,24 +312,30 @@ export default function DirectFileSharePage() {
   };
 
   return (
-    <div className="container mx-auto px-4 sm:px-6 py-12 md:py-20 max-w-full">
-      <div className="mb-12 animate-reveal">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-primary/10 border border-primary/20 text-[9px] font-black text-primary uppercase tracking-widest mb-4">
-          <Share2 className="w-3.5 h-3.5" /> Direct File Share
-        </div>
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-          <div>
-            <h1 className="text-3xl md:text-5xl font-headline font-black text-foreground uppercase tracking-tight">
-              Send <span className="text-primary italic">Files</span>
-            </h1>
-            <p className="text-foreground/40 text-sm md:text-base font-medium mt-2 max-w-2xl leading-relaxed">
-              Stream files directly to any device. No upload, no cloud storage,
-              zero friction.
-            </p>
+    <div className="mb-10 relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-[#0b1220] via-[#101826] to-[#0a0f18] px-6 py-8 sm:px-10 sm:py-10">
+      <div className="pointer-events-none absolute -top-24 -right-16 h-56 w-56 rounded-full bg-sky-500/20 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-20 -left-10 h-48 w-48 rounded-full bg-indigo-500/15 blur-3xl" />
+
+      <div className="relative flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+        <div className="max-w-2xl">
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-sky-400/30 bg-sky-400/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-sky-300">
+            <Share2 className="h-3.5 w-3.5" />
+            Direct File Share
           </div>
-          <div className="flex items-center gap-3">
-            <GetHelp toolId="direct-file-share" />
-          </div>
+
+          <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+            Send files
+            <span className="bg-gradient-to-r from-sky-300 to-indigo-300 bg-clip-text text-transparent">
+              {" "}
+              live
+            </span>
+          </h1>
+
+          <p className="mt-3 max-w-xl text-sm leading-relaxed text-slate-300">
+            Device to device. No cloud upload. Link Open and transfer start.
+          </p>
+
+          <div className="mt-5 flex flex-wrap gap-2"></div>
         </div>
       </div>
 
@@ -350,16 +361,6 @@ export default function DirectFileSharePage() {
                 </div>
               </div>
               <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2 bg-secondary/50 px-3 py-1 rounded-full border border-border">
-                  <span className="text-[8px] font-black uppercase text-foreground/40">
-                    Zip All
-                  </span>
-                  <Switch
-                    checked={shouldZip}
-                    onCheckedChange={setShouldZip}
-                    className="scale-75 h-4"
-                  />
-                </div>
                 <button
                   onClick={() => fileInputRef.current?.click()}
                   className="p-2 rounded-xl bg-primary text-white shadow-lg hover:scale-105 active:scale-95 transition-all"
@@ -384,10 +385,10 @@ export default function DirectFileSharePage() {
                     <Upload className="w-10 h-10" />
                   </div>
                   <div className="text-center space-y-2">
-                    <span className="text-sm font-headline font-black uppercase text-white/40 group-hover:text-white transition-colors">
+                    <span className="text-sm bg-background font-headline font-black uppercase  group-hover:text-Grey transition-colors">
                       Select files to send
                     </span>
-                    <p className="text-[9px] text-white/10 font-bold uppercase tracking-widest">
+                    <p className="text-[9px] bg-background font-bold uppercase tracking-widest">
                       Max 100MB Recommended
                     </p>
                   </div>
@@ -554,36 +555,6 @@ export default function DirectFileSharePage() {
 
         {/* Sidebar Controls */}
         <div className="lg:col-span-5 xl:col-span-4 space-y-8 animate-in fade-in slide-in-from-right-6 duration-1000">
-          {/* Protection Settings */}
-          <Card className="glass-card border-border shadow-2xl">
-            <CardHeader className="py-6 border-b border-white/5 bg-white/2">
-              <CardTitle className="text-[10px] font-black uppercase tracking-[0.3em] flex items-center gap-4 text-foreground">
-                <Lock className="w-5 h-5 text-primary" /> Security Matrix
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-8 space-y-8">
-              <div className="space-y-4">
-                <Label className="text-[10px] font-black text-foreground/40 uppercase tracking-[0.2em] ml-1">
-                  Access PIN (Optional)
-                </Label>
-                <div className="relative group/pin">
-                  <Input
-                    value={pin}
-                    onChange={(e) => setPin(e.target.value.substring(0, 8))}
-                    placeholder="Set a 4-8 digit PIN..."
-                    className="h-14 bg-secondary/50 border-border rounded-2xl text-center text-xl font-bold tracking-[0.5em] focus:ring-primary/40"
-                  />
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-20 group-focus-within/pin:opacity-100 transition-opacity">
-                    <ShieldCheck className="w-5 h-5 text-primary" />
-                  </div>
-                </div>
-                <p className="text-[9px] text-foreground/20 font-bold uppercase text-center">
-                  Recipients must enter this PIN to download.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
           {/* Performance Tips */}
           <Card className="glass-card border-border shadow-xl">
             <CardContent className="p-8 space-y-6">
