@@ -34,8 +34,9 @@ export const metadata: Metadata = {
     canonical: "/",
   },
   verification: {
-    google: "vMj1XN9ziXyU5kBso8wdA_OhZuzhD0o_BGSrSu9uiGU",
+    google: "GHsPI98ad8DlC39-vEjbOFWp58R1dhIkzyM0ta2u9Ao",
   },
+
   openGraph: {
     title: "My Kit Tool | Free Online Tools",
     description:
