@@ -101,6 +101,8 @@ import {
   Smartphone,
   Copy,
   Download,
+  CircleDollarSign,
+  UserRound,
   Camera as CameraIcon,
 } from "lucide-react";
 import { TOOLS } from "./tools";
@@ -212,7 +214,9 @@ function AllToolsPageContent() {
             <span className="text-primary"> Use it now.</span>
           </h1>
           <p className="relative mx-auto mt-3 max-w-md text-sm leading-relaxed text-muted-foreground">
-            Search by name or type. Open a tool and start.
+            My Kit Tool is a free collection of online utilities for PDF, image,
+            AI, audio, and everyday work. Use this page to open any tool in your
+            browser. No signup required.
           </p>
           <div className="relative mt-6 flex flex-wrap items-center justify-center gap-2">
             {[
@@ -448,6 +452,61 @@ function AllToolsPageContent() {
             </a>
           ))}
         </div>
+
+        <section className="mx-auto mt-24 w-full max-w-5xl border-t border-border pt-14">
+          <div className="text-center">
+            <span className="inline-flex items-center rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.22em] text-primary">
+              FAQ
+            </span>
+            <h2 className="mt-4 text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
+              Questions, answered
+            </h2>
+            <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
+              Short answers so you can pick a tool and start.
+            </p>
+          </div>
+
+          <div className="mt-10 grid gap-4 md:grid-cols-3">
+            <article className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-[0_18px_40px_-28px_rgba(0,0,0,0.65)] transition duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-[0_24px_50px_-24px_rgba(56,189,248,0.35)]">
+              <div className="pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full bg-emerald-400/15 blur-2xl transition group-hover:bg-emerald-400/25" />
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-400 ring-1 ring-emerald-400/25">
+                <CircleDollarSign className="h-5 w-5" />
+              </div>
+              <h3 className="mt-4 text-base font-semibold text-foreground">
+                Are the tools free?
+              </h3>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                Yes. Every tool on this page is free to use in your browser.
+              </p>
+            </article>
+
+            <article className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-[0_18px_40px_-28px_rgba(0,0,0,0.65)] transition duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-[0_24px_50px_-24px_rgba(56,189,248,0.35)]">
+              <div className="pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full bg-sky-400/15 blur-2xl transition group-hover:bg-sky-400/25" />
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-sky-500/15 text-sky-400 ring-1 ring-sky-400/25">
+                <UserRound className="h-5 w-5" />
+              </div>
+              <h3 className="mt-4 text-base font-semibold text-foreground">
+                Do I need an account?
+              </h3>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                No signup. Open a tool and start. Nothing extra to install.
+              </p>
+            </article>
+
+            <article className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-[0_18px_40px_-28px_rgba(0,0,0,0.65)] transition duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-[0_24px_50px_-24px_rgba(56,189,248,0.35)]">
+              <div className="pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full bg-violet-400/15 blur-2xl transition group-hover:bg-violet-400/25" />
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-500/15 text-violet-400 ring-1 ring-violet-400/25">
+                <Search className="h-5 w-5" />
+              </div>
+              <h3 className="mt-4 text-base font-semibold text-foreground">
+                How do I start?
+              </h3>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                Search the tool name, tap a category, then open the card.
+              </p>
+            </article>
+          </div>
+        </section>
       </main>
 
       <style jsx global>{`

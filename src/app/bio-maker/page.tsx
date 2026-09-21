@@ -10,6 +10,7 @@ import React, {
 import {
   UserCircle,
   Sparkles,
+  Loader2,
   Copy,
   Trash2,
   CheckCircle2,
@@ -577,7 +578,7 @@ export default function AdvancedBioMakerPage() {
       setBios((prev) => (append ? [...prev, ...newBatch] : newBatch));
       if (!append && newBatch.length > 0) setSelectedBioId(newBatch[0].id);
       setIsGenerating(false);
-      toast({ title: append ? "Batch Extended" : "8 Unique Bios Synthesized" });
+      toast({ title: append ? "Batch Extended" : "8 Unique Bios Genrated" });
     },
     [generateSingleBio, mood, toast],
   );
@@ -667,9 +668,8 @@ export default function AdvancedBioMakerPage() {
               Bio Maker <span className="text-primary italic">Studio Pro</span>
             </h1>
             <p className="text-foreground/40 text-sm md:text-base font-medium mt-2 max-w-2xl leading-relaxed">
-              Advanced identity synthesis matrix. Generate unique, high-entropy
-              social bios with categorized structural layouts and real-time
-              platform previews.
+              Write a short bio for Instagram, TikTok, or LinkedIn. Edit the
+              text, then copy it to your profile.
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -1165,7 +1165,37 @@ export default function AdvancedBioMakerPage() {
           )}
         </div>
       </div>
-
+      <section className="mx-auto mt-20 w-full max-w-4xl border-t border-border pt-12">
+        <h2 className="text-center text-2xl font-semibold text-foreground">
+          FAQ
+        </h2>
+        <div className="mt-8 grid gap-4 md:grid-cols-3">
+          <article className="rounded-2xl border border-border bg-card p-5">
+            <h3 className="text-sm font-semibold text-foreground">
+              What is this tool?
+            </h3>
+            <p className="mt-2 text-sm text-muted-foreground">
+              A simple writer for short social media bios.
+            </p>
+          </article>
+          <article className="rounded-2xl border border-border bg-card p-5">
+            <h3 className="text-sm font-semibold text-foreground">
+              Is it free?
+            </h3>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Yes. No signup required.
+            </p>
+          </article>
+          <article className="rounded-2xl border border-border bg-card p-5">
+            <h3 className="text-sm font-semibold text-foreground">
+              Where can I use the bio?
+            </h3>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Copy it into Instagram, TikTok, LinkedIn, or any profile field.
+            </p>
+          </article>
+        </div>
+      </section>
       <style jsx global>{`
         .custom-scrollbar::-webkit-scrollbar {
           width: 4px;

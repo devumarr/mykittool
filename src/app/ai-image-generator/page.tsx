@@ -1,16 +1,13 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import {
   ImageIcon,
   Sparkles,
   Download,
   Trash2,
-  Copy,
-  CheckCircle2,
   RefreshCcw,
   Loader2,
-  Maximize2,
   Settings2,
   Zap,
   History,
@@ -30,16 +27,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { GetHelp } from "@/components/mykittool/get-help";
@@ -315,9 +303,9 @@ export default function AiImageGeneratorPage() {
             <h1 className="text-3xl md:text-6xl font-headline font-black text-foreground uppercase tracking-tight leading-none">
               AI Image <span className="text-primary italic">Generator</span>
             </h1>
-            <p className="text-foreground/40 text-sm md:text-base font-medium mt-4 max-w-2xl leading-relaxed">
-              Create images from text for free. Professional high-fidelity image
-              synthesis using the Pollinations matrix.
+            <p className="mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground">
+              Type a short prompt and generate an image. Download the result
+              when it is ready.
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -774,6 +762,39 @@ export default function AiImageGeneratorPage() {
           </div>
         </main>
       </div>
+
+      <section className="mx-auto mt-20 w-full max-w-4xl border-t border-border pt-12">
+        <h2 className="text-center text-2xl font-semibold text-foreground">
+          FAQ
+        </h2>
+        <div className="mt-8 grid gap-4 md:grid-cols-3">
+          <article className="rounded-2xl border border-border bg-card p-5">
+            <h3 className="text-sm font-semibold text-foreground">
+              Is this free?
+            </h3>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Yes. Generate images on this page with no signup.
+            </p>
+          </article>
+          <article className="rounded-2xl border border-border bg-card p-5">
+            <h3 className="text-sm font-semibold text-foreground">
+              What should I type?
+            </h3>
+            <p className="mt-2 text-sm text-muted-foreground">
+              A short clear prompt works best. Example: a red logo on a black
+              background.
+            </p>
+          </article>
+          <article className="rounded-2xl border border-border bg-card p-5">
+            <h3 className="text-sm font-semibold text-foreground">
+              Can I download the image?
+            </h3>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Yes. Use the download button after the image appears.
+            </p>
+          </article>
+        </div>
+      </section>
 
       <style jsx global>{`
         .custom-scrollbar::-webkit-scrollbar {

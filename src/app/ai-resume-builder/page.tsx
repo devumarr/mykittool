@@ -272,6 +272,10 @@ export default function AIResumeBuilderPage() {
           <h1 className="text-3xl md:text-5xl lg:text-7xl font-headline font-black text-foreground uppercase tracking-tight leading-none overflow-wrap-anywhere">
             AI Resume <span className="text-primary italic">Builder</span>
           </h1>
+          <p className="mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground">
+            Enter your details, generate a clean resume, then edit and download
+            it.
+          </p>
         </div>
         <div className="flex items-center gap-3 shrink-0 pb-2">
           <GetHelp toolId="ai-resume" />
@@ -307,7 +311,7 @@ export default function AIResumeBuilderPage() {
                       onChange={(e) =>
                         handleInputChange("name", e.target.value)
                       }
-                      placeholder="e.g. John Doe"
+                      placeholder="Enter Your Name"
                       className="h-11 bg-secondary/50 border-border rounded-xl font-bold"
                     />
                   </div>
@@ -626,7 +630,7 @@ export default function AIResumeBuilderPage() {
                   <div className="flex-1 flex flex-col items-center justify-center opacity-10 space-y-6 py-40 grayscale pointer-events-none">
                     <FileText className="w-24 h-24 text-primary" />
                     <p className="text-sm font-black uppercase tracking-[0.3em]">
-                      Awaiting Identity Signal
+                      NO preview
                     </p>
                   </div>
                 )}
@@ -714,7 +718,37 @@ export default function AIResumeBuilderPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
+      <section className="mx-auto mt-20 w-full max-w-4xl border-t border-border pt-12">
+        <h2 className="text-center text-2xl font-semibold text-foreground">
+          FAQ
+        </h2>
+        <div className="mt-8 grid gap-4 md:grid-cols-3">
+          <article className="rounded-2xl border border-border bg-card p-5">
+            <h3 className="text-sm font-semibold text-foreground">
+              Is the resume builder free?
+            </h3>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Yes. Build and edit a resume on this page.
+            </p>
+          </article>
+          <article className="rounded-2xl border border-border bg-card p-5">
+            <h3 className="text-sm font-semibold text-foreground">
+              Can I edit the resume?
+            </h3>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Yes. Change the text in the editor after it is generated.
+            </p>
+          </article>
+          <article className="rounded-2xl border border-border bg-card p-5">
+            <h3 className="text-sm font-semibold text-foreground">
+              How do I save it?
+            </h3>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Use download or copy after the preview looks right.
+            </p>
+          </article>
+        </div>
+      </section>
       <style jsx global>{`
         .custom-scrollbar::-webkit-scrollbar {
           width: 4px;

@@ -806,7 +806,7 @@ export default function AIChatbotPage() {
             <div className="flex items-center gap-3 min-w-0">
               <div className="w-2 h-2 rounded-full bg-primary animate-pulse shrink-0" />
               <h2 className="text-[11px] font-black uppercase tracking-[0.4em] text-foreground/60 truncate max-w-[200px]">
-                {activeSession?.title || "Studio"}
+                {activeSession?.title || "NEW CHAT"}
               </h2>
             </div>
           </div>

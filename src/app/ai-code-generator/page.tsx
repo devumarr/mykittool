@@ -1,9 +1,8 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Code2,
-  Send,
   Trash2,
   Copy,
   CheckCircle2,
@@ -14,23 +13,16 @@ import {
   Zap,
   History,
   Activity,
-  FileCode,
-  ArrowRight,
   Terminal,
-  Database,
   ChevronRight,
-  Braces,
   ShieldCheck,
   FileDown,
   Check,
-  Wand2,
   FileEdit,
   Info,
   Sparkles,
   KeyRound,
-  Globe,
   Unplug,
-  Save,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -290,19 +282,18 @@ export default function AiCodeGeneratorPage() {
   };
 
   return (
-    <div className="container mx-auto px-4 md:px-6 py-12 md:py-20 max-w-full bg-[#0a0a0c] min-h-screen">
+    <div className="container mx-auto px-4 md:px-6 py-12 md:py-20 max-w-full  min-h-screen">
       <div className="mb-12 animate-reveal flex flex-col md:flex-row md:items-end justify-between gap-8">
         <div className="min-w-0">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-primary/10 border border-primary/20 text-[9px] font-black text-primary uppercase tracking-widest mb-4">
             <Code2 className="w-3.5 h-3.5" /> Intelligence Suite Pro
           </div>
-          <h1 className="text-3xl md:text-6xl font-headline font-black text-white uppercase tracking-tight leading-none">
+          <h1 className="text-3xl md:text-6xl font-headline font-black    uppercase tracking-tight leading-none">
             AI Code <span className="text-primary italic">Generator</span>
           </h1>
-          <p className="text-white/40 text-sm md:text-base font-medium mt-4 max-w-2xl leading-relaxed">
-            Professional high-fidelity code synthesis. Generate, fix, and
-            explain logic across multiple languages using secure multi-node
-            processing.
+          <p className="mt-3 max-w-xl font-bold text-sm leading-relaxed text-muted-foreground">
+            Describe the code you need. Get a draft, copy it, and edit it in
+            your project.
           </p>
         </div>
         <div className="flex items-center gap-3 shrink-0 pb-2">
@@ -315,7 +306,7 @@ export default function AiCodeGeneratorPage() {
               "h-10 px-4 rounded-xl border-border text-[8px] font-black uppercase tracking-widest transition-all",
               isCustomConnected
                 ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
-                : "bg-secondary text-white/40",
+                : "bg-secondary   /40",
             )}
           >
             {isCustomConnected ? (
@@ -402,7 +393,7 @@ export default function AiCodeGeneratorPage() {
                 <div className="flex gap-2 pt-2">
                   <Button
                     onClick={handleConnectCustom}
-                    className="flex-1 h-10 bg-primary text-white text-[9px] font-black uppercase rounded-xl"
+                    className="flex-1 h-10 bg-primary    text-[9px] font-black uppercase rounded-xl"
                   >
                     Connect Node
                   </Button>
@@ -423,14 +414,14 @@ export default function AiCodeGeneratorPage() {
           <Card className="glass-card border-border shadow-2xl overflow-hidden relative group">
             <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-1000 pointer-events-none" />
             <CardHeader className="py-6 border-b border-border bg-secondary/30">
-              <CardTitle className="text-[10px] font-black uppercase tracking-[0.3em] flex items-center gap-4 text-white">
+              <CardTitle className="text-[10px] font-black uppercase tracking-[0.3em] flex items-center gap-4   ">
                 <Settings2 className="w-5 h-5 text-primary" /> Details
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-8 space-y-8">
               <div className="space-y-6">
                 <div className="space-y-4">
-                  <Label className="text-[10px] font-black text-white/40 uppercase tracking-widest ml-1">
+                  <Label className="text-[10px] font-black   /40 uppercase tracking-widest ml-1">
                     Mode
                   </Label>
                   <div className="grid grid-cols-3 gap-2">
@@ -441,7 +432,7 @@ export default function AiCodeGeneratorPage() {
                         className={cn(
                           "flex flex-col items-center justify-center gap-2 py-4 rounded-2xl border transition-all h-20",
                           mode === m.id
-                            ? "bg-primary text-white border-primary shadow-lg"
+                            ? "bg-primary    border-primary shadow-lg"
                             : "bg-secondary/50 border-border text-foreground/40 hover:text-primary",
                         )}
                       >
@@ -455,7 +446,7 @@ export default function AiCodeGeneratorPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-[9px] font-black text-white/40 uppercase ml-1">
+                  <Label className="text-[9px] font-black   /40 uppercase ml-1">
                     {mode === "fix"
                       ? "Code to Fix"
                       : mode === "explain"
@@ -475,7 +466,7 @@ export default function AiCodeGeneratorPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-[9px] font-black text-white/40 uppercase ml-1">
+                  <Label className="text-[9px] font-black   /40 uppercase ml-1">
                     Language
                   </Label>
                   <Select value={language} onValueChange={setLanguage}>
@@ -497,7 +488,7 @@ export default function AiCodeGeneratorPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-[9px] font-black text-white/40 uppercase ml-1">
+                  <Label className="text-[9px] font-black   /40 uppercase ml-1">
                     Extra Details (Optional)
                   </Label>
                   <Textarea
@@ -512,7 +503,7 @@ export default function AiCodeGeneratorPage() {
               <Button
                 onClick={() => handleGenerate()}
                 disabled={isProcessing || !prompt.trim()}
-                className="h-16 w-full bg-primary text-white font-black rounded-2xl shadow-xl shadow-primary/30 text-xs uppercase tracking-widest active:scale-95 transition-all"
+                className="h-16 w-full bg-primary    font-black rounded-2xl shadow-xl shadow-primary/30 text-xs uppercase tracking-widest active:scale-95 transition-all"
               >
                 {isProcessing && !code ? (
                   <Loader2 className="w-5 h-5 animate-spin mr-3" />
@@ -529,7 +520,7 @@ export default function AiCodeGeneratorPage() {
             <CardHeader className="py-4 border-b border-border bg-secondary/30 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-3">
                 <History className="w-4 h-4 text-primary" />
-                <CardTitle className="text-[10px] font-black uppercase tracking-widest text-white">
+                <CardTitle className="text-[10px] font-black uppercase tracking-widest   ">
                   Saved Codes
                 </CardTitle>
               </div>
@@ -551,7 +542,7 @@ export default function AiCodeGeneratorPage() {
                       onClick={() => handleRestore(item)}
                     >
                       <div className="min-w-0 flex-1">
-                        <p className="text-xs font-bold text-white truncate uppercase tracking-tight">
+                        <p className="text-xs font-bold    truncate uppercase tracking-tight">
                           {item.name}
                         </p>
                         <div className="flex items-center gap-3 mt-1">
@@ -563,7 +554,7 @@ export default function AiCodeGeneratorPage() {
                           </Badge>
                           <Badge
                             variant="outline"
-                            className="text-[6px] py-0 px-2 border-white/10 text-white/30 uppercase"
+                            className="text-[6px] py-0 px-2 border-white/10   /30 uppercase"
                           >
                             {item.mode}
                           </Badge>
@@ -632,7 +623,7 @@ export default function AiCodeGeneratorPage() {
                         <Label className="text-[9px] font-black text-primary uppercase tracking-widest">
                           {language} Logic
                         </Label>
-                        <span className="text-[8px] font-mono text-white/20 uppercase">
+                        <span className="text-[8px] font-mono   /20 uppercase">
                           {code.length} bytes isolated
                         </span>
                       </div>
@@ -661,7 +652,7 @@ export default function AiCodeGeneratorPage() {
                           <p className="text-[10px] font-black text-primary uppercase tracking-widest mb-4">
                             Protocol Explanation
                           </p>
-                          <p className="text-[13px] text-white/60 leading-relaxed font-medium relative z-10">
+                          <p className="text-[13px]   /60 leading-relaxed font-medium relative z-10">
                             {explanation}
                           </p>
                         </div>
@@ -669,7 +660,7 @@ export default function AiCodeGeneratorPage() {
                     </div>
                   </div>
                 ) : (
-                  <div className="flex-1 flex flex-col items-center justify-center opacity-10 gap-8 py-40 grayscale pointer-events-none">
+                  <div className="flex-auto flex flex-auto items-center justify-center opacity-10 gap-8 py-40 grayscale pointer-events-none">
                     <Terminal className="w-24 h-24 text-primary" />
                     <p className="text-xl font-headline font-black uppercase tracking-[0.4em]">
                       Your code will show here
@@ -698,7 +689,7 @@ export default function AiCodeGeneratorPage() {
                       <Button
                         onClick={() => handleGenerate(true)}
                         disabled={isProcessing || !improveInput.trim()}
-                        className="h-14 px-8 bg-primary text-white font-black text-[10px] uppercase rounded-2xl shadow-xl shadow-primary/30"
+                        className="h-14 px-8 bg-primary    font-black text-[10px] uppercase rounded-2xl shadow-xl shadow-primary/30"
                       >
                         {isProcessing ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
@@ -726,7 +717,7 @@ export default function AiCodeGeneratorPage() {
                       <Button
                         variant="outline"
                         onClick={handleDownloadCode}
-                        className="h-16 px-8 border-white/10 bg-white/5 text-white font-black uppercase text-[10px] tracking-widest rounded-2xl"
+                        className="h-16 px-8 border-white/10 bg-white/5    font-black uppercase text-[10px] tracking-widest rounded-2xl"
                       >
                         <FileDown className="w-5 h-5" />
                       </Button>
@@ -750,10 +741,10 @@ export default function AiCodeGeneratorPage() {
                 <ShieldCheck className="w-6 h-6" />
               </div>
               <div className="space-y-2">
-                <h4 className="text-[12px] font-black text-white uppercase tracking-widest leading-none">
+                <h4 className="text-[12px] font-black    uppercase tracking-widest leading-none">
                   Privacy Safe
                 </h4>
-                <p className="text-[10px] text-white/40 leading-relaxed font-medium uppercase">
+                <p className="text-[10px]   /40 leading-relaxed font-medium uppercase">
                   All code requests are processed locally in your browser memory
                   via secure server nodes. Hardware identifiers are never
                   logged.
@@ -765,10 +756,10 @@ export default function AiCodeGeneratorPage() {
                 <Zap className="w-7 h-7" />
               </div>
               <div className="space-y-2">
-                <h4 className="text-[12px] font-black text-white uppercase tracking-widest leading-none">
+                <h4 className="text-[12px] font-black    uppercase tracking-widest leading-none">
                   Hybrid Intelligence
                 </h4>
-                <p className="text-[10px] text-white/40 leading-relaxed font-medium uppercase">
+                <p className="text-[10px]   /40 leading-relaxed font-medium uppercase">
                   Utilizing high-performance Gemini and Llama 3 models for
                   architectural precision and clinical data translation.
                 </p>
@@ -777,7 +768,39 @@ export default function AiCodeGeneratorPage() {
           </div>
         </div>
       </div>
-
+      <section className="mx-auto mt-20 w-full max-w-4xl border-t border-border pt-12">
+        <h2 className="text-center text-2xl font-semibold text-foreground">
+          FAQ
+        </h2>
+        <div className="mt-8 grid gap-4 md:grid-cols-3">
+          <article className="rounded-2xl border border-border bg-card p-5">
+            <h3 className="text-sm font-semibold text-foreground">
+              Is this free?
+            </h3>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Yes. Generate code on this page with no signup.
+            </p>
+          </article>
+          <article className="rounded-2xl border border-border bg-card p-5">
+            <h3 className="text-sm font-semibold text-foreground">
+              Which languages work?
+            </h3>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Ask for HTML, CSS, JavaScript, React, Python, or another language
+              you need.
+            </p>
+          </article>
+          <article className="rounded-2xl border border-border bg-card p-5">
+            <h3 className="text-sm font-semibold text-foreground">
+              Should I test the code?
+            </h3>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Yes. Review and test the output before you use it in a live
+              project.
+            </p>
+          </article>
+        </div>
+      </section>
       <style jsx global>{`
         .custom-scrollbar::-webkit-scrollbar {
           width: 4px;

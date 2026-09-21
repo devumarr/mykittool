@@ -174,9 +174,8 @@ export default function WifiQrDecoderPage() {
               <span className="text-primary italic">Password Finder</span>
             </h1>
             <p className="text-foreground/40 text-sm md:text-base font-medium mt-2 max-w-2xl leading-relaxed">
-              Professional network credential extraction. Recover SSID,
-              passwords, and security protocols from WiFi QR codes locally and
-              securely.
+              Upload or scan a WiFi QR code to read the network name and
+              password on this page.
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -201,7 +200,7 @@ export default function WifiQrDecoderPage() {
           <Card className="glass-card border-border shadow-2xl overflow-hidden relative flex flex-col min-h-[350px] max-h-[45vh] lg:max-h-none lg:min-h-[600px] bg-background/60">
             <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
             <CardHeader className="py-4 border-b border-white/5 bg-white/5 flex flex-row items-center justify-between shrink-0">
-              <CardTitle className="text-[9px] font-black text-primary uppercase tracking-[0.4em] flex items-center gap-2">
+              <CardTitle className="text-[9px] font-black font-bold text-primary uppercase tracking-[0.4em] flex items-center gap-2">
                 <Scan className="w-3.5 h-3.5" /> PREVIEW
               </CardTitle>
               {image && (
@@ -216,10 +215,10 @@ export default function WifiQrDecoderPage() {
                   onClick={() => fileInputRef.current?.click()}
                   className="flex-1 flex flex-col items-center justify-center gap-6 cursor-pointer group w-full text-center border-2 border-dashed border-white/10 rounded-[2.5rem] hover:border-primary/40 transition-all"
                 >
-                  <div className="w-16 h-16 rounded-[1.5rem] bg-white/5 flex items-center justify-center text-white/10 group-hover:text-primary group-hover:scale-110 transition-all">
+                  <div className="w-16 h-16 rounded-[1.5rem] flex items-center justify-center font-bold  group-hover:text-primary group-hover:scale-110 transition-all">
                     <Upload className="w-8 h-8" />
                   </div>
-                  <span className="text-[10px] font-black uppercase text-white/30 tracking-widest">
+                  <span className="text-[10px]  font-bold uppercase  tracking-widest">
                     Import WiFi QR Image
                   </span>
                   <input
@@ -450,7 +449,37 @@ export default function WifiQrDecoderPage() {
           </Card>
         </div>
       </div>
-
+      <section className="mx-auto mt-20 w-full max-w-4xl border-t border-border pt-12">
+        <h2 className="text-center text-2xl font-semibold text-foreground">
+          FAQ
+        </h2>
+        <div className="mt-8 grid gap-4 md:grid-cols-3">
+          <article className="rounded-2xl border border-border bg-card p-5">
+            <h3 className="text-sm font-semibold text-foreground">
+              What does this tool do?
+            </h3>
+            <p className="mt-2 text-sm text-muted-foreground">
+              It reads a WiFi QR code so you can see the SSID and password.
+            </p>
+          </article>
+          <article className="rounded-2xl border border-border bg-card p-5">
+            <h3 className="text-sm font-semibold text-foreground">
+              Is it free?
+            </h3>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Yes. Use it in your browser with no account.
+            </p>
+          </article>
+          <article className="rounded-2xl border border-border bg-card p-5">
+            <h3 className="text-sm font-semibold text-foreground">
+              What file can I use?
+            </h3>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Use a clear photo or screenshot of the WiFi QR code.
+            </p>
+          </article>
+        </div>
+      </section>
       <style jsx global>{`
         .bg-checkered {
           background-image:

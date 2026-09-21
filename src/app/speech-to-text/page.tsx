@@ -1,27 +1,15 @@
 "use client";
 
-import React, {
-  useState,
-  useEffect,
-  useRef,
-  useCallback,
-  useMemo,
-} from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Mic,
   MicOff,
   Copy,
-  Trash2,
-  Sparkles,
-  Loader2,
-  Info,
   CheckCircle2,
   Languages,
   AlertCircle,
-  Globe,
   ShieldCheck,
   Zap,
-  Volume2,
   Activity,
   History,
   ChevronRight,
@@ -32,18 +20,12 @@ import {
   Play,
   Square,
   Undo2,
-  Download,
   FileText,
-  Save,
-  Clock,
-  User,
-  ShieldAlert,
-  ArrowRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+
 import {
   Select,
   SelectContent,
@@ -52,7 +34,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
+
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { GetHelp } from "@/components/mykittool/get-help";
@@ -300,9 +282,8 @@ export default function SpeechToTextPage() {
             <span className="text-primary italic">Text Studio Pro</span>
           </h1>
           <p className="text-foreground/40 text-sm md:text-base font-medium mt-4 max-w-2xl leading-relaxed">
-            Advanced real-time voice transcription. Convert multi-node audio
-            streams into professional text matrices with session history and
-            local privacy logic.
+            Turn your voice into text in the browser. Allow microphone access,
+            speak, and copy the result.
           </p>
         </div>
         <div className="flex items-center gap-3 shrink-0 pb-2">
@@ -331,14 +312,15 @@ export default function SpeechToTextPage() {
             <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
             <CardHeader className="pb-8 border-b border-border bg-secondary/30">
               <CardTitle className="text-[10px] font-black uppercase tracking-[0.3em] flex items-center gap-4 text-foreground">
-                <Settings2 className="w-5 h-5 text-primary" /> Matrix Preview
+                <Settings2 className="w-5 h-5 text-primary" />
+                Preview
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-10 space-y-10">
               <div className="space-y-6">
                 <div className="space-y-4">
                   <Label className="text-[10px] font-black text-foreground/40 uppercase tracking-[0.2em] ml-1">
-                    Linguistic Profile (Language)
+                    Language
                   </Label>
                   <Select
                     value={language}
@@ -411,7 +393,7 @@ export default function SpeechToTextPage() {
                         </div>
                         <div className="space-y-1">
                           <h4 className="text-[11px] font-black uppercase text-amber-600 tracking-widest">
-                            Protocol Paused
+                            Paused
                           </h4>
                           <p className="text-[9px] text-foreground/30 font-medium uppercase">
                             Buffer held in memory
@@ -469,7 +451,7 @@ export default function SpeechToTextPage() {
                         onClick={startStudio}
                         className="h-16 flex-1 bg-primary text-white font-black uppercase tracking-widest text-[11px] rounded-2xl shadow-xl shadow-primary/30 active:scale-95 transition-all"
                       >
-                        <Mic className="w-5 h-5 mr-3" /> startStudio
+                        <Mic className="w-5 h-5 mr-3" /> start
                       </Button>
                     )}
 
@@ -515,7 +497,7 @@ export default function SpeechToTextPage() {
                   <Type className="w-5 h-5" />
                 </div>
                 <CardTitle className="text-[10px] font-black text-primary uppercase tracking-[0.5em]">
-                  Identity Output
+                  Output
                 </CardTitle>
               </div>
               {transcript && (
@@ -548,7 +530,7 @@ export default function SpeechToTextPage() {
                     <div className="h-full flex flex-col items-center justify-center opacity-10 space-y-6 py-20 pointer-events-none">
                       <Activity className="w-24 h-24 text-primary" />
                       <p className="text-sm font-black uppercase tracking-[0.3em]">
-                        Awaiting Linguistic Signal
+                        NO DATA
                       </p>
                     </div>
                   )}
@@ -607,7 +589,7 @@ export default function SpeechToTextPage() {
               <div className="flex items-center gap-3">
                 <History className="w-4 h-4 text-primary" />
                 <CardTitle className="text-[10px] font-black uppercase tracking-[0.3em] text-foreground">
-                  Archive Registry
+                  History
                 </CardTitle>
               </div>
               {history.length > 0 && (
@@ -624,7 +606,7 @@ export default function SpeechToTextPage() {
                 <div className="py-20 text-center opacity-10 space-y-4">
                   <Activity className="w-10 h-10 mx-auto" />
                   <p className="text-[10px] font-black uppercase tracking-widest">
-                    Zero Matrix History
+                    NO History
                   </p>
                 </div>
               ) : (
@@ -657,6 +639,37 @@ export default function SpeechToTextPage() {
           </Card>
         </div>
       </div>
+      <section className="mx-auto mt-20 w-full max-w-4xl border-t border-border pt-12">
+        <h2 className="text-center text-2xl font-semibold text-foreground">
+          FAQ
+        </h2>
+        <div className="mt-8 grid gap-4 md:grid-cols-3">
+          <article className="rounded-2xl border border-border bg-card p-5">
+            <h3 className="text-sm font-semibold text-foreground">
+              Does this work in the browser?
+            </h3>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Yes. Use a supported browser and allow the microphone.
+            </p>
+          </article>
+          <article className="rounded-2xl border border-border bg-card p-5">
+            <h3 className="text-sm font-semibold text-foreground">
+              Do I upload a file?
+            </h3>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Live dictation runs on this page. Speak, then copy the text.
+            </p>
+          </article>
+          <article className="rounded-2xl border border-border bg-card p-5">
+            <h3 className="text-sm font-semibold text-foreground">
+              Is this free?
+            </h3>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Yes. Open the tool and start.
+            </p>
+          </article>
+        </div>
+      </section>
 
       <style jsx global>{`
         .custom-scrollbar::-webkit-scrollbar {

@@ -1,9 +1,8 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Mail,
-  Send,
   Trash2,
   Copy,
   CheckCircle2,
@@ -14,19 +13,8 @@ import {
   Zap,
   History,
   Activity,
-  User,
   ShieldCheck,
-  Edit3,
   ChevronRight,
-  Sparkles,
-  AlignLeft,
-  ArrowRight,
-  Check,
-  Languages,
-  Clock,
-  Smartphone,
-  Save,
-  FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -41,7 +29,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { cn } from "@/lib/utils";
+
 import { GetHelp } from "@/components/mykittool/get-help";
 import { Badge } from "@/components/ui/badge";
 
@@ -188,18 +176,18 @@ export default function AiEmailWriterPage() {
   };
 
   return (
-    <div className="container mx-auto px-4 md:px-6 py-12 md:py-20 max-w-full bg-[#0a0a0c] min-h-screen">
+    <div className="container mx-auto px-4 md:px-6 py-12 md:py-20 max-w-full bg-backgound min-h-screen">
       <div className="mb-12 animate-reveal flex flex-col md:flex-row md:items-end justify-between gap-8">
         <div className="min-w-0">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-primary/10 border border-primary/20 text-[9px] font-black text-primary uppercase tracking-widest mb-4">
             <Mail className="w-3.5 h-3.5" /> Linguistic Studio
           </div>
-          <h1 className="text-3xl md:text-6xl font-headline font-black text-white uppercase tracking-tight leading-none">
+          <h1 className="text-3xl md:text-6xl font-headline font-black  uppercase tracking-tight leading-none">
             AI Email <span className="text-primary italic">Writer</span>
           </h1>
-          <p className="text-white/40 text-sm md:text-base font-medium mt-4 max-w-2xl leading-relaxed">
-            Write professional emails in seconds. Local-only processing with
-            precision tone controls and multi-language support.
+          <p className="mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground">
+            Describe the email you need. Get a clean draft, then copy and send
+            it.
           </p>
         </div>
         <div className="flex items-center gap-3 shrink-0 pb-2">
@@ -220,14 +208,14 @@ export default function AiEmailWriterPage() {
         <div className="lg:col-span-5 xl:col-span-4 space-y-8 animate-in fade-in slide-in-from-left-6 duration-700">
           <Card className="glass-card border-border shadow-2xl overflow-hidden relative group">
             <CardHeader className="py-6 border-b border-border bg-secondary/30">
-              <CardTitle className="text-[10px] font-black uppercase tracking-[0.3em] flex items-center gap-4 text-white">
+              <CardTitle className="text-[10px] font-black uppercase tracking-[0.3em] flex items-center gap-4 ">
                 <Settings2 className="w-5 h-5 text-primary" /> Email Details
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-8 space-y-8">
               <div className="space-y-6">
                 <div className="space-y-2">
-                  <Label className="text-[9px] font-black text-white/40 uppercase ml-1">
+                  <Label className="text-[9px] font-black uppercase ml-1">
                     Purpose of writing
                   </Label>
                   <Input
@@ -238,7 +226,7 @@ export default function AiEmailWriterPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-[9px] font-black text-white/40 uppercase ml-1">
+                  <Label className="text-[9px] font-black  uppercase ml-1">
                     Recipient
                   </Label>
                   <Input
@@ -251,7 +239,7 @@ export default function AiEmailWriterPage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label className="text-[9px] font-black text-white/40 uppercase ml-1">
+                    <Label className="text-[9px] font-black  uppercase ml-1">
                       Tone
                     </Label>
                     <Select value={tone} onValueChange={setTone}>
@@ -274,7 +262,7 @@ export default function AiEmailWriterPage() {
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-[9px] font-black text-white/40 uppercase ml-1">
+                    <Label className="text-[9px] font-black  uppercase ml-1">
                       Length
                     </Label>
                     <Select value={length} onValueChange={setLength}>
@@ -297,7 +285,7 @@ export default function AiEmailWriterPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-[9px] font-black text-white/40 uppercase ml-1">
+                  <Label className="text-[9px] font-black  uppercase ml-1">
                     Language
                   </Label>
                   <Select value={language} onValueChange={setLanguage}>
@@ -319,7 +307,7 @@ export default function AiEmailWriterPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-[9px] font-black text-white/40 uppercase ml-1">
+                  <Label className="text-[9px] font-black  uppercase ml-1">
                     Extra Points (Optional)
                   </Label>
                   <Textarea
@@ -351,7 +339,7 @@ export default function AiEmailWriterPage() {
             <CardHeader className="py-4 border-b border-border bg-secondary/30 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-3">
                 <History className="w-4 h-4 text-primary" />
-                <CardTitle className="text-[10px] font-black uppercase tracking-widest text-white">
+                <CardTitle className="text-[10px] font-black uppercase tracking-widest">
                   Saved Emails
                 </CardTitle>
               </div>
@@ -508,10 +496,10 @@ export default function AiEmailWriterPage() {
                 <ShieldCheck className="w-6 h-6" />
               </div>
               <div className="space-y-2">
-                <h4 className="text-[12px] font-black text-white uppercase tracking-widest leading-none">
+                <h4 className="text-[12px] font-black  uppercase tracking-widest leading-none">
                   Privacy Safe
                 </h4>
-                <p className="text-[10px] text-white/40 leading-relaxed font-medium uppercase">
+                <p className="text-[10px]  leading-relaxed font-medium uppercase">
                   Linguistic synthesis occurs via secure server nodes. No data
                   is stored or logged on remote servers.
                 </p>
@@ -522,10 +510,10 @@ export default function AiEmailWriterPage() {
                 <Zap className="w-6 h-6" />
               </div>
               <div className="space-y-2">
-                <h4 className="text-[12px] font-black text-white uppercase tracking-widest leading-none">
+                <h4 className="text-[12px] font-black  uppercase tracking-widest leading-none">
                   Instant Handshake
                 </h4>
-                <p className="text-[10px] text-white/40 leading-relaxed font-medium uppercase">
+                <p className="text-[10px] leading-relaxed font-medium uppercase">
                   Utilizing high-performance Llama 3 models for zero-latency
                   communication production.
                 </p>
@@ -534,7 +522,37 @@ export default function AiEmailWriterPage() {
           </div>
         </div>
       </div>
-
+      <section className="mx-auto mt-20 w-full max-w-4xl border-t border-border pt-12">
+        <h2 className="text-center text-2xl font-semibold text-foreground">
+          FAQ
+        </h2>
+        <div className="mt-8 grid gap-4 md:grid-cols-3">
+          <article className="rounded-2xl border border-border bg-card p-5">
+            <h3 className="text-sm font-semibold text-foreground">
+              Is this free?
+            </h3>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Yes. Write emails on this page with no signup.
+            </p>
+          </article>
+          <article className="rounded-2xl border border-border bg-card p-5">
+            <h3 className="text-sm font-semibold text-foreground">
+              What should I type?
+            </h3>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Who it is for, why you are writing, and the tone you want.
+            </p>
+          </article>
+          <article className="rounded-2xl border border-border bg-card p-5">
+            <h3 className="text-sm font-semibold text-foreground">
+              Can I edit the draft?
+            </h3>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Yes. Change the text, then copy it to your email app.
+            </p>
+          </article>
+        </div>
+      </section>
       <style jsx global>{`
         .custom-scrollbar::-webkit-scrollbar {
           width: 4px;
