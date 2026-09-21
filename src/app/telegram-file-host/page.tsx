@@ -777,7 +777,7 @@ export default function FILEHOSTPage() {
                     {[
                       {
                         label: "Proxy Protocol Link",
-                        val: `https://mykittool.app/api/telegram-proxy?fileId=${result.fileId}`,
+                        val: `https://mykittool.online/api/telegram-proxy?fileId=${result.fileId}`,
                         icon: LinkIcon,
                       },
                       {
@@ -977,7 +977,7 @@ export default function FILEHOSTPage() {
                                 label: "Proxy Link",
                                 val:
                                   generatedUrls[item.id] ||
-                                  `https://mykittool.app/api/telegram-proxy?fileId=${item.data.fileId}`,
+                                  `https://mykittool.online/api/telegram-proxy?fileId=${item.data.fileId}`,
                                 icon: LinkIcon,
                               },
                               {

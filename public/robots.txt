@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://mykittool.vercel.app/sitemap.xml
+Sitemap: https://mykittool.online/sitemap.xml

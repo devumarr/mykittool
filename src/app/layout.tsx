@@ -29,7 +29,7 @@ export const metadata: Metadata = {
   authors: [{ name: "My Kit Tool" }],
   creator: "My Kit Tool",
   publisher: "My Kit Tool",
-  metadataBase: new URL("https://mykittool.vercel.app"),
+  metadataBase: new URL("https://mykittool.online"),
   alternates: {
     canonical: "/",
   },
@@ -43,7 +43,7 @@ export const metadata: Metadata = {
       "Free online tools for chat, resume, images, logos, code, email and more.",
     type: "website",
     locale: "en_US",
-    url: "https://mykittool.vercel.app",
+    url: "https://mykittool.online",
     siteName: "My Kit Tool",
     images: [
       {
@@ -70,6 +70,11 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <meta
+          name="google-site-verification"
+          content="GHsPI98ad8DlC39-vEjbOFWp58R1dhIkzyM0ta2u9Ao"
+        />
+
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
           rel="preconnect"
@@ -93,11 +98,11 @@ export default function RootLayout({
               "@type": "WebSite",
               name: "My Kit Tool",
               alternateName: ["MyKitTool", "mykittool"],
-              url: "https://mykittool.vercel.app",
+              url: "https://mykittool.online",
               publisher: {
                 "@type": "Organization",
                 name: "My Kit Tool",
-                url: "https://mykittool.vercel.app",
+                url: "https://mykittool.online",
               },
             }),
           }}

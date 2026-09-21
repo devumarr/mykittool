@@ -160,7 +160,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const uniqueRoutes = [...new Set(allRoutes)];
 
   const routes = uniqueRoutes.map((route) => ({
-    url: `https://mykittool.vercel.app${route}`,
+    url: `https://mykittool.online${route}`,
     lastModified: LASTMOD,
     changeFrequency: "weekly" as const,
     priority: priorityFor(route),
@@ -168,7 +168,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   return [
     {
-      url: "https://mykittool.vercel.app",
+      url: "https://mykittool.online",
       lastModified: LASTMOD,
       changeFrequency: "weekly" as const,
       priority: 1,

@@ -268,7 +268,7 @@ export default function IpFinderPage() {
 
   const handleShare = () => {
     if (!data) return;
-    const text = `IP Finder Results: ${data.ip} (${data.country}). Identified via mykittool.app`;
+    const text = `IP Finder Results: ${data.ip} (${data.country}). Identified via mykittool.online`;
     if (navigator.share) {
       navigator.share({ title: "My Kit Tool IP Finder", text });
     } else {

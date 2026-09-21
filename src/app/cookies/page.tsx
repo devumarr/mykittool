@@ -22,7 +22,7 @@ export default function CookiePolicyPage() {
       icon: Info,
       title: "How to Manage",
       content:
-        "You can clear all stored data by resetting the studio Preview within the app or by clearing your browser's cache and site data for mykittool.app.",
+        "You can clear all stored data by resetting the studio Preview within the app or by clearing your browser's cache and site data for mykittool.online.",
     },
   ];
 

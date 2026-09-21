@@ -69,7 +69,7 @@ export default function FactStudioPage() {
 
   const handleCopy = () => {
     if (!fact) return;
-    const text = `${fact.text}\n\n— Generated via mykittool.app`;
+    const text = `${fact.text}\n\n— Generated via mykittool.online`;
     navigator.clipboard.writeText(text);
     setIsCopied(true);
     toast({
@@ -81,7 +81,7 @@ export default function FactStudioPage() {
 
   const handleShare = async () => {
     if (!fact) return;
-    const text = `${fact.text} — Shared via mykittool.app`;
+    const text = `${fact.text} — Shared via mykittool.online`;
     if (navigator.share) {
       try {
         await navigator.share({ title: "Fact Studio Knowledge", text });
