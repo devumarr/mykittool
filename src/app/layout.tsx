@@ -21,10 +21,14 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: "My Kit Tool | Free Online Tools",
-  description: "Free AI, PDF And Image Tools In Your Broswer.",
+  description:
+    "Free online tools for chat, resume, images, logos, code, email and more. Use My Kit Tool in your browser.",
+  applicationName: "My Kit Tool",
   keywords:
     "free online tools, ai tools, pdf editor, image converter, qr code generator, developer tools, my kit tool, privacy-focused tools, browser-based utilities",
-  authors: [{ name: "UMAR FAROOQ" }],
+  authors: [{ name: "My Kit Tool" }],
+  creator: "My Kit Tool",
+  publisher: "My Kit Tool",
   metadataBase: new URL("https://mykittool.vercel.app"),
   alternates: {
     canonical: "/",
@@ -35,10 +39,11 @@ export const metadata: Metadata = {
   openGraph: {
     title: "My Kit Tool | Free Online Tools",
     description:
-      "120+ free online tools for AI, PDF, Images, and more at My Kit Tool. Fast, private, and secure.",
+      "Free online tools for chat, resume, images, logos, code, email and more.",
     type: "website",
+    locale: "en_US",
     url: "https://mykittool.vercel.app",
-    siteName: "MY KIT TOOL",
+    siteName: "My Kit Tool",
     images: [
       {
         url: "/og-image.png",
@@ -51,11 +56,11 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "My Kit Tool | Free Online Tools",
-    description: "Free AI, PDF and image tools in your browser.",
+    description:
+      "Free online tools for chat, resume, images, logos, code, email and more.",
     images: ["/twitter-image.png"],
   },
 };
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -79,6 +84,23 @@ export default function RootLayout({
         className="font-body bg-background text-foreground antialiased selection:bg-primary/20 selection:text-foreground overflow-x-hidden w-full max-w-full"
         suppressHydrationWarning
       >
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebSite",
+              name: "My Kit Tool",
+              alternateName: ["MyKitTool", "mykittool"],
+              url: "https://mykittool.vercel.app",
+              publisher: {
+                "@type": "Organization",
+                name: "My Kit Tool",
+                url: "https://mykittool.vercel.app",
+              },
+            }),
+          }}
+        />
         <ThemeProvider>
           <FirebaseClientProvider>
             <UsageTracker />
