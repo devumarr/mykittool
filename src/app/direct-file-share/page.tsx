@@ -71,6 +71,7 @@ export default function DirectFileSharePage() {
   const [shouldZip, setShouldZip] = useState(false);
   const filesRef = useRef(files);
   const shouldZipRef = useRef(shouldZip);
+
   useEffect(() => {
     filesRef.current = files;
   }, [files]);
@@ -281,27 +282,18 @@ export default function DirectFileSharePage() {
   }, [peerId]);
 
   useEffect(() => {
-    if (showQr && qrRef.current && shareUrl) {
-      const render = async () => {
-        if (!(window as any).QRCodeStyling) return;
-        qrRef.current!.innerHTML = "";
-        qrInstance.current = new (window as any).QRCodeStyling({
-          width: 300,
-          height: 300,
-          data: shareUrl,
-          dotsOptions: { color: "#3b82f6", type: "extra-rounded" },
-          backgroundOptions: { color: "transparent" },
-          cornersSquareOptions: { type: "extra-rounded", color: "#3b82f6" },
-          imageOptions: {
-            hideBackgroundDots: true,
-            imageSize: 0.4,
-            margin: 10,
-          },
-        });
-        qrInstance.current.append(qrRef.current);
-      };
-      render();
-    }
+    if (!showQr || !shareUrl || !qrRef.current) return;
+
+    const box = qrRef.current;
+    box.innerHTML = "";
+
+    const img = document.createElement("img");
+    img.alt = "Share QR";
+    img.width = 280;
+    img.height = 280;
+    img.className = "h-[280px] w-[280px] rounded-xl";
+    img.src = `https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(shareUrl)}`;
+    box.appendChild(img);
   }, [showQr, shareUrl]);
 
   const handleCopyLink = () => {
@@ -346,31 +338,30 @@ export default function DirectFileSharePage() {
             <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
 
             {/* Header Bar */}
-            <div className="p-6 border-b border-white/5 bg-background flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shadow-inner border border-primary/20">
-                  <FileIcon className="w-5 h-5" />
+            <div className="flex items-center justify-between border-b border-border bg-card/70 px-5 py-4 sm:px-6">
+              <div className="flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/20 to-primary/5 text-primary shadow-[0_8px_20px_-12px_hsl(var(--primary))] transition-transform duration-300 hover:-translate-y-0.5">
+                  <FileIcon className="h-5 w-5" />
                 </div>
-                <div className="space-y-0.5">
-                  <h4 className="text-[10px] font-black uppercase text-foreground">
-                    File Queue
+                <div>
+                  <h4 className="text-sm font-semibold text-foreground">
+                    File queue
                   </h4>
-                  <p className="text-[8px] font-bold text-foreground/30 uppercase tracking-widest">
-                    {files.length} items ready
+                  <p className="text-[11px] text-muted-foreground">
+                    {files.length} {files.length === 1 ? "item" : "items"} ready
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="p-2 rounded-xl bg-primary text-white shadow-lg hover:scale-105 active:scale-95 transition-all"
-                >
-                  <Plus className="w-4 h-4" />
-                </button>
-              </div>
+
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-[0_10px_24px_-10px_hsl(var(--primary))] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_16px_30px_-12px_hsl(var(--primary))] active:scale-95"
+              >
+                <Plus className="h-5 w-5" />
+              </button>
             </div>
 
-            <CardContent className="flex-1 flex flex-col p-6 sm:p-10">
+            <CardContent className="flex flex-1 flex-col p-5 sm:p-7">
               {files.length === 0 ? (
                 <div
                   onClick={() => fileInputRef.current?.click()}
@@ -379,17 +370,17 @@ export default function DirectFileSharePage() {
                     e.preventDefault();
                     if (e.dataTransfer.files) handleFiles(e.dataTransfer.files);
                   }}
-                  className="flex-1 border-2 border-dashed border-white/10 rounded-[2.5rem] flex flex-col items-center justify-center gap-6 cursor-pointer hover:border-primary/40 transition-all bg-background group"
+                  className="group flex flex-1 cursor-pointer flex-col items-center justify-center gap-5 rounded-[1.8rem] border border-dashed border-border bg-background/60 px-6 py-12 transition-all duration-300 hover:border-primary/40 hover:bg-primary/5"
                 >
-                  <div className="w-20 h-20 rounded-[2rem] bg-white/5 flex items-center justify-center text-white/10 group-hover:text-primary group-hover:scale-110 transition-all">
-                    <Upload className="w-10 h-10" />
+                  <div className="flex h-16 w-16 items-center justify-center rounded-3xl border border-border bg-card text-primary shadow-sm transition-transform duration-300 group-hover:-translate-y-1 group-hover:scale-105">
+                    <Upload className="h-7 w-7" />
                   </div>
-                  <div className="text-center space-y-2">
-                    <span className="text-sm bg-background font-headline font-black uppercase  group-hover:text-Grey transition-colors">
-                      Select files to send
-                    </span>
-                    <p className="text-[9px] bg-background font-bold uppercase tracking-widest">
-                      Max 100MB Recommended
+                  <div className="text-center">
+                    <p className="text-sm font-medium text-foreground">
+                      Drop files or tap to add
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      No Limit Of File
                     </p>
                   </div>
                   <input
@@ -403,85 +394,83 @@ export default function DirectFileSharePage() {
                   />
                 </div>
               ) : (
-                <div className="space-y-8 animate-in fade-in duration-500">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                <div className="space-y-6">
+                  <div className="custom-scrollbar grid max-h-[360px] grid-cols-1 gap-3 overflow-y-auto pr-1 sm:grid-cols-2">
                     {files.map((f) => (
                       <div
                         key={f.id}
-                        className="p-4 rounded-3xl bg-background border border-white/5 flex items-center gap-4 group/item"
+                        className="group/item flex items-center gap-3 rounded-2xl border border-border bg-background p-3 transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md"
                       >
-                        <div className="w-12 h-12 rounded-2xl bg-secondary flex items-center justify-center overflow-hidden shrink-0 border border-border">
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border bg-secondary">
                           {f.preview ? (
                             <img
                               src={f.preview}
-                              className="w-full h-full object-cover"
+                              className="h-full w-full object-cover"
                             />
                           ) : (
-                            <FileIcon className="w-5 h-5 text-primary/40" />
+                            <FileIcon className="h-5 w-5 text-primary" />
                           )}
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-[11px] font-bold text-white truncate uppercase">
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium text-foreground">
                             {f.name}
                           </p>
-                          <p className="text-[9px] text-white/20 font-black">
+                          <p className="text-[11px] text-muted-foreground">
                             {(f.size / (1024 * 1024)).toFixed(1)} MB
                           </p>
                         </div>
                         <button
                           onClick={() => removeFile(f.id)}
-                          className="w-8 h-8 rounded-lg bg-red-500/10 text-red-500 flex items-center justify-center opacity-0 group-hover/item:opacity-100 transition-all hover:bg-red-500 hover:text-white"
+                          className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-all hover:bg-red-500 hover:text-white sm:opacity-0 sm:group-hover/item:opacity-100"
                         >
-                          <X className="w-4 h-4" />
+                          <X className="h-4 h-4" />
                         </button>
                       </div>
                     ))}
                   </div>
 
                   {peerId ? (
-                    <div className="pt-8 border-t border-white/5 space-y-10">
-                      <div className="flex flex-col items-center text-center gap-6">
-                        <div className="space-y-4 w-full">
-                          <Label className="text-[10px] font-black uppercase text-primary tracking-[0.4em]">
-                            Copy this link to share
-                          </Label>
-                          <div className="p-6 bg-background rounded-[2.5rem] border border-primary/20 shadow-2xl relative group/url overflow-hidden max-w-full">
-                            <p className="text-lg sm:text-xl font-bold text-white break-all leading-tight">
-                              {shareUrl}
-                            </p>
-                          </div>
-                          <div className="flex flex-wrap justify-center gap-4">
-                            <Button
-                              onClick={handleCopyLink}
-                              className="h-14 px-8 bg-primary text-white font-black rounded-2xl shadow-xl"
+                    <div className="space-y-5 border-t border-border pt-6">
+                      <div className="text-center">
+                        <Label className="text-[11px] font-medium uppercase tracking-[0.18em] text-primary">
+                          Share this link
+                        </Label>
+                        <div className="mt-3 overflow-hidden rounded-2xl border border-border bg-background px-4 py-4">
+                          <p className="break-all text-sm font-medium text-foreground">
+                            {shareUrl}
+                          </p>
+                        </div>
+                        <div className="mt-4 flex flex-wrap justify-center gap-3">
+                          <Button
+                            onClick={handleCopyLink}
+                            className="h-11 rounded-xl px-5 shadow-[0_10px_24px_-12px_hsl(var(--primary))] transition-transform hover:-translate-y-0.5"
+                          >
+                            {isCopied ? (
+                              <CheckCircle2 className="mr-2 h-4 w-4" />
+                            ) : (
+                              <Copy className="mr-2 h-4 w-4" />
+                            )}
+                            {isCopied ? "Copied" : "Copy link"}
+                          </Button>
+                          <Button
+                            onClick={() => setShowQr(true)}
+                            variant="outline"
+                            className="h-11 rounded-xl px-4 transition-transform hover:-translate-y-0.5"
+                          >
+                            <QrCode className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            asChild
+                            variant="outline"
+                            className="h-11 rounded-xl px-4 transition-transform hover:-translate-y-0.5"
+                          >
+                            <a
+                              href={`https://wa.me/?text=${encodeURIComponent("I sent you some files: " + shareUrl)}`}
+                              target="_blank"
                             >
-                              {isCopied ? (
-                                <CheckCircle2 className="w-5 h-5 mr-2" />
-                              ) : (
-                                <Copy className="w-5 h-5 mr-2" />
-                              )}
-                              Copy link
-                            </Button>
-                            <Button
-                              onClick={() => setShowQr(true)}
-                              variant="outline"
-                              className="h-14 px-6 border-white/10 bg-white/5 text-white font-black rounded-2xl"
-                            >
-                              <QrCode className="w-5 h-5" />
-                            </Button>
-                            <Button
-                              asChild
-                              variant="outline"
-                              className="h-14 px-6 border-white/10 bg-white/5 text-white font-black rounded-2xl"
-                            >
-                              <a
-                                href={`https://wa.me/?text=${encodeURIComponent("I sent you some files: " + shareUrl)}`}
-                                target="_blank"
-                              >
-                                <MessageCircle className="w-5 h-5" />
-                              </a>
-                            </Button>
-                          </div>
+                              <MessageCircle className="h-4 w-4" />
+                            </a>
+                          </Button>
                         </div>
                       </div>
 
@@ -554,36 +543,43 @@ export default function DirectFileSharePage() {
         </div>
 
         {/* Sidebar Controls */}
-        <div className="lg:col-span-5 xl:col-span-4 space-y-8 animate-in fade-in slide-in-from-right-6 duration-1000">
-          {/* Performance Tips */}
-          <Card className="glass-card border-border shadow-xl">
-            <CardContent className="p-8 space-y-6">
+        <div className="space-y-6 lg:col-span-5 xl:col-span-4">
+          <Card className="overflow-hidden border-border bg-card shadow-sm">
+            <CardContent className="space-y-4 p-5 sm:p-6">
               {[
                 {
                   icon: Zap,
-                  title: "WiFi Best",
-                  desc: "Sharing between devices on the same network is 10x faster.",
+                  title: "Wi‑Fi is faster",
+                  desc: "Transfers are much quicker when both devices are on the same network.",
+                  tone: "from-amber-400/20 to-orange-500/10 text-amber-600 dark:text-amber-400",
                 },
                 {
                   icon: Smartphone,
-                  title: "No Sleep",
-                  desc: "Ensure your phone doesn't auto-lock during large transfers.",
+                  title: "Keep screens on",
+                  desc: "Do not lock the phone or close the tab while a large file is sending.",
+                  tone: "from-sky-400/20 to-blue-500/10 text-sky-600 dark:text-sky-400",
                 },
                 {
                   icon: ShieldCheck,
-                  title: "Peer-to-Peer",
-                  desc: "Files flow directly. Nothing is stored in the cloud.",
+                  title: "Direct transfer",
+                  desc: "Files move device to device. Nothing is stored in the cloud.",
+                  tone: "from-emerald-400/20 to-teal-500/10 text-emerald-600 dark:text-emerald-400",
                 },
-              ].map((tip, i) => (
-                <div key={i} className="flex gap-5">
-                  <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center text-primary shrink-0 border border-border">
-                    <tip.icon className="w-5 h-5" />
+              ].map((tip) => (
+                <div
+                  key={tip.title}
+                  className="group flex gap-4 rounded-2xl border border-border bg-background/70 p-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/25 hover:shadow-md"
+                >
+                  <div
+                    className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${tip.tone} transition-transform duration-300 group-hover:scale-110`}
+                  >
+                    <tip.icon className="h-5 w-5" />
                   </div>
-                  <div className="space-y-1">
-                    <h4 className="text-[11px] font-black uppercase text-foreground">
+                  <div>
+                    <h4 className="text-sm font-semibold text-foreground">
                       {tip.title}
                     </h4>
-                    <p className="text-[10px] text-foreground/40 leading-relaxed font-medium uppercase">
+                    <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
                       {tip.desc}
                     </p>
                   </div>
@@ -594,37 +590,33 @@ export default function DirectFileSharePage() {
         </div>
       </div>
 
-      {/* QR Modal Overlay */}
       {showQr && (
-        <div className="fixed inset-0 z-[200] bg-background/95 backdrop-blur-2xl flex items-center justify-center p-6 animate-in fade-in duration-500">
-          <div className="w-full max-w-lg space-y-10 text-center">
-            <div className="space-y-4">
-              <h2 className="text-3xl font-headline font-black text-white uppercase tracking-tight">
-                Scan to <span className="text-primary italic">Receive</span>
-              </h2>
-              <p className="text-white/20 text-xs font-black uppercase tracking-widest">
-                Hold your camera to the screen
-              </p>
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-background/80 p-6 backdrop-blur-md">
+          <div className="w-full max-w-md rounded-3xl border border-border bg-card p-6 text-center shadow-2xl sm:p-8">
+            <h2 className="text-2xl font-semibold tracking-tight text-foreground">
+              Scan to receive
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Camera phone se QR scan karo
+            </p>
+
+            <div className="mx-auto mt-6 w-fit rounded-3xl border border-border bg-white p-4 shadow-lg">
+              <div
+                ref={qrRef}
+                className="flex h-[280px] w-[280px] items-center justify-center"
+              />
             </div>
 
-            <div className="relative group/qr mx-auto w-fit">
-              <div className="absolute -inset-10 bg-primary/20 blur-[100px] rounded-full opacity-50" />
-              <div className="relative p-6 bg-white rounded-[3rem] shadow-2xl transition-transform duration-700 group-hover/qr:scale-105">
-                <div
-                  ref={qrRef}
-                  className="w-[300px] h-[300px] bg-white rounded-2xl"
-                />
-              </div>
-            </div>
+            <p className="mt-4 break-all px-2 text-xs text-muted-foreground">
+              {shareUrl}
+            </p>
 
-            <div className="flex justify-center gap-4">
-              <Button
-                onClick={() => setShowQr(false)}
-                className="h-16 px-10 bg-primary text-white font-black rounded-2xl text-xs uppercase tracking-widest shadow-xl shadow-primary/30"
-              >
-                Done
-              </Button>
-            </div>
+            <Button
+              onClick={() => setShowQr(false)}
+              className="mt-6 h-11 rounded-xl px-8"
+            >
+              Done
+            </Button>
           </div>
         </div>
       )}
