@@ -229,10 +229,10 @@ export default function SharePage() {
                 </div>
 
                 <div className="text-center space-y-2 w-full min-w-0">
-                  <h3 className="text-lg font-bold text-white truncate px-4 uppercase">
+                  <h3 className="text-lg font-bold bg-background/10 truncate px-4 uppercase">
                     {meta.name}
                   </h3>
-                  <p className="text-[10px] text-white/20 font-black uppercase tracking-widest">
+                  <p className="text-[10px] bg-background/10 font-black uppercase tracking-widest">
                     {formatSize(meta.size)} • Verified Secure
                   </p>
                 </div>
@@ -252,10 +252,10 @@ export default function SharePage() {
             <div className="text-center space-y-6 animate-in zoom-in">
               <AlertCircle className="w-20 h-20 text-red-500 mx-auto" />
               <div className="space-y-2">
-                <h3 className="text-xl font-headline font-black text-white">
+                <h3 className="text-xl font-headline font-black bg-background/10">
                   Sender Offline
                 </h3>
-                <p className="text-xs text-white/20 font-bold uppercase">
+                <p className="text-xs bg-background/10 font-bold uppercase">
                   The sender closed the page or the link is incorrect.
                 </p>
               </div>
@@ -275,10 +275,10 @@ export default function SharePage() {
             <div className="text-center space-y-6 animate-in zoom-in">
               <AlertCircle className="w-20 h-20 text-orange-500 mx-auto" />
               <div className="space-y-2">
-                <h3 className="text-xl font-headline font-black text-white">
+                <h3 className="text-xl font-headline font-black bg-background/10">
                   System Error
                 </h3>
-                <p className="text-xs text-white/20 font-bold uppercase">
+                <p className="text-xs bg-background/10 font-bold uppercase">
                   {errorMessage}
                 </p>
               </div>
@@ -298,10 +298,10 @@ export default function SharePage() {
         <div className="p-6 rounded-[2rem] bg-secondary/30 border border-white/5 flex items-start gap-4 group hover:bg-secondary/50 transition-all">
           <Globe className="w-5 h-5 text-primary/40 group-hover:text-primary transition-colors" />
           <div className="space-y-1">
-            <h4 className="text-[10px] font-black uppercase text-white/40">
+            <h4 className="text-[10px] font-black uppercase bg-background/10">
               Direct Tunnel
             </h4>
-            <p className="text-[10px] text-white/10 font-bold uppercase">
+            <p className="text-[10px] bg-background/10 font-bold uppercase">
               No server storage
             </p>
           </div>
@@ -309,10 +309,10 @@ export default function SharePage() {
         <div className="p-6 rounded-[2rem] bg-secondary/30 border border-white/5 flex items-start gap-4 group hover:bg-secondary/50 transition-all">
           <Clock className="w-5 h-5 text-primary/40 group-hover:text-primary transition-colors" />
           <div className="space-y-1">
-            <h4 className="text-[10px] font-black uppercase text-white/40">
+            <h4 className="text-[10px] font-black uppercase bg-background/10">
               Real-Time
             </h4>
-            <p className="text-[10px] text-white/10 font-bold uppercase">
+            <p className="text-[10px] bg-background/10 font-bold uppercase">
               Stream memory-to-memory
             </p>
           </div>
@@ -320,10 +320,10 @@ export default function SharePage() {
         <div className="p-6 rounded-[2rem] bg-secondary/30 border border-white/5 flex items-start gap-4 group hover:bg-secondary/50 transition-all">
           <ShieldCheck className="w-5 h-5 text-primary/40 group-hover:text-primary transition-colors" />
           <div className="space-y-1">
-            <h4 className="text-[10px] font-black uppercase text-white/40">
+            <h4 className="text-[10px] font-black uppercase bg-background/10">
               Encrypted
             </h4>
-            <p className="text-[10px] text-white/10 font-bold uppercase">
+            <p className="text-[10px] bg-background/10 font-bold uppercase">
               Private P2P link
             </p>
           </div>
