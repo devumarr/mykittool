@@ -141,8 +141,8 @@ export default function DirectFileSharePage() {
 
   // 2. Transfer Logic
   const startTransfer = async (conn: any) => {
-    const currentFiles = (filesRef.current || []).filter(
-      (f) => f && f.file && (f.file instanceof File || f.file instanceof Blob),
+    const currentFiles: any[] = ((filesRef.current || []) as any[]).filter(
+      (item: any) => item && item.file,
     );
 
     if (!currentFiles.length) {
