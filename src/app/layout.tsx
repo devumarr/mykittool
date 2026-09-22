@@ -55,7 +55,7 @@ export const metadata: Metadata = {
     siteName: "My Kit Tool",
     images: [
       {
-        url: "/og-image.png",
+        url: "https://mykittool.online/og-image.png?v=4",
         width: 1200,
         height: 630,
         alt: "My Kit Tool",
@@ -67,7 +67,7 @@ export const metadata: Metadata = {
     title: "My Kit Tool | Free Online Tools",
     description:
       "Free online tools for chat, resume, images, logos, code, email and more.",
-    images: ["https://mykittool.online/og-image.png"],
+    images: ["https://mykittool.online/og-image.png?v=4"],
   },
 };
 export default function RootLayout({
