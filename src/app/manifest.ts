@@ -27,10 +27,32 @@ export default function manifest(): MetadataRoute.Manifest {
     categories: ["productivity", "utilities", "business"],
     screenshots: [
       {
-        src: "https://picsum.photos/seed/mykit-ss/400/800",
-        sizes: "400x800",
+        src: "/screenshots/home.png",
+        sizes: "1080x1920",
         type: "image/png",
-        label: "MY KIT TOOL Studio Dashboard",
+        form_factor: "narrow",
+        label: "Home — search PDF, image and AI tools",
+      },
+      {
+        src: "/screenshots/library.png",
+        sizes: "1080x1920",
+        type: "image/png",
+        form_factor: "narrow",
+        label: "130+ free tools that work in your browser",
+      },
+      {
+        src: "/screenshots/how.png",
+        sizes: "1080x1920",
+        type: "image/png",
+        form_factor: "narrow",
+        label: "How it works — choose, use, save",
+      },
+      {
+        src: "/screenshots/about.png",
+        sizes: "1080x1920",
+        type: "image/png",
+        form_factor: "narrow",
+        label: "About the builder — free browser tools",
       },
     ],
   };
