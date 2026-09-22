@@ -33,6 +33,14 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "/",
   },
+  icons: {
+    icon: [
+      { url: "/favicon.ico" },
+      { url: "/favicon-96x96.png", sizes: "96x96", type: "image/png" },
+      { url: "/favicon.svg", type: "image/svg+xml" },
+    ],
+    apple: "/apple-touch-icon.png",
+  },
   verification: {
     google: "vMj1XN9ziXyU5kBso8wdA_OhZuzhD0o_BGSrSu9uiGU",
   },
@@ -103,6 +111,7 @@ export default function RootLayout({
                 "@type": "Organization",
                 name: "My Kit Tool",
                 url: "https://mykittool.online",
+                logo: "https://mykittool.online/web-app-manifest-512x512.png",
               },
             }),
           }}
