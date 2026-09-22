@@ -67,7 +67,7 @@ export const metadata: Metadata = {
     title: "My Kit Tool | Free Online Tools",
     description:
       "Free online tools for chat, resume, images, logos, code, email and more.",
-    images: ["/twitter-image.png"],
+    images: ["https://mykittool.online/twitter-image.png"],
   },
 };
 export default function RootLayout({
