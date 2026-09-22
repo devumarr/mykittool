@@ -129,48 +129,47 @@ export function Navbar() {
               <Scan className="h-4 w-4" />
             </button>
 
-            {user && (
-              <button
-                type="button"
-                onClick={() => router.push("/account")}
-                className="h-8 w-8 sm:h-10 sm:w-10 rounded-full overflow-hidden border border-border shrink-0"
-                aria-label="Account"
-              >
-                {user.photoURL ? (
-                  <img
-                    src={user.photoURL}
-                    alt=""
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <span className="h-full w-full flex items-center justify-center bg-primary text-primary-foreground text-xs font-semibold">
-                    {(user.displayName || user.email || "U")
-                      .charAt(0)
-                      .toUpperCase()}
-                  </span>
-                )}
-              </button>
-            )}
-
             <div className="relative" ref={menuRef}>
-              <button
-                type="button"
-                aria-label="Open menu"
-                onClick={() => setMenuOpen((v) => !v)}
-                className="flex h-8 w-8 items-center justify-center rounded-xl bg-secondary/50 text-foreground hover:text-primary sm:h-10 sm:w-10"
-              >
-                {menuOpen ? (
-                  <X className="h-4 w-4" />
-                ) : (
-                  <Menu className="h-4 w-4" />
-                )}
-              </button>
+              {user ? (
+                <button
+                  type="button"
+                  aria-label="Open account menu"
+                  onClick={() => setMenuOpen((v) => !v)}
+                  className="h-8 w-8 sm:h-10 sm:w-10 rounded-full overflow-hidden border border-border shrink-0"
+                >
+                  {user.photoURL ? (
+                    <img
+                      src={user.photoURL}
+                      alt=""
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <span className="h-full w-full flex items-center justify-center bg-primary text-primary-foreground text-xs font-semibold">
+                      {(user.displayName || user.email || "U")
+                        .charAt(0)
+                        .toUpperCase()}
+                    </span>
+                  )}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  aria-label="Open menu"
+                  onClick={() => setMenuOpen((v) => !v)}
+                  className="flex h-8 w-8 items-center justify-center rounded-xl bg-secondary/50 text-foreground hover:text-primary sm:h-10 sm:w-10"
+                >
+                  {menuOpen ? (
+                    <X className="h-4 w-4" />
+                  ) : (
+                    <Menu className="h-4 w-4" />
+                  )}
+                </button>
+              )}
 
               {menuOpen && (
                 <div className="absolute right-0 top-full z-[110] mt-2 w-56 rounded-2xl bg-card p-2 shadow-2xl">
                   {[
                     { label: "Home", href: "/", icon: Home },
-
                     { label: "All Tools", href: "/all-tools", icon: Layers },
                     { label: "About", href: "/about", icon: Info },
                     { label: "Support", href: "/donate", icon: Coffee },
@@ -198,10 +197,31 @@ export function Navbar() {
                       <Link
                         href="/account"
                         onClick={() => setMenuOpen(false)}
-                        className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm hover:bg-muted"
+                        className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm hover:bg-muted"
                       >
-                        <User className="h-4 w-4" />
-                        Account
+                        {user.photoURL ? (
+                          <img
+                            src={user.photoURL}
+                            alt=""
+                            className="h-8 w-8 rounded-full object-cover"
+                          />
+                        ) : (
+                          <span className="h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-semibold">
+                            {(user.displayName || user.email || "U")
+                              .charAt(0)
+                              .toUpperCase()}
+                          </span>
+                        )}
+                        <span className="min-w-0">
+                          <span className="block truncate font-medium">
+                            {user.displayName || "Account"}
+                          </span>
+                          {user.email && (
+                            <span className="block truncate text-[11px] text-muted-foreground">
+                              {user.email}
+                            </span>
+                          )}
+                        </span>
                       </Link>
                       <button
                         type="button"
