@@ -27,32 +27,10 @@ export default function manifest(): MetadataRoute.Manifest {
     categories: ["productivity", "utilities", "business"],
     screenshots: [
       {
-        src: "https://i.ibb.co/4gdpcL5d/resized-1000079051.png",
-        sizes: "1080x1920",
+        src: "https://picsum.photos/seed/mykit-ss/400/800",
+        sizes: "400x800",
         type: "image/png",
-        form_factor: "narrow",
-        label: "Home — search PDF, image and AI tools",
-      },
-      {
-        src: "https://i.ibb.co/QFcLzPN8/resized-1000079055.png",
-        sizes: "1080x1920",
-        type: "image/png",
-        form_factor: "narrow",
-        label: "130+ free tools that work in your browser",
-      },
-      {
-        src: "https://i.ibb.co/93sR6kkj/resized-1000079059.png",
-        sizes: "1080x1920",
-        type: "image/png",
-        form_factor: "narrow",
-        label: "How it works — choose, use, save",
-      },
-      {
-        src: "https://i.ibb.co/zV2QQgKq/resized-1000079062.png",
-        sizes: "1080x1920",
-        type: "image/png",
-        form_factor: "narrow",
-        label: "About the builder — free browser tools",
+        label: "MY KIT TOOL Studio Dashboard",
       },
     ],
   };
