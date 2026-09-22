@@ -192,7 +192,7 @@ export default function DonatePage() {
                   <Button
                     type="button"
                     onClick={() => handleCopy("03194259023", "easypaisa")}
-                    className="h-11 w-11 shrink-0 rounded-xl bg-[#2563eb]"
+                    className="h-9 w-9 shrink-0 rounded-xl bg-[#2563eb]"
                   >
                     {isCopied === "easypaisa" ? <CheckCircle2 /> : <Copy />}
                   </Button>
@@ -216,7 +216,7 @@ export default function DonatePage() {
                     onClick={() =>
                       handleCopy("PK26MEZN0000300112583758", "iban")
                     }
-                    className="h-11 w-11 shrink-0 rounded-xl bg-[#2563eb]"
+                    className="h-9 w-9 shrink-0 rounded-xl bg-[#2563eb]"
                   >
                     {isCopied === "iban" ? <CheckCircle2 /> : <Copy />}
                   </Button>
