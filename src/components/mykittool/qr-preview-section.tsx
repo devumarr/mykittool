@@ -4,9 +4,9 @@ import React, { useEffect, useRef, useState } from "react";
 import { QRState, QRHistoryItem } from "@/lib/qr-types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import QRCodeStyling from "qr-code-styling";
 import { Progress } from "@/components/ui/progress";
 import {
-  FileCode,
   Loader2,
   History,
   Download,
@@ -16,16 +16,14 @@ import {
   Copy,
   Phone,
   ChevronRight,
-  Trash2,
   MessageSquare,
   Zap,
   ShieldCheck,
   BarChart3,
   TrendingUp,
   Target,
-  FileImage,
-  FileText,
 } from "lucide-react";
+
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { jsPDF } from "jspdf";
@@ -35,12 +33,6 @@ interface QrPreviewSectionProps {
   history: QRHistoryItem[];
   onDownload: () => void;
   onClearHistory: () => void;
-}
-
-declare global {
-  interface Window {
-    QRCodeStyling: any;
-  }
 }
 
 export function QrPreviewSection({
@@ -80,7 +72,7 @@ export function QrPreviewSection({
       width: size,
       height: size,
       type: "canvas" as const,
-      data: state.data || " ",
+      data: state.data?.trim() || "https://google.com",
       image: preloadedLogo || state.logo || "",
       margin: 40,
       dotsOptions: { color: state.fgColor, type: state.dotStyle },
@@ -137,45 +129,43 @@ export function QrPreviewSection({
     }
 
     const qrConfig = getQrConfig(resolution, true);
-    if (!window.QRCodeStyling) {
-      throw new Error("QR Styling engine not ready");
-    }
-    const styling = new window.QRCodeStyling(qrConfig);
-
-    const qrBlob = await styling.getRawData("png");
-    const qrImg = await loadImage(URL.createObjectURL(qrBlob));
-
+    const styling = new QRCodeStyling(qrConfig as any);
+    const raw = await styling.getRawData("png");
+    if (!raw) throw new Error("QR render failed");
+    const blob = raw instanceof Blob ? raw : new Blob([raw as BlobPart]);
+    const qrImg = await loadImage(URL.createObjectURL(blob));
     ctx.drawImage(qrImg, 0, 0, resolution, resolution);
 
     return finalCanvas;
   };
 
   useEffect(() => {
-    if (
-      typeof window !== "undefined" &&
-      window.QRCodeStyling &&
-      qrRef.current
-    ) {
-      setIsGenerating(true);
-      const renderPreview = async () => {
-        try {
-          const finalCanvas = await compositeCanvas(800);
-          if (qrRef.current) {
-            qrRef.current.innerHTML = "";
-            finalCanvas.style.width = "100%";
-            finalCanvas.style.height = "100%";
-            finalCanvas.style.display = "block";
-            finalCanvas.style.borderRadius = "0.75rem";
-            qrRef.current.appendChild(finalCanvas);
-          }
-        } catch (e) {
-          console.error("Studio render failed", e);
-        } finally {
-          setIsGenerating(false);
-        }
-      };
-      renderPreview();
-    }
+    if (!qrRef.current) return;
+
+    let cancelled = false;
+    setIsGenerating(true);
+
+    const renderPreview = async () => {
+      try {
+        const finalCanvas = await compositeCanvas(800);
+        if (cancelled || !qrRef.current) return;
+        qrRef.current.innerHTML = "";
+        finalCanvas.style.width = "100%";
+        finalCanvas.style.height = "100%";
+        finalCanvas.style.display = "block";
+        finalCanvas.style.borderRadius = "0.75rem";
+        qrRef.current.appendChild(finalCanvas);
+      } catch (e) {
+        console.error("Studio render failed", e);
+      } finally {
+        if (!cancelled) setIsGenerating(false);
+      }
+    };
+
+    renderPreview();
+    return () => {
+      cancelled = true;
+    };
   }, [state]);
 
   const handleDownload = async (
@@ -186,7 +176,7 @@ export function QrPreviewSection({
     try {
       if (ext === "svg") {
         const qrConfig = getQrConfig(resolution, !!state.backgroundImage);
-        const styling = new window.QRCodeStyling(qrConfig);
+        const styling = new QRCodeStyling(qrConfig as any);
         await styling.download({ name: "mykittool-export", extension: "svg" });
       } else if (ext === "pdf") {
         const finalCanvas = await compositeCanvas(resolution);
@@ -229,7 +219,7 @@ export function QrPreviewSection({
         <CardHeader className="text-center pb-4 sm:pb-6 pt-8">
           <CardTitle className="text-[10px] font-black text-primary uppercase tracking-[0.5em] flex items-center justify-center gap-2">
             <Zap className="w-3 h-3 fill-primary/20" />
-            Live Studio Rendering
+            Live
           </CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col items-center gap-6 sm:gap-8 px-4 sm:px-8 pb-10">

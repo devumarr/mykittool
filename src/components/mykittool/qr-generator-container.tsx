@@ -198,12 +198,14 @@ export function QrGeneratorContainer({
         </div>
 
         <div className="lg:col-span-5 xl:col-span-4 lg:sticky lg:top-24 space-y-8 animate-in fade-in slide-in-from-right-8 duration-1000 stagger-2">
-          <QrPreviewSection
-            state={debouncedState}
-            history={history}
-            onDownload={() => addToHistory(state.data, state.type)}
-            onClearHistory={clearHistory}
-          />
+          {activeMode === "single" && (
+            <QrPreviewSection
+              state={debouncedState}
+              history={history}
+              onDownload={() => addToHistory(state.data, state.type)}
+              onClearHistory={clearHistory}
+            />
+          )}
         </div>
       </div>
     </div>

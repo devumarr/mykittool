@@ -1,4 +1,5 @@
 "use client";
+import QRCodeStyling from "qr-code-styling";
 
 import React, { useState } from "react";
 import { QRState } from "@/lib/qr-types";
@@ -105,15 +106,12 @@ export function QrBulkSection({ state, updateState }: QrBulkSectionProps) {
       },
       qrOptions: { errorCorrectionLevel: errorLevel },
     };
-
-    if (!(window as any).QRCodeStyling) {
-      throw new Error("QR Styling engine not loaded");
-    }
-    const qrCode = new (window as any).QRCodeStyling(config);
-    const qrBlob = await qrCode.getRawData("png");
-    const qrImg = await loadImage(URL.createObjectURL(qrBlob));
+    const qrCode = new QRCodeStyling(config as any);
+    const raw = await qrCode.getRawData("png");
+    if (!raw) throw new Error("QR render failed");
+    const blob = raw instanceof Blob ? raw : new Blob([raw as BlobPart]);
+    const qrImg = await loadImage(URL.createObjectURL(blob));
     ctx.drawImage(qrImg, 0, 0, resolution, resolution);
-
     if (format === "pdf") {
       const imgData = finalCanvas.toDataURL("image/jpeg", 1.0);
       const doc = new jsPDF({
@@ -189,47 +187,6 @@ export function QrBulkSection({ state, updateState }: QrBulkSectionProps) {
 
   return (
     <div className="space-y-10 animate-in fade-in duration-700">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="glass-card p-6 rounded-3xl border-border space-y-3 relative overflow-hidden group">
-          <div className="absolute -right-4 -top-4 w-24 h-24 bg-primary/5 rounded-full blur-2xl group-hover:bg-primary/10 transition-all" />
-          <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center text-primary border border-border">
-            <ClipboardType className="w-5 h-5" />
-          </div>
-          <h4 className="text-[11px] font-black uppercase tracking-widest text-foreground">
-            1. Batch Payload
-          </h4>
-          <p className="text-[11px] text-foreground/70 leading-relaxed font-medium">
-            Paste your target list, one item per line.
-          </p>
-        </div>
-        <div className="glass-card p-6 rounded-3xl border-border space-y-3 relative overflow-hidden group">
-          <div className="absolute -right-4 -top-4 w-24 h-24 bg-primary/5 rounded-full blur-2xl group-hover:bg-primary/10 transition-all" />
-          <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center text-primary border border-border">
-            <Palette className="w-5 h-5" />
-          </div>
-          <h4 className="text-[11px] font-black uppercase tracking-widest text-foreground">
-            2. Auto Branding
-          </h4>
-          <p className="text-[11px] text-foreground/70 leading-relaxed font-medium">
-            Active styles and imagery are injected automatically.
-          </p>
-        </div>
-        <div className="glass-card p-6 rounded-3xl border-border space-y-3 relative overflow-hidden group">
-          <div className="absolute -right-4 -top-4 w-24 h-24 bg-primary/5 rounded-full blur-2xl group-hover:bg-primary/10 transition-all" />
-          <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center text-primary border border-border">
-            <Archive className="w-5 h-5" />
-          </div>
-          <h4 className="text-[11px] font-black uppercase tracking-widest text-foreground">
-            3. Bundle Export
-          </h4>
-          <p className="text-[11px] text-foreground/70 leading-relaxed font-medium">
-            Download all high-res assets in one organized ZIP.
-          </p>
-        </div>
-      </div>
-
-      <QrPresetsControls state={state} updateState={updateState} />
-
       <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
         <QrStylingControls state={state} updateState={updateState} />
         <QrBrandingControls state={state} updateState={updateState} />
@@ -242,12 +199,12 @@ export function QrBulkSection({ state, updateState }: QrBulkSectionProps) {
               <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary ring-1 ring-primary/40 shadow-inner">
                 <Layers className="w-6 h-6" />
               </div>
-              Bulk Production Engine
+              BULK MODE
             </CardTitle>
             <div className="hidden sm:flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/30">
               <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
               <span className="text-[9px] font-black tracking-widest text-primary uppercase">
-                Engine Active
+                Active
               </span>
             </div>
           </div>
@@ -257,10 +214,10 @@ export function QrBulkSection({ state, updateState }: QrBulkSectionProps) {
             <div className="flex items-center justify-between">
               <div className="space-y-1">
                 <Label className="text-[11px] font-black text-foreground/70 uppercase tracking-[0.2em]">
-                  Data Strings
+                  Data
                 </Label>
                 <p className="text-[10px] text-foreground/40 font-bold uppercase">
-                  One URL or text string per line
+                  One Line = One Qr Image
                 </p>
               </div>
               <div className="px-3 py-1 rounded-lg bg-secondary border border-border">
@@ -307,21 +264,6 @@ export function QrBulkSection({ state, updateState }: QrBulkSectionProps) {
               </div>
             </div>
 
-            <div className="flex items-start gap-5">
-              <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shrink-0 ring-1 ring-primary/40">
-                <Settings2 className="w-6 h-6" />
-              </div>
-              <div className="space-y-2">
-                <h4 className="text-sm font-bold text-foreground uppercase tracking-tight">
-                  Studio Asset Sync
-                </h4>
-                <p className="text-xs text-foreground/70 leading-relaxed font-medium">
-                  Applying chromatic matrix and active brand imagery to the
-                  entire batch in {exportFormat.toUpperCase()} format.
-                </p>
-              </div>
-            </div>
-
             {isProcessing && (
               <div className="space-y-3 animate-in fade-in duration-500">
                 <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-primary">
@@ -343,12 +285,12 @@ export function QrBulkSection({ state, updateState }: QrBulkSectionProps) {
               {isProcessing ? (
                 <>
                   <Loader2 className="w-6 h-6 animate-spin" />
-                  Generating Bundle {progress}%
+                  Generating {progress}%
                 </>
               ) : (
                 <>
                   <Download className="w-6 h-6" />
-                  Export {exportFormat.toUpperCase()} Bundle ZIP
+                  {exportFormat.toUpperCase()} Bundle ZIP
                 </>
               )}
             </Button>
