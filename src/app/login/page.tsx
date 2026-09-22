@@ -25,6 +25,9 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   updateProfile,
+  GoogleAuthProvider,
+  GithubAuthProvider,
+  signInWithPopup,
 } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
@@ -123,6 +126,59 @@ export default function LoginPage() {
       setIsLoading(false);
     }
   };
+  const handleGoogle = async () => {
+    if (!auth) {
+      setError("Login service is not ready.");
+      return;
+    }
+    setIsLoading(true);
+    setError(null);
+    try {
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: "select_account" });
+      await signInWithPopup(auth, provider);
+      toast({ title: "Logged in" });
+      router.push(redirectTo);
+    } catch (err: any) {
+      if (err?.code === "auth/popup-closed-by-user") {
+        setError(null);
+      } else if (err?.code === "auth/unauthorized-domain") {
+        setError("This domain is not allowed in Firebase.");
+      } else {
+        setError(mapAuthError(err?.code || "unknown"));
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGithub = async () => {
+    if (!auth) {
+      setError("Login service is not ready.");
+      return;
+    }
+    setIsLoading(true);
+    setError(null);
+    try {
+      await signInWithPopup(auth, new GithubAuthProvider());
+      toast({ title: "Logged in" });
+      router.push(redirectTo);
+    } catch (err: any) {
+      if (err?.code === "auth/popup-closed-by-user") {
+        setError(null);
+      } else if (
+        err?.code === "auth/account-exists-with-different-credential"
+      ) {
+        setError("This email already uses another login method.");
+      } else if (err?.code === "auth/unauthorized-domain") {
+        setError("This domain is not allowed in Firebase.");
+      } else {
+        setError(mapAuthError(err?.code || "unknown"));
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   if (authLoading) {
     return (
@@ -152,6 +208,7 @@ export default function LoginPage() {
                 <User className="h-6 w-6" />
               )}
             </div>
+
             <CardTitle className="text-3xl font-black tracking-tight">
               {isSignUp ? "Register" : "Login"}
             </CardTitle>
@@ -291,7 +348,50 @@ export default function LoginPage() {
                   <p className="text-xs text-red-500">{error}</p>
                 </div>
               )}
-
+              <button
+                type="button"
+                onClick={handleGoogle}
+                disabled={isLoading}
+                className="group flex h-12 w-full items-center justify-center gap-2.5 rounded-2xl border border-black/10 bg-white text-sm font-semibold text-foreground shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-[0.98] disabled:opacity-60 dark:border-white/10 dark:bg-white/[0.04]"
+              >
+                <svg className="h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    fill="#EA4335"
+                    d="M12 10.2v3.6h5.1c-.2 1.2-.9 2.3-1.9 3l3.1 2.4c1.8-1.7 2.9-4.1 2.9-7 0-.7-.1-1.3-.2-1.9H12z"
+                  />
+                  <path
+                    fill="#34A853"
+                    d="M6.6 14.3l-.9.7-2.5 1.9C5.1 20.1 8.3 22 12 22c2.7 0 5-.9 6.7-2.4l-3.1-2.4c-.9.6-2 1-3.6 1-2.7 0-5-1.8-5.8-4.3z"
+                  />
+                  <path
+                    fill="#4A90E2"
+                    d="M3.2 7.1C2.4 8.6 2 10.3 2 12s.4 3.4 1.2 4.9l3.4-2.6C6.2 13.4 6 12.7 6 12s.2-1.4.6-2.3L3.2 7.1z"
+                  />
+                  <path
+                    fill="#FBBC05"
+                    d="M12 6c1.5 0 2.8.5 3.8 1.5l2.8-2.8C16.9 3 14.6 2 12 2 8.3 2 5.1 3.9 3.2 7.1l3.4 2.6C7 7.8 9.3 6 12 6z"
+                  />
+                </svg>
+                <span className="transition-colors group-hover:text-primary">
+                  Continue with Google
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={handleGithub}
+                disabled={isLoading}
+                className="group mt-3 flex h-12 w-full items-center justify-center gap-2.5 rounded-2xl border border-black/10 bg-white text-sm font-semibold text-foreground shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-[0.98] disabled:opacity-60 dark:border-white/10 dark:bg-white/[0.04]"
+              >
+                <svg
+                  className="h-4 w-4"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  aria-hidden="true"
+                >
+                  <path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2.1c-3.3.7-4-1.6-4-1.6-.5-1.3-1.3-1.7-1.3-1.7-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 .1.8 1.8 2.8 1.3.1-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-6a4.7 4.7 0 0 1 1.3-3.3 4.3 4.3 0 0 1 .1-3.2s1-.3 3.4 1.3a11.6 11.6 0 0 1 6.2 0C17.7 4.7 18.7 5 18.7 5a4.3 4.3 0 0 1 .1 3.2 4.7 4.7 0 0 1 1.2 3.3c0 4.7-2.8 5.7-5.5 6 .4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .3z" />
+                </svg>
+                Continue with GitHub
+              </button>
               <Button
                 type="submit"
                 disabled={isLoading}
