@@ -2,16 +2,16 @@
 
 import { initializeApp, getApps, getApp, FirebaseApp } from "firebase/app";
 import { getFirestore, Firestore } from "firebase/firestore";
-import { getAuth, Auth } from "firebase/auth";
 import { getStorage, FirebaseStorage } from "firebase/storage";
 import { getDatabase, Database } from "firebase/database";
 import { firebaseConfig } from "./config";
+import {
+  getAuth,
+  Auth,
+  setPersistence,
+  browserLocalPersistence,
+} from "firebase/auth";
 
-/**
- * Firebase Core Initialization
- * Centralized setup for production services with pre-flight validation.
- * Prevents crashes if API keys are missing or invalid.
- */
 let app: FirebaseApp | undefined;
 let db: Firestore | undefined;
 let auth: Auth | undefined;
@@ -24,6 +24,7 @@ if (firebaseConfig.apiKey && firebaseConfig.apiKey.length > 5) {
     app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
     db = getFirestore(app);
     auth = getAuth(app);
+    setPersistence(auth, browserLocalPersistence).catch(() => {});
     storage = getStorage(app);
     rtdb = getDatabase(app);
   } catch (err) {
