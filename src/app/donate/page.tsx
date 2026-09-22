@@ -175,36 +175,55 @@ export default function DonatePage() {
             <p className="text-sm text-foreground/65">
               Send any amount. No login needed.
             </p>
-            <div className="space-y-2">
-              <Label className="text-xs text-foreground/55">
-                Easypaisa / JazzCash
-              </Label>
-              <div className="flex gap-2">
-                <div className="flex h-14 flex-1 items-center rounded-2xl border border-black/5 bg-secondary/70 px-4 font-mono text-lg font-bold">
-                  03194259023
+
+            <div className="grid grid-cols-2 gap-4 items-start">
+              {/* LEFT — Easypaisa */}
+              <div className="flex flex-col items-center gap-2">
+                <img
+                  src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=03194259023"
+                  alt="Easypaisa QR"
+                  className="h-32 w-32 rounded-2xl bg-white p-2"
+                />
+                <p className="text-xs text-foreground/60">Easypaisa</p>
+                <div className="flex w-full items-center gap-2">
+                  <div className="flex h-11 flex-1 items-center overflow-hidden rounded-xl border border-black/10 px-3 text-sm">
+                    03194259023
+                  </div>
+                  <Button
+                    type="button"
+                    onClick={() => handleCopy("03194259023", "easypaisa")}
+                    className="h-11 w-11 shrink-0 rounded-xl bg-[#2563eb]"
+                  >
+                    {isCopied === "easypaisa" ? <CheckCircle2 /> : <Copy />}
+                  </Button>
                 </div>
-                <Button
-                  onClick={() => handleCopy("03194259023", "easypaisa")}
-                  className="h-14 w-14 rounded-2xl bg-[#2563eb] shadow-lg shadow-blue-500/25 transition-transform hover:scale-105"
-                >
-                  {isCopied === "easypaisa" ? <CheckCircle2 /> : <Copy />}
-                </Button>
+              </div>
+
+              {/* RIGHT — Bank */}
+              <div className="flex flex-col items-center gap-2">
+                <img
+                  src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=PK26MEZN0000300112583758"
+                  alt="RAAST IBAN QR"
+                  className="h-32 w-32 rounded-2xl bg-white p-2"
+                />
+                <p className="text-xs text-foreground/60">Bank / RAAST</p>
+                <div className="flex w-full items-center gap-2">
+                  <div className="flex h-11 flex-1 items-center overflow-hidden rounded-xl border border-black/10 px-2 text-[11px]">
+                    PK26MEZN0000300112583758
+                  </div>
+                  <Button
+                    type="button"
+                    onClick={() =>
+                      handleCopy("PK26MEZN0000300112583758", "iban")
+                    }
+                    className="h-11 w-11 shrink-0 rounded-xl bg-[#2563eb]"
+                  >
+                    {isCopied === "iban" ? <CheckCircle2 /> : <Copy />}
+                  </Button>
+                </div>
               </div>
             </div>
-            <div className="space-y-2">
-              <Label className="text-xs text-foreground/55">RAAST IBAN</Label>
-              <div className="flex gap-2">
-                <div className="flex h-14 flex-1 items-center overflow-hidden rounded-2xl border border-black/5 bg-secondary/70 px-4 font-mono text-[11px] font-bold sm:text-sm">
-                  PK26MEZN0000300112583758
-                </div>
-                <Button
-                  onClick={() => handleCopy("PK26MEZN0000300112583758", "iban")}
-                  className="h-14 w-14 rounded-2xl bg-[#2563eb] shadow-lg shadow-blue-500/25 transition-transform hover:scale-105"
-                >
-                  {isCopied === "iban" ? <CheckCircle2 /> : <Copy />}
-                </Button>
-              </div>
-            </div>
+
             <div className="flex flex-wrap gap-2">
               {["Rs 100", "Rs 500", "Rs 1000"].map((tier) => (
                 <span
@@ -237,10 +256,11 @@ export default function DonatePage() {
             <div className="flex flex-col items-center gap-5">
               <div className="flex h-40 w-40 items-center justify-center rounded-[1.6rem] bg-white shadow-xl ring-1 ring-black/5 transition-transform duration-500 group-hover:scale-105">
                 <div className="relative flex h-full w-full items-center justify-center rounded-[1.2rem] bg-slate-50">
-                  <QrCode className="h-20 w-20 text-slate-300" />
-                  <span className="absolute bottom-3 rounded-full bg-background px-3 py-1 text-[8px] font-bold uppercase tracking-widest text-white">
-                    TRC20
-                  </span>
+                  <img
+                    src="https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=TDhUm3utKqQ4sE974RCRefAFpdNAVGcLtQ"
+                    alt="USDT TRC20 QR"
+                    className="h-48 w-48 rounded-1xl bg-white p-2"
+                  />
                 </div>
               </div>
               <div className="w-full space-y-2">
