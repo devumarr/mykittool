@@ -134,6 +134,24 @@ const CATEGORIES: {
   { id: "File", label: "File", icon: FileText },
   { id: "Other", label: "Other", icon: Zap },
 ];
+const ICON_COLORS = [
+  "bg-sky-500/15 text-sky-600",
+  "bg-violet-500/15 text-violet-600",
+  "bg-emerald-500/15 text-emerald-600",
+  "bg-amber-500/15 text-amber-600",
+  "bg-rose-500/15 text-rose-600",
+  "bg-indigo-500/15 text-indigo-600",
+  "bg-teal-500/15 text-teal-600",
+  "bg-orange-500/15 text-orange-600",
+  "bg-fuchsia-500/15 text-fuchsia-600",
+  "bg-cyan-500/15 text-cyan-600",
+];
+
+function iconColor(href: string) {
+  let n = 0;
+  for (let i = 0; i < href.length; i++) n += href.charCodeAt(i);
+  return ICON_COLORS[n % ICON_COLORS.length];
+}
 
 const levenshteinDistance = (a: string, b: string): number => {
   const matrix = Array(b.length + 1)
@@ -278,7 +296,7 @@ function AllToolsPageContent() {
           </div>
 
           <div className="flex items-center justify-center gap-4 w-full px-2">
-            <div className="w-auto overflow-x-auto no-scrollbar bg-foreground/[0.02] backdrop-blur-3xl border border-foreground/5 rounded-2xl p-1.5 shadow-2xl">
+            <div className="w-auto max-w-full overflow-x-auto no-scrollbar bg-foreground/[0.02] border border-foreground/5 rounded-2xl p-1.5">
               <div className="flex items-center space-x-1 min-w-max">
                 {CATEGORIES.map((cat) => (
                   <button
@@ -324,7 +342,16 @@ function AllToolsPageContent() {
             </div>
           </div>
         </div>
-
+        <p className="mt-6 mb-2 text-center text-sm">
+          <a
+            href="https://whatsapp.com/channel/0029Vb8K2p24Crfd31KVcv26"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline"
+          >
+            New tools? Follow on WhatsApp
+          </a>
+        </p>
         {/* Status Matrix */}
         <div className="max-w-5xl mx-auto mb-12 px-4 flex flex-col items-center gap-4">
           {didYouMean && (
@@ -375,14 +402,8 @@ function AllToolsPageContent() {
                   <div className="relative z-10">
                     <div
                       className={cn(
-                        "inline-flex h-9 w-9 items-center justify-center rounded-xl mb-4 shadow-inner border border-foreground/5 transition-all group-hover:scale-110",
-                        tool.category === "AI"
-                          ? "bg-cyan-500/10 text-cyan-600 dark:text-cyan-400"
-                          : tool.category === "Image"
-                            ? "bg-purple-500/10 text-purple-600 dark:text-purple-400"
-                            : tool.category === "File"
-                              ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
-                              : "bg-blue-500/10 text-blue-600 dark:text-blue-400",
+                        "mb-4 inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-white/40",
+                        iconColor(tool.href),
                       )}
                     >
                       {tool.icon ? (
@@ -413,14 +434,8 @@ function AllToolsPageContent() {
                   <div className="flex items-center gap-6 flex-1 min-w-0">
                     <div
                       className={cn(
-                        "flex-shrink-0 h-9 w-9 flex items-center justify-center rounded-xl shadow-inner border border-foreground/5",
-                        tool.category === "AI"
-                          ? "bg-cyan-500/10 text-cyan-600 dark:text-cyan-400"
-                          : tool.category === "Image"
-                            ? "bg-purple-500/10 text-purple-600 dark:text-purple-400"
-                            : tool.category === "File"
-                              ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
-                              : "bg-blue-500/10 text-blue-600 dark:text-blue-400",
+                        "mb-4 inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-white/40",
+                        iconColor(tool.href),
                       )}
                     >
                       {tool.icon ? (
