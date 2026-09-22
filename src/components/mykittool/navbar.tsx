@@ -8,35 +8,18 @@ import {
   Scan,
   Home,
   Menu,
-  QrCode,
   Layers,
-  Type,
   Coffee,
   User,
   X,
-  LogIn,
   LogOut,
-  UserPlus,
-  ChevronDown,
-  ShieldCheck,
-  Settings,
   Info,
-  Heart,
-  Fingerprint,
 } from "lucide-react";
 import { NavSearch } from "@/components/mykittool/nav-search";
 import { cn } from "@/lib/utils";
 import { useUser, useAuth } from "@/firebase";
 import { signOut } from "firebase/auth";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
+
 import dynamic from "next/dynamic";
 import { ThemeToggle } from "./theme-toggle";
 
@@ -145,6 +128,29 @@ export function Navbar() {
             >
               <Scan className="h-4 w-4" />
             </button>
+
+            {user && (
+              <button
+                type="button"
+                onClick={() => router.push("/account")}
+                className="h-8 w-8 sm:h-10 sm:w-10 rounded-full overflow-hidden border border-border shrink-0"
+                aria-label="Account"
+              >
+                {user.photoURL ? (
+                  <img
+                    src={user.photoURL}
+                    alt=""
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <span className="h-full w-full flex items-center justify-center bg-primary text-primary-foreground text-xs font-semibold">
+                    {(user.displayName || user.email || "U")
+                      .charAt(0)
+                      .toUpperCase()}
+                  </span>
+                )}
+              </button>
+            )}
 
             <div className="relative" ref={menuRef}>
               <button

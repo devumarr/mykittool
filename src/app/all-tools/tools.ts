@@ -968,7 +968,7 @@ export const TOOLS: Tool[] = [
   },
   {
     href: "/bulk",
-    title: "Bulk Production",
+    title: "Bulk QR",
     desc: "Generate hundreds of high-res assets in seconds.",
     category: "Other",
     icon: Layers,
