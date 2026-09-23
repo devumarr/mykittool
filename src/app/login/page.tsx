@@ -274,7 +274,7 @@ export default function LoginPage() {
                       required
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
-                      placeholder="Your name"
+                      placeholder="Enter Your Full Name"
                       className="h-12 rounded-2xl bg-secondary/50 pl-10"
                     />
                     <User className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/35" />
