@@ -21,6 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth, useUser } from "@/firebase";
+import { sendEmailVerification } from "firebase/auth";
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
@@ -114,7 +115,11 @@ export default function LoginPage() {
           password,
         );
         await updateProfile(cred.user, { displayName: fullName });
-        toast({ title: "Welcome", description: "Account created." });
+        await sendEmailVerification(cred.user);
+        toast({
+          title: "Welcome",
+          description: "Account created. Check email to verify.",
+        });
       } else {
         await signInWithEmailAndPassword(auth, email, password);
         toast({ title: "Logged in" });
