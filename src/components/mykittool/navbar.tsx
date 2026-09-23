@@ -78,6 +78,7 @@ export function Navbar() {
   const router = useRouter();
   const auth = useAuth();
   const { user, loading: authLoading } = useUser();
+  const isLoggedIn = !!user && !!user.emailVerified;
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -130,7 +131,7 @@ export function Navbar() {
             </button>
 
             <div className="relative" ref={menuRef}>
-              {user ? (
+              {isLoggedIn ? (
                 <button
                   type="button"
                   aria-label="Open account menu"
@@ -192,7 +193,7 @@ export function Navbar() {
 
                   <div className="my-1.5 h-px bg-border" />
 
-                  {user ? (
+                  {isLoggedIn ? (
                     <>
                       <Link
                         href="/account"

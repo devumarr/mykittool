@@ -29,6 +29,7 @@ import {
   GoogleAuthProvider,
   GithubAuthProvider,
   signInWithPopup,
+  signOut,
 } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
@@ -53,7 +54,7 @@ export default function LoginPage() {
   const redirectTo = searchParams.get("redirect") || "/account";
 
   useEffect(() => {
-    if (!authLoading && user) router.replace(redirectTo);
+    if (!authLoading && user?.emailVerified) router.replace(redirectTo);
   }, [user, authLoading, router, redirectTo]);
 
   const mapAuthError = (code: string) => {
@@ -119,14 +120,19 @@ export default function LoginPage() {
           url: "https://mykittool.online/login",
           handleCodeInApp: false,
         });
-        toast({
-          title: "Welcome",
-          description: "Account created. Check email to verify.",
-        });
-      } else {
-        await signInWithEmailAndPassword(auth, email, password);
-        toast({ title: "Logged in" });
+        sessionStorage.setItem("pendingEmail", email);
+        router.push(`/verify-email?email=${encodeURIComponent(email)}`);
+        return;
       }
+
+      const cred = await signInWithEmailAndPassword(auth, email, password);
+      if (!cred.user.emailVerified) {
+        await signOut(auth);
+        setError("Verify your email first. Check your inbox.");
+        return;
+      }
+
+      toast({ title: "Logged in" });
       router.push(redirectTo);
     } catch (err: any) {
       setError(mapAuthError(err?.code || "unknown"));
@@ -151,7 +157,7 @@ export default function LoginPage() {
       if (err?.code === "auth/popup-closed-by-user") {
         setError(null);
       } else if (err?.code === "auth/unauthorized-domain") {
-        setError("This domain is not allowed in Firebase.");
+        setError("This domain is not allowed");
       } else {
         setError(mapAuthError(err?.code || "unknown"));
       }
@@ -179,7 +185,7 @@ export default function LoginPage() {
       ) {
         setError("This email already uses another login method.");
       } else if (err?.code === "auth/unauthorized-domain") {
-        setError("This domain is not allowed in Firebase.");
+        setError("This domain is not allowed");
       } else {
         setError(mapAuthError(err?.code || "unknown"));
       }

@@ -31,6 +31,7 @@ export function ToolNav() {
       "/donate",
       "/temp-mail",
       "/auth/action",
+      "/verify-email",
     ];
     if (nonToolPages.includes(pathname)) return false;
     if (pathname.startsWith("/share/")) return false;
