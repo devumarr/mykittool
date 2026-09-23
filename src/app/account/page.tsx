@@ -34,7 +34,10 @@ import {
   EmailAuthProvider,
   reauthenticateWithCredential,
   verifyBeforeUpdateEmail,
+  deleteUser,
 } from "firebase/auth";
+import { doc, deleteDoc } from "firebase/firestore";
+import { db } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
@@ -52,6 +55,10 @@ export default function AccountPage() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [emailMsg, setEmailMsg] = useState("");
   const [emailBusy, setEmailBusy] = useState(false);
+  const [deleteText, setDeleteText] = useState("");
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [deleteMsg, setDeleteMsg] = useState("");
+  const [deletePassword, setDeletePassword] = useState("");
 
   useEffect(() => {
     if (!loading && !user) {
@@ -63,6 +70,53 @@ export default function AccountPage() {
     }
     if (user) setDisplayName(user.displayName || "");
   }, [user, loading, router]);
+
+  const deleteAccount = async () => {
+    if (!user) return;
+    if (deleteText !== "DELETE") {
+      setDeleteMsg("Type DELETE to confirm.");
+      return;
+    }
+    if (!deletePassword.trim()) {
+      setDeleteMsg("Enter current password first.");
+      return;
+    }
+
+    setDeleteBusy(true);
+    setDeleteMsg("");
+
+    try {
+      const cred = EmailAuthProvider.credential(
+        user.email || "",
+        deletePassword,
+      );
+      await reauthenticateWithCredential(user, cred);
+
+      try {
+        if (db) {
+          await deleteDoc(doc(db, "users", user.uid));
+        }
+      } catch {}
+
+      await deleteUser(user);
+      window.location.href = "/";
+    } catch (e: any) {
+      const c = e?.code || "";
+      if (c === "auth/wrong-password" || c === "auth/invalid-credential") {
+        setDeleteMsg("Wrong password.");
+      } else if (c === "auth/missing-password") {
+        setDeleteMsg("Wrong password.");
+      } else if (c === "auth/requires-recent-login") {
+        setDeleteMsg("Login again, then delete.");
+      } else if (c === "auth/too-many-requests") {
+        setDeleteMsg("Too many tries. Wait and try again.");
+      } else {
+        setDeleteMsg("Could not delete account.");
+      }
+    } finally {
+      setDeleteBusy(false);
+    }
+  };
 
   const changeEmail = async () => {
     <Input
@@ -87,7 +141,10 @@ export default function AccountPage() {
     setEmailBusy(true);
     setEmailMsg("");
     try {
-      const cred = EmailAuthProvider.credential(user.email, currentPassword);
+      const cred = EmailAuthProvider.credential(
+        user.email || "",
+        deletePassword,
+      );
       await reauthenticateWithCredential(user, cred);
       sessionStorage.setItem("oldEmail", user.email || "");
       sessionStorage.setItem("pendingNewEmail", newEmail.trim());
@@ -446,6 +503,43 @@ export default function AccountPage() {
                     )}
                     Update password
                   </Button>
+                </div>
+
+                <div className="mt-8 rounded-2xl border border-red-500/30 bg-red-500/5 p-5">
+                  <h2 className="text-sm font-semibold text-red-500">
+                    Delete account
+                  </h2>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    This removes your login and saved account data. Tools stay.
+                    Type DELETE to confirm.
+                  </p>
+                  <label className="mt-3 block text-sm">Current password</label>
+                  <Input
+                    type="password"
+                    value={deletePassword}
+                    onChange={(e) => setDeletePassword(e.target.value)}
+                    placeholder="Current password"
+                    className="mt-1"
+                  />
+                  <Input
+                    value={deleteText}
+                    onChange={(e) => setDeleteText(e.target.value)}
+                    placeholder="DELETE"
+                    className="mt-3"
+                  />
+
+                  <Button
+                    type="button"
+                    onClick={deleteAccount}
+                    disabled={deleteBusy}
+                    className="mt-3 bg-red-600 text-white hover:bg-red-700"
+                  >
+                    {deleteBusy ? "Deleting..." : "Delete account"}
+                  </Button>
+
+                  {deleteMsg ? (
+                    <p className="mt-2 text-sm text-red-500">{deleteMsg}</p>
+                  ) : null}
                 </div>
               </CardContent>
             </Card>
