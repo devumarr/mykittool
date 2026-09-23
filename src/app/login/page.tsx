@@ -35,6 +35,17 @@ import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
+function getPasswordChecks(password: string) {
+  return [
+    { id: "len", label: "At least 8 characters", ok: password.length >= 8 },
+    { id: "up", label: "One uppercase letter", ok: /[A-Z]/.test(password) },
+    {
+      id: "sp",
+      label: "One special character",
+      ok: /[^A-Za-z0-9]/.test(password),
+    },
+  ];
+}
 export default function LoginPage() {
   const { toast } = useToast();
   const router = useRouter();
@@ -68,7 +79,7 @@ export default function LoginPage() {
       case "auth/invalid-email":
         return "Please enter a valid email address.";
       case "auth/weak-password":
-        return "Password must be at least 6 characters.";
+        return "Password must be at least 8 characters.";
       case "auth/too-many-requests":
         return "Too many attempts. Try again later.";
       case "auth/network-request-failed":
@@ -93,7 +104,7 @@ export default function LoginPage() {
         return;
       }
       if (password.length < 6) {
-        setError("Password must be at least 6 characters.");
+        setError("Password must be at least 8 characters.");
         setIsLoading(false);
         return;
       }
@@ -110,6 +121,16 @@ export default function LoginPage() {
     }
     try {
       if (isSignUp) {
+        const missing = getPasswordChecks(password)
+          .filter((c) => !c.ok)
+          .map((c) => c.label);
+
+        if (missing.length) {
+          setError("Complete first: " + missing.join(", "));
+          setIsLoading(false);
+          return;
+        }
+
         const cred = await createUserWithEmailAndPassword(
           auth,
           email,
@@ -301,6 +322,73 @@ export default function LoginPage() {
                   </button>
                 </div>
               </div>
+
+              {isSignUp &&
+                (() => {
+                  const checks = getPasswordChecks(password);
+                  const lenScore = Math.min(password.length, 12) * 5;
+                  const upScore = /[A-Z]/.test(password) ? 20 : 0;
+                  const spScore = /[^A-Za-z0-9]/.test(password) ? 20 : 0;
+                  const pct = Math.min(lenScore + upScore + spScore, 100);
+                  const word =
+                    pct < 40 ? "Weak" : pct < 75 ? "Normal" : "Strong";
+                  const bar =
+                    pct < 40
+                      ? "bg-red-500"
+                      : pct < 75
+                        ? "bg-yellow-500"
+                        : "bg-green-500";
+
+                  return (
+                    <div className="mt-3 space-y-3">
+                      <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all duration-300 ${bar}`}
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                      <p
+                        className={`text-xs font-medium ${
+                          pct < 40
+                            ? "text-red-500"
+                            : pct < 75
+                              ? "text-yellow-600"
+                              : "text-green-600"
+                        }`}
+                      >
+                        {word}
+                      </p>
+
+                      <ul className="space-y-1.5">
+                        {checks.map((c) => (
+                          <li
+                            key={c.id}
+                            className="flex items-center gap-2 text-xs"
+                          >
+                            <span
+                              className={`flex h-4 w-4 items-center justify-center rounded-full text-[10px] ${
+                                c.ok
+                                  ? "bg-green-500 text-white"
+                                  : "bg-muted text-muted-foreground"
+                              }`}
+                            >
+                              {c.ok ? "✓" : ""}
+                            </span>
+                            <span
+                              className={
+                                c.ok
+                                  ? "text-green-600 line-through"
+                                  : "text-muted-foreground"
+                              }
+                            >
+                              {c.label}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  );
+                })()}
 
               {isSignUp && (
                 <div className="space-y-2">
