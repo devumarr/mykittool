@@ -2,7 +2,7 @@
 
 import React from "react";
 import { usePathname } from "next/navigation";
-import { Coffee, Mail, MapPin } from "lucide-react";
+import { Coffee, MessageCircle, Mail, MapPin } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
@@ -89,7 +89,25 @@ export function Footer() {
                 </span>
                 WhatsApp Channel
               </a>
-
+              <a
+                href="https://x.com/mykittool"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group flex items-center gap-3 text-sm text-foreground/80 transition-colors hover:text-foreground"
+              >
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-black/5 transition-transform duration-200 group-hover:scale-105 group-hover:bg-black/10">
+                  <svg
+                    viewBox="0 0 24 24"
+                    className="h-4 w-4 fill-current"
+                    aria-hidden="true"
+                  >
+                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.74l7.727-8.835L1.254 2.25H8.08l4.253 5.622L18.244 2.25zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                  </svg>
+                </span>
+                <span className="underline-offset-4 group-hover:underline">
+                  @mykittool
+                </span>
+              </a>
               <div className="flex items-center gap-3 text-sm text-foreground/85">
                 <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/12 text-emerald-500 shadow-[0_8px_20px_rgba(16,185,129,0.16)] ring-1 ring-emerald-500/20">
                   <MapPin className="h-4 w-4" />
