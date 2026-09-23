@@ -1,6 +1,10 @@
 "use client";
 
 import { initializeApp, getApps, getApp, FirebaseApp } from "firebase/app";
+import {
+  initializeAppCheck,
+  ReCaptchaEnterpriseProvider,
+} from "firebase/app-check";
 import { getFirestore, Firestore } from "firebase/firestore";
 import { getStorage, FirebaseStorage } from "firebase/storage";
 import { getDatabase, Database } from "firebase/database";
@@ -27,6 +31,17 @@ if (firebaseConfig.apiKey && firebaseConfig.apiKey.length > 5) {
     setPersistence(auth, browserLocalPersistence).catch(() => {});
     storage = getStorage(app);
     rtdb = getDatabase(app);
+    if (
+      typeof window !== "undefined" &&
+      process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY
+    ) {
+      initializeAppCheck(app, {
+        provider: new ReCaptchaEnterpriseProvider(
+          process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY,
+        ),
+        isTokenAutoRefreshEnabled: true,
+      });
+    }
   } catch (err) {
     console.error("Firebase services failed to initialize:", err);
   }
