@@ -115,7 +115,10 @@ export default function LoginPage() {
           password,
         );
         await updateProfile(cred.user, { displayName: fullName });
-        await sendEmailVerification(cred.user);
+        await sendEmailVerification(cred.user, {
+          url: "https://mykittool.online/login",
+          handleCodeInApp: false,
+        });
         toast({
           title: "Welcome",
           description: "Account created. Check email to verify.",
