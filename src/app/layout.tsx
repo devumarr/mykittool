@@ -54,7 +54,7 @@ export const metadata: Metadata = {
       "Free online tools for chat, resume, images, logos, code, email and more.",
     images: [
       {
-        url: "https://mykittool.online/og-image.jpg",
+        url: "https://mykittool.online/og-image.jpeg",
         width: 1200,
         height: 630,
         type: "image/jpeg",
@@ -64,7 +64,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    images: ["https://mykittool.online/og-image.jpg"],
+    images: ["https://mykittool.online/og-image.jpeg"],
   },
 };
 export default function RootLayout({
