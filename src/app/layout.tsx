@@ -64,6 +64,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
+    title: "My Kit Tool | Free Online Tools",
+    description:
+      "Free online tools for chat, resume, images, logos, code, email and more.",
     images: ["https://mykittool.online/og-image.jpeg"],
   },
 };
