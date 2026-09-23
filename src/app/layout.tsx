@@ -46,28 +46,25 @@ export const metadata: Metadata = {
   },
 
   openGraph: {
+    type: "website",
+    url: "https://mykittool.online",
+    siteName: "My Kit Tool",
     title: "My Kit Tool | Free Online Tools",
     description:
       "Free online tools for chat, resume, images, logos, code, email and more.",
-    type: "website",
-    locale: "en_US",
-    url: "https://mykittool.online",
-    siteName: "My Kit Tool",
     images: [
       {
-        url: "https://mykittool.online/og-image.png?v=4",
+        url: "https://mykittool.online/og-image.jpg",
         width: 1200,
         height: 630,
+        type: "image/jpeg",
         alt: "My Kit Tool",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "My Kit Tool | Free Online Tools",
-    description:
-      "Free online tools for chat, resume, images, logos, code, email and more.",
-    images: ["https://mykittool.online/og-image.png?v=4"],
+    images: ["https://mykittool.online/og-image.jpg"],
   },
 };
 export default function RootLayout({
