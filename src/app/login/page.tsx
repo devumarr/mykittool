@@ -131,7 +131,9 @@ export default function LoginPage() {
         setError("Verify your email first. Check your inbox.");
         return;
       }
-
+      sessionStorage.removeItem("oldEmail");
+      sessionStorage.removeItem("pendingNewEmail");
+      sessionStorage.removeItem("emailJustChanged");
       toast({ title: "Logged in" });
       router.push(redirectTo);
     } catch (err: any) {
@@ -151,6 +153,9 @@ export default function LoginPage() {
       const provider = new GoogleAuthProvider();
       provider.setCustomParameters({ prompt: "select_account" });
       await signInWithPopup(auth, provider);
+      sessionStorage.removeItem("oldEmail");
+      sessionStorage.removeItem("pendingNewEmail");
+      sessionStorage.removeItem("emailJustChanged");
       toast({ title: "Logged in" });
       router.push(redirectTo);
     } catch (err: any) {
@@ -175,6 +180,9 @@ export default function LoginPage() {
     setError(null);
     try {
       await signInWithPopup(auth, new GithubAuthProvider());
+      sessionStorage.removeItem("oldEmail");
+      sessionStorage.removeItem("pendingNewEmail");
+      sessionStorage.removeItem("emailJustChanged");
       toast({ title: "Logged in" });
       router.push(redirectTo);
     } catch (err: any) {

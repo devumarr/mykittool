@@ -17,6 +17,7 @@ import {
   Save,
   Globe,
   Activity,
+  Send,
   Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -26,7 +27,14 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useUser, useAuth } from "@/firebase";
-import { signOut, updateProfile, updatePassword } from "firebase/auth";
+import {
+  signOut,
+  updateProfile,
+  updatePassword,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
+  verifyBeforeUpdateEmail,
+} from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
@@ -40,11 +48,111 @@ export default function AccountPage() {
   const [newPass, setNewPass] = useState("");
   const [confirmPass, setConfirmPass] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
+  const [newEmail, setNewEmail] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [emailMsg, setEmailMsg] = useState("");
+  const [emailBusy, setEmailBusy] = useState(false);
 
   useEffect(() => {
-    if (!loading && !user) router.replace("/login?redirect=/account");
+    if (!loading && !user) {
+      if (sessionStorage.getItem("emailJustChanged")) {
+        router.replace("/login");
+        return;
+      }
+      router.replace("/login?redirect=/account");
+    }
     if (user) setDisplayName(user.displayName || "");
   }, [user, loading, router]);
+
+  const changeEmail = async () => {
+    <Input
+      type="password"
+      value={currentPassword}
+      onChange={(e) => {
+        setCurrentPassword(e.target.value);
+        if (emailMsg) setEmailMsg("");
+      }}
+      placeholder="••••••••"
+      className={`mt-1 ${
+        emailMsg === "Current password is wrong."
+          ? "border-red-500 ring-2 ring-red-500/30 animate-pulse"
+          : ""
+      }`}
+    />;
+    if (!user?.email) return;
+    if (!newEmail.trim() || !currentPassword) {
+      setEmailMsg("Enter new email and current password.");
+      return;
+    }
+    setEmailBusy(true);
+    setEmailMsg("");
+    try {
+      const cred = EmailAuthProvider.credential(user.email, currentPassword);
+      await reauthenticateWithCredential(user, cred);
+      sessionStorage.setItem("oldEmail", user.email || "");
+      sessionStorage.setItem("pendingNewEmail", newEmail.trim());
+      await verifyBeforeUpdateEmail(user, newEmail.trim(), {
+        url: "https://mykittool.online/account",
+        handleCodeInApp: false,
+      });
+      setEmailMsg("Check the new inbox and tap the link to finish.");
+      setNewEmail("");
+      setCurrentPassword("");
+    } catch (err: any) {
+      const code = err?.code || "";
+      if (
+        code === "auth/wrong-password" ||
+        code === "auth/invalid-credential"
+      ) {
+        setEmailMsg("Current password is wrong.");
+      } else if (code === "auth/email-already-in-use") {
+        setEmailMsg("This email is already in use.");
+      } else if (code === "auth/requires-recent-login") {
+        setEmailMsg("Login again, then change email.");
+      } else if (code === "auth/operation-not-allowed") {
+        setEmailMsg("Email change is not enabled for this login method.");
+      } else {
+        setEmailMsg("Could not start email change.");
+      }
+    } finally {
+      setEmailBusy(false);
+    }
+  };
+  useEffect(() => {
+    if (!user) return;
+    if (!sessionStorage.getItem("pendingNewEmail")) return;
+
+    const tick = async () => {
+      const finish = async () => {
+        sessionStorage.removeItem("oldEmail");
+        sessionStorage.removeItem("pendingNewEmail");
+        sessionStorage.setItem("emailJustChanged", "1");
+        try {
+          if (auth) await signOut(auth);
+        } catch {}
+        router.replace("/login");
+      };
+
+      try {
+        await user.reload();
+      } catch (err: any) {
+        if (err?.code === "auth/user-token-expired") await finish();
+        return;
+      }
+
+      const now = user.email || "";
+      const oldEmail = sessionStorage.getItem("oldEmail") || "";
+      const pending = sessionStorage.getItem("pendingNewEmail") || "";
+      if (!now || !oldEmail) return;
+      if (now === oldEmail) return;
+      if (pending && now !== pending) return;
+      await finish();
+    };
+
+    tick();
+    const id = setInterval(tick, 2500);
+    return () => clearInterval(id);
+  }, [user, auth, router]);
 
   const handleUpdateProfile = async () => {
     if (!user) return;
@@ -208,6 +316,95 @@ export default function AccountPage() {
                     </Button>
                   </div>
                 </div>
+
+                <div className="relative mt-8 overflow-hidden rounded-2xl border border-primary/20 bg-card p-5 shadow-[0_0_0_1px_rgba(59,130,246,0.08)]">
+                  <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-primary/10 blur-2xl" />
+
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+                      <Mail className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h2 className="text-sm font-semibold tracking-wide">
+                        Change email
+                      </h2>
+                      <p className="text-xs text-muted-foreground">
+                        Now:{" "}
+                        <span className="font-medium text-foreground">
+                          {user.email}
+                        </span>
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 space-y-3">
+                    <div>
+                      <Label className="text-xs">New email</Label>
+                      <Input
+                        type="email"
+                        value={newEmail}
+                        onChange={(e) => setNewEmail(e.target.value)}
+                        placeholder="name@email.com"
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Current password</Label>
+                      <Input
+                        type="password"
+                        value={currentPassword}
+                        onChange={(e) => setCurrentPassword(e.target.value)}
+                        placeholder="••••••••"
+                        className="mt-1"
+                      />
+                    </div>
+                  </div>
+
+                  {newEmail.trim() ? (
+                    <div className="mt-3 flex items-start gap-2 rounded-xl bg-primary/10 px-3 py-2 text-xs text-foreground">
+                      <Send className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+                      <p>
+                        Confirm link will go to{" "}
+                        <span className="font-semibold">{newEmail.trim()}</span>
+                        . Open that inbox, not the old one.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="mt-3 flex items-start gap-2 text-xs text-muted-foreground">
+                      <Shield className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                      <p>Type the new email. The link is sent there.</p>
+                    </div>
+                  )}
+
+                  <Button
+                    type="button"
+                    onClick={changeEmail}
+                    disabled={emailBusy}
+                    className="mt-4 w-full"
+                  >
+                    {emailBusy ? "Sending..." : "Send change link"}
+                  </Button>
+
+                  {emailMsg === "Current password is wrong." && (
+                    <p className="mt-2 animate-bounce text-sm font-medium text-red-500">
+                      Wrong password. Try again.
+                    </p>
+                  )}
+
+                  {emailMsg ===
+                    "Check the new inbox and tap the link to finish." && (
+                    <div className="mt-3 animate-pulse rounded-xl border border-green-500/30 bg-green-500/10 px-3 py-2 text-sm text-green-600">
+                      Link sent. Open the new email inbox and tap the link.
+                    </div>
+                  )}
+
+                  {emailMsg &&
+                    emailMsg !== "Current password is wrong." &&
+                    emailMsg !==
+                      "Check the new inbox and tap the link to finish." && (
+                      <p className="mt-2 text-sm text-red-500">{emailMsg}</p>
+                    )}
+                </div>
                 <div className="space-y-5 rounded-2xl border border-black/5 bg-secondary/30 p-5">
                   <div className="flex items-center gap-4">
                     <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-[#2563eb] to-[#60a5fa] text-white shadow-md">
@@ -260,7 +457,7 @@ export default function AccountPage() {
               <div>
                 <h4 className="text-sm font-semibold">Security guaranteed</h4>
                 <p className="mt-1 text-sm text-foreground/60">
-                  Account details are encrypted and managed with Firebase.
+                  Account details are encrypted.
                 </p>
               </div>
             </div>
