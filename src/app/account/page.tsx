@@ -134,7 +134,7 @@ export default function AccountPage() {
 
     const key = process.env.NEXT_PUBLIC_IMGBB_API_KEY;
     if (!key) {
-      toast({ variant: "destructive", title: "ImgBB key missing" });
+      toast({ variant: "destructive", title: "Server Buzy" });
       return;
     }
 
