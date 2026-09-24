@@ -306,6 +306,7 @@ export function RelatedTools() {
       "/ai-chatbot",
       "/auth/action",
       "/verify-email",
+      "/forgot-password",
     ];
     if (nonToolPages.includes(pathname)) return false;
     if (pathname.startsWith("/share/") || pathname.startsWith("/p/"))

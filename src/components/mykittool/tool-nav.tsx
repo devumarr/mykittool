@@ -32,6 +32,7 @@ export function ToolNav() {
       "/temp-mail",
       "/auth/action",
       "/verify-email",
+      "/forgot-password",
     ];
     if (nonToolPages.includes(pathname)) return false;
     if (pathname.startsWith("/share/")) return false;

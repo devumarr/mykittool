@@ -21,7 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth, useUser } from "@/firebase";
-import { sendEmailVerification } from "firebase/auth";
+import { sendEmailVerification, sendPasswordResetEmail } from "firebase/auth";
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
@@ -63,7 +63,10 @@ export default function LoginPage() {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const redirectTo = searchParams.get("redirect") || "/account";
-
+  const [showReset, setShowReset] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetMsg, setResetMsg] = useState("");
+  const [resetLoading, setResetLoading] = useState(false);
   useEffect(() => {
     if (!authLoading && user?.emailVerified) router.replace(redirectTo);
   }, [user, authLoading, router, redirectTo]);
@@ -86,6 +89,28 @@ export default function LoginPage() {
         return "Network error. Check your connection.";
       default:
         return "Unable to sign in. Check your details.";
+    }
+  };
+
+  const handleReset = async () => {
+    setResetMsg("");
+    const email = resetEmail.trim();
+    if (!email) {
+      setResetMsg("Enter your email.");
+      return;
+    }
+    if (!auth) {
+      setResetMsg("Login service is not ready.");
+      return;
+    }
+    setResetLoading(true);
+    try {
+      await sendPasswordResetEmail(auth, email);
+      setResetMsg("Check your email for the reset link.");
+    } catch (e: any) {
+      setResetMsg(e?.message || "Could not send reset email.");
+    } finally {
+      setResetLoading(false);
     }
   };
 
@@ -322,7 +347,11 @@ export default function LoginPage() {
                   </button>
                 </div>
               </div>
-
+              {!isSignUp && (
+                <Link href="/forgot-password" className="text-sm text-blue-500">
+                  Forgot password?
+                </Link>
+              )}
               {isSignUp &&
                 (() => {
                   const checks = getPasswordChecks(password);
