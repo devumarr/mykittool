@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   Mail,
@@ -12,6 +12,8 @@ import {
   Shield,
   Clock,
   Loader2,
+  Camera,
+  Trash2,
   Settings2,
   Smartphone,
   Save,
@@ -59,6 +61,9 @@ export default function AccountPage() {
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [deleteMsg, setDeleteMsg] = useState("");
   const [deletePassword, setDeletePassword] = useState("");
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const [preview, setPreview] = useState<string | null>(null);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -70,6 +75,105 @@ export default function AccountPage() {
     }
     if (user) setDisplayName(user.displayName || "");
   }, [user, loading, router]);
+
+  const deleteOldImgbb = async (url: string | null) => {
+    if (!url) return;
+    try {
+      const parts = url.split("/").filter(Boolean);
+      const hash = parts.pop();
+      const id = parts.pop();
+      if (!id || !hash) return;
+      const fd = new FormData();
+      fd.append("pathname", `/\( {id}/ \){hash}`);
+      fd.append("action", "delete");
+      fd.append("delete", "image");
+      fd.append("from", "resource");
+      fd.append("deleting[id]", id);
+      fd.append("deleting[hash]", hash);
+      await fetch("https://ibb.co/json", {
+        method: "POST",
+        body: fd,
+        mode: "no-cors",
+      });
+    } catch {}
+  };
+  const handleRemovePhoto = async () => {
+    if (!user) return;
+    setPhotoBusy(true);
+    try {
+      const oldDelete = localStorage.getItem(`imgbbDelete_${user.uid}`);
+      await deleteOldImgbb(oldDelete);
+      localStorage.removeItem(`imgbbDelete_${user.uid}`);
+      await updateProfile(user, { photoURL: "" });
+      toast({ title: "Photo removed" });
+    } catch (err: any) {
+      toast({
+        variant: "destructive",
+        title: "Remove failed",
+        description: err?.message || "Try again",
+      });
+    } finally {
+      setPhotoBusy(false);
+    }
+  };
+
+  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !user) return;
+    if (!file.type.startsWith("image/")) {
+      toast({ variant: "destructive", title: "Use an image file" });
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      toast({ variant: "destructive", title: "Max 2 MB" });
+      return;
+    }
+    const localUrl = URL.createObjectURL(file);
+    setPreview(localUrl);
+
+    const key = process.env.NEXT_PUBLIC_IMGBB_API_KEY;
+    if (!key) {
+      toast({ variant: "destructive", title: "ImgBB key missing" });
+      return;
+    }
+
+    setPhotoBusy(true);
+    try {
+      const oldDelete = localStorage.getItem(`imgbbDelete_${user.uid}`);
+      await deleteOldImgbb(oldDelete);
+      localStorage.removeItem(`imgbbDelete_${user.uid}`);
+      const fd = new FormData();
+      fd.append("key", key);
+      fd.append("image", file);
+      const res = await fetch("https://api.imgbb.com/1/upload", {
+        method: "POST",
+        body: fd,
+      });
+      const json = await res.json();
+      if (!json?.success || !json?.data?.url) {
+        throw new Error("Upload failed");
+      }
+      if (json.data.delete_url) {
+        localStorage.setItem(`imgbbDelete_${user.uid}`, json.data.delete_url);
+      }
+
+      const photo =
+        json.data.display_url || json.data.url || json.data.medium?.url;
+      await updateProfile(user, { photoURL: photo });
+      await user.reload();
+
+      toast({ title: "Photo updated" });
+    } catch (err: any) {
+      toast({
+        variant: "destructive",
+        title: "Photo failed",
+        description: err?.message || "Try again",
+      });
+    } finally {
+      setPhotoBusy(false);
+    }
+  };
 
   const deleteAccount = async () => {
     if (!user) return;
@@ -211,6 +315,18 @@ export default function AccountPage() {
     return () => clearInterval(id);
   }, [user, auth, router]);
 
+  const pickPhoto = () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+    input.style.display = "none";
+    input.onchange = (ev) => {
+      handlePhotoChange(ev as unknown as React.ChangeEvent<HTMLInputElement>);
+      input.remove();
+    };
+    document.body.appendChild(input);
+    input.click();
+  };
   const handleUpdateProfile = async () => {
     if (!user) return;
     setIsUpdating(true);
@@ -310,23 +426,35 @@ export default function AccountPage() {
           <div className="h-[3px] bg-gradient-to-r from-[#2563eb] via-[#60a5fa] to-orange-400" />
           <div className="pointer-events-none absolute right-[-40px] top-[-40px] h-48 w-48 rounded-full bg-[#2563eb]/10 blur-3xl" />
           <div className="flex flex-col items-center gap-8 p-8 md:flex-row md:items-center md:p-10">
-            <div className="relative">
-              <div className="absolute -inset-2 rounded-[1.8rem] bg-gradient-to-br from-[#2563eb] to-orange-400 opacity-30 blur-md" />
-              <Avatar className="relative h-28 w-28 rounded-[1.6rem] border-4 border-white shadow-xl dark:border-background md:h-32 md:w-32">
-                <AvatarImage
-                  src={
-                    user.photoURL ||
-                    `https://i.ibb.co/RTZYSzvR/f2a3fc286c53.png/${user.uid}/300/300`
-                  }
-                  className="object-cover"
-                />
-                <AvatarFallback className="bg-secondary text-3xl font-black text-primary">
-                  {user.email?.charAt(0).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <span className="absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-xl border-4 border-white bg-[#2563eb] text-white dark:border-background">
-                <BadgeCheck className="h-3.5 w-3.5" />
-              </span>
+            <div className="flex flex-col items-center">
+              <div className="relative">
+                <div className="pointer-events-none absolute -inset-2 rounded-[1.8rem] bg-gradient-to-br from-[#2563eb] to-orange-400 opacity-30 blur-md" />
+                <Avatar className="relative h-28 w-28 overflow-hidden rounded-[1.6rem] border-4 border-white shadow-xl dark:border-background md:h-32 md:w-32">
+                  {preview || user.photoURL ? (
+                    <img
+                      src={preview || user.photoURL || ""}
+                      alt=""
+                      className="h-full w-full object-cover"
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <AvatarFallback className="bg-secondary text-3xl font-black text-primary">
+                      {user.email?.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  )}
+                </Avatar>
+                <button
+                  type="button"
+                  disabled={photoBusy}
+                  onClick={pickPhoto}
+                  className="absolute inset-0 z-[5] flex items-center justify-center rounded-[1.6rem] bg-black/0 text-white opacity-0 transition hover:bg-black/40 hover:opacity-100"
+                >
+                  <Camera className="h-5 w-5" />
+                </button>
+                <span className="absolute -bottom-1 -right-1 z-10 flex h-8 w-8 items-center justify-center rounded-xl border-4 border-white bg-[#2563eb] text-white dark:border-background">
+                  <BadgeCheck className="h-3.5 w-3.5" />
+                </span>
+              </div>
             </div>
             <div className="min-w-0 flex-1 text-center md:text-left">
               <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-[#2563eb]">
@@ -336,6 +464,30 @@ export default function AccountPage() {
                 {user.displayName || "Member"}
               </h1>
               <p className="mt-2 text-sm text-foreground/65">{user.email}</p>
+
+              <div className="mt-3 flex items-center justify-center gap-3 text-[12px] font-medium md:justify-start">
+                <button
+                  type="button"
+                  disabled={photoBusy}
+                  onClick={pickPhoto}
+                  className="text-[#2563eb] transition hover:underline disabled:opacity-50"
+                >
+                  {photoBusy ? "Saving..." : "Change photo"}
+                </button>
+                {(user.photoURL || preview) && (
+                  <>
+                    <span className="h-3 w-px bg-black/10 dark:bg-white/10" />
+                    <button
+                      type="button"
+                      disabled={photoBusy}
+                      onClick={handleRemovePhoto}
+                      className="text-foreground/40 transition hover:text-red-500 disabled:opacity-50"
+                    >
+                      Remove
+                    </button>
+                  </>
+                )}
+              </div>
               <div className="mt-5 flex flex-wrap justify-center gap-2 md:justify-start">
                 <Badge className="rounded-full border-0 bg-[#2563eb] px-3 py-1 text-white">
                   Studio member
