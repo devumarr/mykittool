@@ -225,27 +225,46 @@ export default function AccountPage() {
   };
 
   const handleChangePassword = async () => {
-    if (!user || !newPass) return;
+    if (!user || !currentPassword || !newPass) return;
     if (newPass !== confirmPass) {
       toast({ variant: "destructive", title: "Passwords do not match" });
       return;
     }
     setIsUpdating(true);
     try {
+      if (!user.email) {
+        toast({ variant: "destructive", title: "No email on this account" });
+        setCurrentPassword("");
+        return;
+      }
+      const cred = EmailAuthProvider.credential(user.email, currentPassword);
+      await reauthenticateWithCredential(user, cred);
       await updatePassword(user, newPass);
       setNewPass("");
       setConfirmPass("");
       toast({ title: "Password changed" });
     } catch (err: any) {
-      toast({
-        variant: "destructive",
-        title:
-          err.code === "auth/requires-recent-login" ? "Login again" : "Failed",
-        description:
-          err.code === "auth/requires-recent-login"
-            ? "Log out and back in to change password."
-            : err.message,
-      });
+      const code = err?.code || "";
+      let title = "Failed";
+      let description = err?.message || "Could not update password.";
+      if (
+        code === "auth/wrong-password" ||
+        code === "auth/invalid-credential"
+      ) {
+        title = "Wrong current password";
+        description = "Current password is not correct.";
+      } else if (code === "auth/weak-password") {
+        title = "Weak password";
+        description = "Use a stronger new password.";
+      } else if (code === "auth/network-request-failed") {
+        title = "Network error";
+        description =
+          "My Kit Tool request blocked. Turn off adblock and try again.";
+      } else if (code === "auth/requires-recent-login") {
+        title = "Login again";
+        description = "Log out and log in, then change password.";
+      }
+      toast({ variant: "destructive", title, description });
     } finally {
       setIsUpdating(false);
     }
@@ -475,6 +494,13 @@ export default function AccountPage() {
                     </div>
                   </div>
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <input
+                      type="password"
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      placeholder="Current password"
+                      className="h-12 w-full rounded-2xl bg-background px-3"
+                    />
                     <Input
                       type="password"
                       value={newPass}
@@ -492,7 +518,7 @@ export default function AccountPage() {
                   </div>
                   <Button
                     onClick={handleChangePassword}
-                    disabled={isUpdating || !newPass}
+                    disabled={isUpdating || !currentPassword || !newPass}
                     variant="outline"
                     className="h-12 w-full rounded-2xl border-[#2563eb]/20 hover:bg-[#2563eb] hover:text-white"
                   >
