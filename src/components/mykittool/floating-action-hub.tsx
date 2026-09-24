@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import {
   Plus,
   X,
@@ -13,7 +13,6 @@ import {
   Eraser,
   Image as ImageIcon,
   Zap,
-  ShieldCheck,
   Search,
   FileCode,
   Languages,
@@ -21,13 +20,7 @@ import {
   Hash,
   Database,
   Lock,
-  Box,
   FileArchive,
-  Palette,
-  Maximize2,
-  ListFilter,
-  MonitorPlay,
-  RotateCcw,
   Bot,
   Globe,
   ArrowRightLeft,
@@ -43,16 +36,10 @@ import {
   MessageSquare,
   Scale,
   Activity,
-  MousePointer2,
   Trophy,
-  Dices,
   Mic2,
   Volume2,
   CloudUpload,
-  Globe2,
-  PanelLeft,
-  ArrowRight,
-  ShieldAlert,
   Trash2,
   Sparkles,
 } from "lucide-react";
@@ -301,7 +288,8 @@ export function FloatingActionHub() {
     if (!id) return null;
     return TOOL_MAP.find((t) => t.id === id) || null;
   };
-
+  const pathname = usePathname();
+  if (pathname !== "/") return null;
   return (
     <>
       {/* Outside Click Interceptor */}
@@ -424,7 +412,7 @@ export function FloatingActionHub() {
 
       {/* REFINED TOOL PICKER MODAL */}
       <Dialog open={showPicker} onOpenChange={setShowAddPicker}>
-        <DialogContent className="glass-card max-w-2xl w-[calc(100%-32px)] border-foreground/[0.08] dark:border-white/20 p-0 overflow-hidden outline-none flex flex-col max-h-[85vh]">
+        <DialogContent className="max-w-2xl w-[calc(100%-32px)] border-foreground/[0.08] dark:border-white/20 p-0 overflow-hidden outline-none flex flex-col max-h-[85vh]">
           <DialogHeader className="p-6 sm:p-8 border-b border-foreground/[0.05] dark:border-white/5 bg-secondary/30 shrink-0">
             <div className="flex items-center gap-5">
               <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shadow-inner border border-primary/20">
@@ -448,7 +436,7 @@ export function FloatingActionHub() {
               <Input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search studio registry..."
+                placeholder="Search"
                 className="h-14 pl-12 bg-background border-foreground/[0.08] dark:border-white/10 text-xs font-bold uppercase rounded-2xl shadow-inner"
                 autoFocus
                 aria-label="Filter tool registry"
