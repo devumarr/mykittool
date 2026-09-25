@@ -248,9 +248,7 @@ export default function PdfToImagePage() {
           PDF to <span className="text-primary italic">Image Studio</span>
         </h1>
         <p className="text-foreground/40 text-sm md:text-base font-medium mt-4 max-w-2xl leading-relaxed">
-          High-fidelity document rendering. Convert PDF pages into
-          professional-grade PNG or JPG assets locally in your browser with
-          absolute privacy.
+          Convert PDF pages into PNG or JPG locally in your browser.
         </p>
       </div>
 
@@ -437,12 +435,11 @@ export default function PdfToImagePage() {
             <Info className="w-6 h-6 text-primary mt-1 shrink-0" />
             <div className="space-y-2">
               <h4 className="text-[11px] font-black text-primary uppercase tracking-widest">
-                Privacy Absolute
+                Privacy
               </h4>
               <p className="text-[11px] text-foreground/40 leading-relaxed font-medium">
-                Conversion occurs entirely on your device via the Canvas
-                rendering engine. Your documents never leave your browser
-                sandbox, ensuring 100% data security.
+                Your documents never leave your browser sandbox, ensuring 100%
+                data security.
               </p>
             </div>
           </div>
@@ -472,7 +469,7 @@ export default function PdfToImagePage() {
                 <div className="h-full flex flex-col items-center justify-center text-center opacity-10 space-y-6 py-20">
                   <Monitor className="w-24 h-24 text-primary" />
                   <p className="text-sm font-black uppercase tracking-[0.3em]">
-                    Studio Standby
+                    Preview
                   </p>
                 </div>
               ) : isProcessing && results.length === 0 ? (
@@ -502,14 +499,14 @@ export default function PdfToImagePage() {
                         className="w-full h-full object-cover"
                       />
                       <div className="absolute inset-0 bg-background opacity-0 group-hover:opacity-100 transition-all flex flex-col items-center justify-center gap-3 backdrop-blur-sm">
-                        <p className="text-[10px] font-black text-white uppercase tracking-widest">
+                        <p className="text-[10px] font-black  uppercase tracking-widest">
                           Page {res.index}
                         </p>
                         <Button
                           asChild
                           size="sm"
                           variant="outline"
-                          className="h-8 bg-white/20 border-white/40 text-white hover:bg-primary hover:border-primary text-[9px] font-black uppercase"
+                          className="h-8  border-white/40 hover:bg-primary hover:border-primary text-[9px] font-black uppercase"
                         >
                           <a
                             href={res.dataUrl}
@@ -519,7 +516,7 @@ export default function PdfToImagePage() {
                           </a>
                         </Button>
                       </div>
-                      <div className="absolute bottom-3 left-3 px-2 py-0.5 rounded-md bg-background text-white text-[8px] font-black uppercase tracking-widest">
+                      <div className="absolute bottom-3 left-3 px-2 py-0.5 rounded-md bg-background text-[8px] font-black uppercase tracking-widest">
                         P.{res.index}
                       </div>
                     </div>
@@ -568,6 +565,50 @@ export default function PdfToImagePage() {
             </div>
           </div>
         </div>
+        <section className="mx-auto mt-16 max-w-3xl">
+          <div className="mb-8 flex items-center gap-3">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600/10 text-blue-600">
+              <FileText className="h-5 w-5" />
+            </span>
+            <div>
+              <h2 className="text-xl font-bold">PDF to Image FAQ</h2>
+              <p className="text-sm text-foreground/55">
+                How page export works
+              </p>
+            </div>
+          </div>
+          <div className="space-y-3">
+            {[
+              {
+                q: "Is PDF to Image free?",
+                a: "Yes. Export PDF pages as images on My Kit Tool at no cost.",
+              },
+              {
+                q: "Is my PDF uploaded?",
+                a: "No. Pages are rendered in your browser. The file stays on your device.",
+              },
+              {
+                q: "Which formats can I download?",
+                a: "JPG and PNG, depending on the option you pick on the page.",
+              },
+              {
+                q: "Can I export every page?",
+                a: "Yes. Each page can be saved as its own image.",
+              },
+            ].map((item) => (
+              <div
+                key={item.q}
+                className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm"
+              >
+                <div className="h-1 bg-gradient-to-r from-blue-600 via-sky-400 to-orange-400" />
+                <div className="p-5">
+                  <h3 className="text-sm font-bold">{item.q}</h3>
+                  <p className="mt-1 text-sm text-foreground/60">{item.a}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
       </div>
 
       <style jsx global>{`
