@@ -1,27 +1,18 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useRef, useState } from "react";
 import {
   Lock,
-  Unlock,
   Upload,
-  Download,
   Trash2,
-  Sparkles,
   Loader2,
-  Info,
-  CheckCircle2,
-  FileText,
-  Settings2,
-  ShieldAlert,
   Eye,
   EyeOff,
   Printer,
   Copy,
-  Zap,
-  Activity,
   ShieldCheck,
-  KeyRound,
+  Info,
+  CheckCircle2,
   AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -31,104 +22,36 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { PDFDocument } from "pdf-lib";
+import { PDFDocument } from "@cantoo/pdf-lib";
 
 export default function PdfPasswordProtectPage() {
   const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
-
-  // Permissions
   const [allowPrinting, setAllowPrinting] = useState(true);
   const [allowCopying, setAllowCopying] = useState(true);
-
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const formatSize = (bytes: number) => {
-    if (bytes === 0) return "0 Bytes";
-    const k = 1024;
-    const sizes = ["Bytes", "KB", "MB", "GB"];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
+    if (!bytes) return "0 B";
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${["B", "KB", "MB", "GB"][i]}`;
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
-    if (selectedFile) {
-      if (selectedFile.type !== "application/pdf") {
-        toast({
-          variant: "destructive",
-          title: "Invalid Protocol",
-          description: "Only PDF documents are supported for encryption.",
-        });
-        return;
-      }
-      setFile(selectedFile);
-      toast({
-        title: "Asset Imported",
-        description: "Matrix ready for encryption protocol.",
-      });
-    }
-  };
-
-  const executeProtection = async () => {
-    if (!file) return;
-    if (!password) {
-      toast({
-        variant: "destructive",
-        title: "Key Required",
-        description: "Please enter a protection password.",
-      });
+    const selected = e.target.files?.[0];
+    if (!selected) return;
+    if (
+      selected.type !== "application/pdf" &&
+      !selected.name.toLowerCase().endsWith(".pdf")
+    ) {
+      toast({ variant: "destructive", title: "PDF only" });
       return;
     }
-    if (password !== confirmPassword) {
-      toast({
-        variant: "destructive",
-        title: "Matrix Mismatch",
-        description: "Passwords do not match.",
-      });
-      return;
-    }
-
-    setIsProcessing(true);
-
-    try {
-      const arrayBuffer = await file.arrayBuffer();
-      const pdfDoc = await PDFDocument.load(arrayBuffer, {
-        ignoreEncryption: true,
-      });
-
-      // Note: Encryption in pdf-lib requires external implementation or manual dictionary manipulation
-      // for 100% spec-compliance if not using a dedicated encryption plugin.
-      // For this studio utility, we simulate the production of the locked master.
-      // In a production environment with node-qpdf or similar, this would be a full AES lock.
-
-      const pdfBytes = await pdfDoc.save();
-      const blob = new Blob([pdfBytes], { type: "application/pdf" });
-      const url = URL.createObjectURL(blob);
-
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `protected_${file.name}`;
-      link.click();
-
-      toast({
-        title: "Protection Complete",
-        description: "Locked document exported to local storage.",
-      });
-    } catch (err) {
-      console.error(err);
-      toast({
-        variant: "destructive",
-        title: "Encryption Failed",
-        description: "Internal error during document re-synthesis.",
-      });
-    } finally {
-      setIsProcessing(false);
-    }
+    setFile(selected);
   };
 
   const handleClear = () => {
@@ -136,312 +59,296 @@ export default function PdfPasswordProtectPage() {
     setPassword("");
     setConfirmPassword("");
     if (fileInputRef.current) fileInputRef.current.value = "";
-    toast({ title: "Studio Reset", description: "Security buffer cleared." });
+  };
+
+  const executeProtection = async () => {
+    if (!file) return;
+    if (password.length < 4) {
+      toast({
+        variant: "destructive",
+        title: "Password too short",
+        description: "Use at least 4 characters.",
+      });
+      return;
+    }
+    if (password !== confirmPassword) {
+      toast({ variant: "destructive", title: "Passwords do not match" });
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      const bytes = await file.arrayBuffer();
+      const pdfDoc = await PDFDocument.load(bytes, { ignoreEncryption: true });
+
+      await (pdfDoc as any).encrypt({
+        userPassword: password,
+        ownerPassword: password,
+        permissions: {
+          printing: allowPrinting ? "highResolution" : false,
+          copying: allowCopying,
+          modifying: false,
+          annotating: false,
+          fillingForms: false,
+          contentAccessibility: true,
+          documentAssembly: false,
+        },
+      });
+
+      const out = await pdfDoc.save();
+      const blob = new Blob([out as BlobPart], { type: "application/pdf" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = file.name.replace(/\.pdf$/i, "") + "-protected.pdf";
+      a.click();
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: "Protected",
+        description: "Open the file — it will ask for the password.",
+      });
+    } catch (err) {
+      console.error(err);
+      toast({
+        variant: "destructive",
+        title: "Lock failed",
+        description: "This PDF could not be encrypted in the browser.",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
-    <div className="container mx-auto px-6 py-12 md:py-20 max-w-7xl">
-      <div className="mb-12 animate-reveal">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-primary/10 border border-primary/20 text-[9px] font-black text-primary uppercase tracking-widest mb-4">
-          <Lock className="w-3.5 h-3.5" /> Security Suite
-        </div>
-        <h1 className="text-4xl md:text-7xl font-headline font-black text-foreground uppercase tracking-tight">
-          PDF <span className="text-primary italic">Password Studio</span>
+    <div className="container mx-auto max-w-5xl px-4 py-12 md:px-6 md:py-16">
+      <div className="mb-10">
+        <p className="mb-2 text-[11px] font-black uppercase tracking-[0.22em] text-blue-600">
+          PDF tools
+        </p>
+        <h1 className="text-3xl font-black tracking-tight md:text-5xl">
+          PDF Password Protect
         </h1>
-        <p className="text-foreground/40 text-sm md:text-base font-medium mt-4 max-w-2xl leading-relaxed">
-          Professional-grade document encryption. Protect sensitive PDFs with
-          user passwords and granular permission restrictions locally in your
-          browser.
+        <p className="mt-3 max-w-xl text-sm text-foreground/60">
+          Add a real open-password to a PDF in your browser. File never leaves
+          this device.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
-        {/* Input Panel */}
-        <div className="lg:col-span-7 space-y-8 animate-in fade-in slide-in-from-left-6 duration-700">
-          <Card className="glass-card border-border shadow-2xl overflow-hidden relative group">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
+      <div className="grid gap-6 lg:grid-cols-12">
+        <Card className="overflow-hidden rounded-[1.8rem] border-border shadow-xl lg:col-span-7">
+          <div className="h-1 bg-gradient-to-r from-blue-600 via-sky-400 to-orange-400" />
+          <CardHeader className="border-b border-border bg-muted/40">
+            <CardTitle className="flex items-center gap-3 text-sm">
+              <Lock className="h-4 w-4 text-blue-600" /> Lock file
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6 p-6">
+            <button
+              type="button"
+              onClick={() => !isProcessing && fileInputRef.current?.click()}
+              className={cn(
+                "flex h-40 w-full flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border bg-muted/30 hover:border-blue-600/40",
+                file && "border-solid border-blue-600/20",
+              )}
+            >
+              {file ? (
+                <>
+                  <CheckCircle2 className="mb-2 h-8 w-8 text-blue-600" />
+                  <p className="max-w-[260px] truncate text-sm font-bold">
+                    {file.name}
+                  </p>
+                  <p className="text-xs text-foreground/50">
+                    {formatSize(file.size)}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <Upload className="mb-2 h-8 w-8 text-foreground/30" />
+                  <p className="text-sm font-semibold text-foreground/60">
+                    Drop or click PDF
+                  </p>
+                </>
+              )}
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="application/pdf"
+              className="hidden"
+              onChange={handleFileUpload}
+            />
 
-            <CardHeader className="pb-8 border-b border-border bg-secondary/30">
-              <CardTitle className="text-xl font-headline flex items-center gap-4 text-foreground">
-                <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary ring-1 ring-primary/40 shadow-inner group-hover:scale-110 transition-transform">
-                  <FileText className="w-6 h-6" />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Password</Label>
+                <div className="relative">
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="h-12 rounded-xl pr-12"
+                    placeholder="Set password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground/40"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
                 </div>
-                Asset Intake
-              </CardTitle>
-            </CardHeader>
-
-            <CardContent className="pt-10 space-y-10">
-              <div
-                onClick={() => !isProcessing && fileInputRef.current?.click()}
-                className={cn(
-                  "relative h-48 rounded-[2.5rem] border-2 border-dashed border-border hover:border-primary/40 flex flex-col items-center justify-center bg-secondary/30 transition-all cursor-pointer overflow-hidden group/upload",
-                  file && "border-solid border-primary/20",
-                  isProcessing && "cursor-not-allowed opacity-80",
-                )}
-              >
-                {file ? (
-                  <div className="text-center p-6 space-y-2">
-                    <CheckCircle2 className="w-10 h-10 text-primary mx-auto mb-2" />
-                    <p className="text-xs font-black uppercase text-foreground truncate max-w-[280px]">
-                      {file.name}
-                    </p>
-                    <p className="text-[10px] font-bold text-foreground/30 uppercase tracking-widest">
-                      {formatSize(file.size)} detected
-                    </p>
-                  </div>
-                ) : (
-                  <>
-                    <div className="w-16 h-16 rounded-[1.5rem] bg-background border border-border flex items-center justify-center text-foreground/10 group-hover/upload:text-primary transition-all mb-4 shadow-xl">
-                      <Upload className="w-8 h-8" />
-                    </div>
-                    <p className="text-[10px] font-black uppercase text-foreground/30 tracking-widest group-hover/upload:text-primary transition-colors">
-                      Import PDF Document
-                    </p>
-                  </>
-                )}
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  accept="application/pdf"
-                  onChange={handleFileUpload}
-                  className="hidden"
+              </div>
+              <div className="space-y-2">
+                <Label>Confirm</Label>
+                <Input
+                  type={showPassword ? "text" : "password"}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className={cn(
+                    "h-12 rounded-xl",
+                    confirmPassword &&
+                      password !== confirmPassword &&
+                      "border-red-500",
+                  )}
+                  placeholder="Repeat password"
                 />
               </div>
+            </div>
 
-              {file && (
-                <div className="space-y-10 animate-in zoom-in duration-500">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="space-y-4">
-                      <Label className="text-[10px] font-black text-foreground/40 uppercase tracking-[0.2em] ml-1">
-                        Access Password
-                      </Label>
-                      <div className="relative group/pass">
-                        <Input
-                          type={showPassword ? "text" : "password"}
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          className="h-14 bg-secondary border-border rounded-2xl text-lg font-mono font-bold pr-14 focus:ring-primary/40"
-                          placeholder="••••••••"
-                        />
-                        <button
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-4 top-1/2 -translate-y-1/2 text-foreground/20 hover:text-primary transition-colors"
-                        >
-                          {showPassword ? (
-                            <EyeOff className="w-5 h-5" />
-                          ) : (
-                            <Eye className="w-5 h-5" />
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                    <div className="space-y-4">
-                      <Label className="text-[10px] font-black text-foreground/40 uppercase tracking-[0.2em] ml-1">
-                        Confirm Identity
-                      </Label>
-                      <Input
-                        type={showPassword ? "text" : "password"}
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        className={cn(
-                          "h-14 bg-secondary border-border rounded-2xl text-lg font-mono font-bold",
-                          password &&
-                            confirmPassword &&
-                            password !== confirmPassword &&
-                            "border-destructive/50 ring-1 ring-destructive/20",
-                        )}
-                        placeholder="••••••••"
-                      />
-                    </div>
-                  </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="flex items-center justify-between rounded-2xl border border-border bg-muted/30 p-4">
+                <span className="flex items-center gap-2 text-sm font-medium">
+                  <Printer className="h-4 w-4 text-blue-600" /> Allow print
+                </span>
+                <Switch
+                  checked={allowPrinting}
+                  onCheckedChange={setAllowPrinting}
+                />
+              </label>
+              <label className="flex items-center justify-between rounded-2xl border border-border bg-muted/30 p-4">
+                <span className="flex items-center gap-2 text-sm font-medium">
+                  <Copy className="h-4 w-4 text-blue-600" /> Allow copy
+                </span>
+                <Switch
+                  checked={allowCopying}
+                  onCheckedChange={setAllowCopying}
+                />
+              </label>
+            </div>
 
-                  <div className="space-y-6 pt-4 border-t border-border">
-                    <Label className="text-[10px] font-black text-foreground/40 uppercase tracking-[0.2em] ml-1">
-                      Permission Matrix
-                    </Label>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="p-6 rounded-[2rem] bg-secondary/50 border border-border flex items-center justify-between group hover:border-primary/20 transition-all">
-                        <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 rounded-xl bg-background border border-border flex items-center justify-center text-primary/40 group-hover:text-primary">
-                            <Printer className="w-5 h-5" />
-                          </div>
-                          <div>
-                            <p className="text-[10px] font-black uppercase text-foreground/60">
-                              Allow Printing
-                            </p>
-                            <p className="text-[8px] font-bold text-foreground/20 uppercase">
-                              High resolution output
-                            </p>
-                          </div>
-                        </div>
-                        <Switch
-                          checked={allowPrinting}
-                          onCheckedChange={setAllowPrinting}
-                        />
-                      </div>
-                      <div className="p-6 rounded-[2rem] bg-secondary/50 border border-border flex items-center justify-between group hover:border-primary/20 transition-all">
-                        <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 rounded-xl bg-background border border-border flex items-center justify-center text-primary/40 group-hover:text-primary">
-                            <Copy className="w-5 h-5" />
-                          </div>
-                          <div>
-                            <p className="text-[10px] font-black uppercase text-foreground/60">
-                              Allow Extraction
-                            </p>
-                            <p className="text-[8px] font-bold text-foreground/20 uppercase">
-                              Text & Image Copying
-                            </p>
-                          </div>
-                        </div>
-                        <Switch
-                          checked={allowCopying}
-                          onCheckedChange={setAllowCopying}
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-4 pt-4">
-                    <Button
-                      onClick={executeProtection}
-                      disabled={
-                        isProcessing ||
-                        !password ||
-                        password !== confirmPassword
-                      }
-                      className="flex-[2] h-16 bg-primary hover:bg-primary/90 text-white font-black rounded-2xl flex items-center justify-center gap-4 text-lg shadow-xl shadow-primary/30 transition-all active:scale-95 group/btn"
-                    >
-                      {isProcessing ? (
-                        <Loader2 className="w-6 h-6 animate-spin" />
-                      ) : (
-                        <ShieldAlert className="w-6 h-6 group-hover:rotate-12 transition-transform" />
-                      )}
-                      Lock Document
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={handleClear}
-                      className="flex-1 h-16 rounded-2xl border-border bg-secondary hover:bg-secondary/80 text-foreground/40 hover:text-destructive transition-all active:scale-95"
-                    >
-                      <Trash2 className="w-6 h-6" />
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Sidebar */}
-        <div className="lg:col-span-5 space-y-8 animate-in fade-in slide-in-from-right-6 duration-1000 stagger-2">
-          <Card className="glass-card border-border shadow-xl overflow-hidden relative group">
-            <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
-            <CardHeader className="py-8 border-b border-border bg-secondary/30">
-              <CardTitle className="text-[10px] font-black text-primary uppercase tracking-[0.5em] flex items-center gap-2">
-                <ShieldCheck className="w-3.5 h-3.5" /> Security Protocol
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-10 space-y-10">
-              <div className="relative group/output min-h-[200px] flex flex-col items-center justify-center rounded-[2.5rem] bg-secondary/30 border border-border p-10 text-center">
-                {!file && !isProcessing && (
-                  <div className="opacity-10 group-hover:opacity-20 transition-all duration-700">
-                    <Activity className="w-20 h-20 text-primary mb-4 mx-auto" />
-                    <p className="text-xs font-black uppercase tracking-[0.3em]">
-                      Studio Standby
-                    </p>
-                  </div>
+            <div className="flex gap-3">
+              <Button
+                onClick={executeProtection}
+                disabled={
+                  !file ||
+                  isProcessing ||
+                  !password ||
+                  password !== confirmPassword
+                }
+                className="h-12 flex-1 rounded-xl bg-blue-600 text-white hover:bg-blue-700"
+              >
+                {isProcessing ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Lock className="mr-2 h-4 w-4" />
                 )}
+                Protect PDF
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleClear}
+                className="h-12 w-12 rounded-xl"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
-                {isProcessing && (
-                  <div className="w-full space-y-8 animate-in fade-in duration-500">
-                    <div className="relative w-28 h-28 mx-auto">
-                      <div className="w-28 h-28 rounded-full border-4 border-primary/10 border-t-primary animate-spin" />
-                      <KeyRound className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 text-primary animate-pulse" />
-                    </div>
-                    <div className="space-y-2">
-                      <p className="text-[11px] font-black uppercase tracking-[0.4em] text-primary">
-                        Executing AES Matrix...
-                      </p>
-                      <p className="text-[9px] text-foreground/30 font-bold uppercase">
-                        Synthesizing cryptographically-secure PDF
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {file && !isProcessing && (
-                  <div className="space-y-8 w-full animate-in zoom-in duration-500">
-                    <div className="w-24 h-24 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary mx-auto shadow-xl ring-4 ring-primary/5">
-                      <Lock className="w-10 h-10" />
-                    </div>
-                    <div className="space-y-3">
-                      <h3 className="text-sm font-black text-foreground uppercase tracking-widest">
-                        Awaiting Encryption
-                      </h3>
-                      <p className="text-[10px] text-foreground/40 font-medium leading-relaxed uppercase">
-                        Enter security keys to startdocument locking.
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="p-6 rounded-[2.5rem] bg-primary/5 border border-primary/10 flex items-start gap-5 group hover:bg-primary/10 transition-colors">
-                <Info className="w-6 h-6 text-primary mt-1 shrink-0" />
-                <div className="space-y-2">
-                  <h4 className="text-[11px] font-black text-primary uppercase tracking-widest">
-                    Privacy Absolute
-                  </h4>
-                  <p className="text-[11px] text-foreground/40 leading-relaxed font-medium">
-                    Encryption occurs entirely on your device using WebAssembly.
-                    Your documents and passwords never leave your browser
-                    sandbox, ensuring 100% data security.
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 gap-4">
-                <div className="flex items-start gap-4 p-5 rounded-2xl bg-secondary border border-border group transition-all hover:bg-secondary/80">
-                  <Zap className="w-5 h-5 text-primary mt-0.5 shrink-0" />
-                  <div className="space-y-1">
-                    <p className="text-[10px] font-black text-foreground uppercase tracking-widest">
-                      Master Protocol
-                    </p>
-                    <p className="text-[10px] text-foreground/60 leading-relaxed font-medium">
-                      Standard 128-bit encryption for universal document
-                      compatibility.
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-4 p-5 rounded-2xl bg-secondary border border-border group transition-all hover:bg-secondary/80">
-                  <AlertCircle className="w-5 h-5 text-primary mt-0.5 shrink-0" />
-                  <div className="space-y-1">
-                    <p className="text-[10px] font-black text-foreground uppercase tracking-widest">
-                      Lock-Out Warning
-                    </p>
-                    <p className="text-[10px] text-foreground/60 leading-relaxed font-medium">
-                      Ensure you record your password; lost keys cannot be
-                      recovered by the studio.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        <Card className="overflow-hidden rounded-[1.8rem] border-border shadow-xl lg:col-span-5">
+          <div className="h-1 bg-gradient-to-r from-blue-600 to-orange-400" />
+          <CardContent className="space-y-4 p-6">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-600/10 text-blue-600">
+              <ShieldCheck className="h-5 w-5" />
+            </div>
+            <h3 className="font-bold">Real password lock</h3>
+            <p className="text-sm text-foreground/60">
+              Uses AES encryption in the browser. Opening the file should ask
+              for this password.
+            </p>
+            <div className="flex gap-3 rounded-xl bg-muted/50 p-3 text-sm text-foreground/60">
+              <Info className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" />
+              Remember the password. It cannot be recovered here.
+            </div>
+            <div className="flex gap-3 rounded-xl bg-muted/50 p-3 text-sm text-foreground/60">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" />
+              Already-locked PDFs may fail. Unlock first, then protect again.
+            </div>
+          </CardContent>
+        </Card>
       </div>
-
-      <style jsx global>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          @apply bg-transparent;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          @apply bg-primary/20 rounded-full;
-        }
-      `}</style>
+      <section className="mx-auto mt-16 max-w-3xl">
+        <div className="mb-8 flex items-center gap-3">
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600/10 text-blue-600">
+            <Lock className="h-5 w-5" />
+          </span>
+          <div>
+            <h2 className="text-xl font-bold">PDF Password FAQ</h2>
+            <p className="text-sm text-foreground/55">
+              How PDF lock works here
+            </p>
+          </div>
+        </div>
+        <div className="space-y-3">
+          {[
+            {
+              q: "Does the PDF really get a password?",
+              a: "Yes. After Protect PDF, opening the file should ask for the password you set.",
+            },
+            {
+              q: "Is my file uploaded?",
+              a: "No. Encryption runs in your browser. The PDF stays on your device.",
+            },
+            {
+              q: "Is it free?",
+              a: "Yes. PDF Password Protect on My Kit Tool is free.",
+            },
+            {
+              q: "What if I forget the password?",
+              a: "It cannot be recovered here. Save the password before you lock the file.",
+            },
+          ].map((item) => (
+            <div
+              key={item.q}
+              className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm"
+            >
+              <div className="h-1 bg-gradient-to-r from-blue-600 via-sky-400 to-orange-400" />
+              <div className="p-5">
+                <h3 className="text-sm font-bold">{item.q}</h3>
+                <p className="mt-1 text-sm text-foreground/60">{item.a}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }
+<div>
+  <style jsx global>{`
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      @apply bg-transparent;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      @apply bg-primary/20 rounded-full;
+    }
+  `}</style>
+</div>;
