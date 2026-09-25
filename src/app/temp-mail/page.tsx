@@ -8,24 +8,17 @@ import React, {
   useRef,
 } from "react";
 import {
-  Mail,
   RefreshCcw,
   Copy,
-  Trash2,
   Inbox,
+  Mail,
+  User,
   ArrowRight,
   Loader2,
-  Clock,
-  User,
   X,
   Zap,
   ShieldCheck,
-  Activity,
   MessageSquare,
-  Sparkles,
-  Info,
-  Calendar,
-  AlertCircle,
   Plus,
   Server,
   ChevronRight,
@@ -35,19 +28,15 @@ import {
   Search,
   Pin,
   PinOff,
-  Download,
   FileCode,
   FileDown,
   KeyRound,
-  Eye,
-  EyeOff,
-  Volume2,
-  VolumeX,
   History,
-  Type,
   LayoutGrid,
   Smartphone,
   Unplug,
+  HelpCircle,
+  Lock,
   Settings,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -518,7 +507,7 @@ export default function TempMailPage() {
     } catch (err: any) {
       toast({
         variant: "destructive",
-        title: "Handshake Failed",
+        title: "Api Connection Failed",
         description: err.message,
       });
     } finally {
@@ -581,163 +570,169 @@ export default function TempMailPage() {
   };
 
   return (
-    <div className="flex flex-1 w-full overflow-hidden bg-[#060608] selection:bg-primary/20 relative">
+    <div className="flex flex-1 w-full overflow-hidden selection:bg-primary/20 relative">
       <div className="container mx-auto px-4 flex flex-col h-full">
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-10 items-start overflow-hidden pt-4 pb-12">
           {/* Left Column: Controls & History */}
           <div className="lg:col-span-4 space-y-8 animate-in fade-in slide-in-from-left-6 duration-700 overflow-y-auto custom-scrollbar h-full pr-2">
-            <Card className="glass-card border-border shadow-2xl overflow-hidden">
-              <CardHeader className="py-6 border-b border-border bg-secondary/30 flex flex-row items-center justify-between">
-                <CardTitle className="text-[10px] font-black uppercase tracking-widest flex items-center gap-4 text-foreground">
-                  <Server className="w-5 h-5 text-primary" /> Matrix Config
+            <Card className="relative overflow-hidden rounded-[1.8rem] border border-border bg-card shadow-xl">
+              <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-blue-600 via-sky-400 to-orange-400" />
+
+              <CardHeader className="flex flex-row items-center justify-between border-b border-border bg-muted/40 py-5">
+                <CardTitle className="flex items-center gap-3 text-[11px] font-black uppercase tracking-[0.2em] text-foreground">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-600/10 text-blue-600 dark:text-blue-400">
+                    <Server className="h-5 w-5" />
+                  </span>
+                  Matrix Config
                 </CardTitle>
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => setShowAddNode(true)}
-                  className="h-8 w-8 rounded-lg bg-primary/10 text-primary border border-primary/20"
+                  className="h-9 w-9 rounded-xl border border-blue-500/20 bg-blue-600/10 text-blue-600 hover:bg-blue-600 hover:text-white"
                 >
-                  <Plus className="w-4 h-4" />
+                  <Plus className="h-4 w-4" />
                 </Button>
               </CardHeader>
-              <CardContent className="pt-8 space-y-8">
-                <div className="space-y-6">
-                  <div className="space-y-3">
-                    <Label className="text-[10px] font-black text-foreground/40 uppercase tracking-[0.2em] ml-1">
-                      Active Server Node
-                    </Label>
-                    <Select
-                      value={provider}
-                      onValueChange={handleProviderChange}
-                    >
-                      <SelectTrigger className="h-14 bg-secondary/50 border-border rounded-2xl font-bold uppercase text-[10px] tracking-widest">
-                        <SelectValue placeholder="Choose Provider" />
-                      </SelectTrigger>
-                      <SelectContent className="glass-card">
-                        {allProviders.map((p) => (
-                          <SelectItem
-                            key={p.id}
-                            value={p.id}
-                            className="text-[10px] font-black uppercase"
-                          >
-                            {p.label}{" "}
-                            {p.id.startsWith("custom_") && " (Custom)"}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
 
-                    {provider.startsWith("custom_") && (
-                      <div className="flex justify-end">
-                        <button
-                          onClick={() => disconnectNode(provider)}
-                          className="text-[8px] font-black text-red-500 uppercase tracking-widest hover:underline flex items-center gap-1.5"
+              <CardContent className="space-y-7 pt-7">
+                <div className="space-y-3">
+                  <Label className="ml-1 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-foreground/50">
+                    <Globe className="h-3.5 w-3.5 text-sky-500" />
+                    Active Servers
+                  </Label>
+                  <Select value={provider} onValueChange={handleProviderChange}>
+                    <SelectTrigger className="h-14 rounded-2xl border-border bg-muted/50 text-[10px] font-bold uppercase tracking-widest">
+                      <SelectValue placeholder="Choose Provider" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-card">
+                      {allProviders.map((p) => (
+                        <SelectItem
+                          key={p.id}
+                          value={p.id}
+                          className="text-[10px] font-black uppercase"
                         >
-                          <Unplug className="w-3 h-3" /> Disconnect Node
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                          {p.label} {p.id.startsWith("custom_") && " (Custom)"}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
 
-                  <div className="space-y-3">
-                    <Label className="text-[10px] font-black text-foreground/40 uppercase tracking-[0.2em] ml-1">
-                      Custom Identity (Optional)
-                    </Label>
-                    <div className="flex gap-2">
-                      <Input
-                        value={customUsername}
-                        onChange={(e) =>
-                          setCustomUsername(
-                            e.target.value
-                              .toLowerCase()
-                              .replace(/[^a-z0-9]/g, ""),
-                          )
-                        }
-                        placeholder="prefix handle..."
-                        className="h-12 bg-secondary border-border rounded-xl font-bold"
-                      />
-                      <Button
-                        onClick={() => generateMail(provider, customUsername)}
-                        disabled={!customUsername.trim() || isLoading}
-                        className="h-12 px-4 bg-primary text-white font-black uppercase text-[9px] rounded-xl"
+                  {provider.startsWith("custom_") && (
+                    <div className="flex justify-end">
+                      <button
+                        onClick={() => disconnectNode(provider)}
+                        className="flex items-center gap-1.5 text-[8px] font-black uppercase tracking-widest text-red-500 hover:underline"
                       >
-                        Set
-                      </Button>
+                        <Unplug className="h-3 w-3" /> Disconnect
+                      </button>
                     </div>
-                  </div>
+                  )}
+                </div>
 
-                  <div className="p-8 rounded-[3rem] bg-secondary/50 border-2 border-primary/20 shadow-inner flex flex-col items-center justify-center text-center gap-4 relative overflow-hidden group/mail">
-                    <p className="text-[9px] font-black uppercase text-primary/40 tracking-[0.6em] relative z-10">
-                      Active Mailbox
-                    </p>
-                    {isLoading ? (
-                      <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                <div className="space-y-3">
+                  <Label className="ml-1 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-foreground/50">
+                    <User className="h-3.5 w-3.5 text-violet-500" />
+                    Custom Name (Optional)
+                  </Label>
+                  <div className="flex gap-2">
+                    <Input
+                      value={customUsername}
+                      onChange={(e) =>
+                        setCustomUsername(
+                          e.target.value
+                            .toLowerCase()
+                            .replace(/[^a-z0-9]/g, ""),
+                        )
+                      }
+                      placeholder="prefix handle..."
+                      className="h-12 rounded-xl border-border bg-muted/40 font-bold"
+                    />
+                    <Button
+                      onClick={() => generateMail(provider, customUsername)}
+                      disabled={!customUsername.trim() || isLoading}
+                      className="h-12 rounded-xl bg-blue-600 px-5 text-[9px] font-black uppercase text-white"
+                    >
+                      Set
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="relative flex flex-col items-center justify-center gap-3 rounded-[1.5rem] border border-blue-500/20 bg-gradient-to-b from-blue-600/10 via-sky-500/5 to-muted/30 p-7 text-center">
+                  <p className="flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.4em] text-blue-600 dark:text-blue-400">
+                    <Mail className="h-3.5 w-3.5" />
+                    Active Mailbox
+                  </p>
+                  {isLoading ? (
+                    <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                  ) : (
+                    <h2 className="break-all font-headline text-lg font-black text-foreground select-all md:text-xl">
+                      {email || "---"}
+                    </h2>
+                  )}
+                  {unreadCount > 0 && (
+                    <div className="absolute right-4 top-4 flex h-5 w-5 items-center justify-center rounded-full bg-orange-500 text-[9px] font-black text-white">
+                      {unreadCount}
+                    </div>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <Button
+                    onClick={() => handleCopyText(email || "", "identity")}
+                    disabled={!email}
+                    className="h-12 rounded-2xl bg-blue-600 text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-blue-600/25"
+                  >
+                    {isCopied === "identity" ? (
+                      <CheckCircle2 className="mr-2 h-5 w-5" />
                     ) : (
-                      <h2 className="text-xl font-headline font-black text-foreground break-all select-all relative z-10">
-                        {email || "---"}
-                      </h2>
+                      <Copy className="mr-2 h-5 w-5" />
                     )}
-                    {unreadCount > 0 && (
-                      <div className="absolute top-4 right-4 w-5 h-5 rounded-full bg-primary text-white text-[9px] font-black flex items-center justify-center animate-bounce">
-                        {unreadCount}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <Button
-                      onClick={() => handleCopyText(email || "", "identity")}
-                      disabled={!email}
-                      className="h-14 bg-primary text-white font-black uppercase tracking-widest text-[10px] rounded-2xl shadow-xl shadow-primary/30 active:scale-95 transition-all"
-                    >
-                      {isCopied === "identity" ? (
-                        <CheckCircle2 className="w-5 h-5 mr-2" />
-                      ) : (
-                        <Copy className="w-5 h-5 mr-2" />
-                      )}{" "}
-                      Copy
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => generateMail()}
-                      className="h-14 border-border bg-secondary text-foreground font-black text-[10px] uppercase tracking-widest rounded-2xl hover:text-primary"
-                    >
-                      <RefreshCcw className="w-4 h-4 mr-2" /> Randomize
-                    </Button>
-                  </div>
+                    Copy
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => generateMail()}
+                    className="h-12 rounded-2xl border-border bg-muted/40 text-[10px] font-black uppercase tracking-widest text-foreground hover:text-blue-600"
+                  >
+                    <RefreshCcw className="mr-2 h-4 w-4" /> Genrate New
+                  </Button>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="glass-card border-border shadow-xl flex flex-col max-h-[350px]">
-              <CardHeader className="py-4 border-b border-white/5 bg-secondary/30 flex items-center justify-between shrink-0">
+            <Card className="flex max-h-[350px] flex-col overflow-hidden rounded-[1.8rem] border border-border bg-card shadow-xl">
+              <div className="h-1 w-full shrink-0 bg-gradient-to-r from-blue-600 via-sky-400 to-orange-400" />
+              <CardHeader className="flex shrink-0 flex-row items-center justify-between border-b border-border bg-muted/40 py-4">
                 <div className="flex items-center gap-3">
-                  <History className="w-4 h-4 text-primary" />
-                  <CardTitle className="text-[10px] font-black uppercase text-foreground">
-                    Identity Registry
+                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600/10 text-blue-600">
+                    <History className="h-4 w-4" />
+                  </span>
+                  <CardTitle className="text-[10px] font-black uppercase tracking-widest text-foreground">
+                    History
                   </CardTitle>
                 </div>
                 <button
                   onClick={() => setHistory([])}
-                  className="text-[9px] font-black text-foreground/20 hover:text-red-500 uppercase transition-colors"
+                  className="rounded-lg px-2 py-1 text-[9px] font-black uppercase text-foreground/35 hover:bg-red-500/10 hover:text-red-500"
                 >
                   Clear
                 </button>
               </CardHeader>
-              <CardContent className="p-0 overflow-y-auto custom-scrollbar flex-1">
+              <CardContent className="custom-scrollbar min-h-0 flex-1 overflow-y-auto p-0">
                 {history.length === 0 ? (
-                  <div className="py-12 text-center opacity-10 space-y-2">
-                    <History className="w-8 h-8 mx-auto" />
+                  <div className="space-y-2 py-12 text-center text-foreground/30">
+                    <History className="mx-auto h-8 w-8" />
                     <p className="text-[9px] font-black uppercase tracking-widest">
                       No History
                     </p>
                   </div>
                 ) : (
-                  <div className="divide-y divide-white/5">
+                  <div className="divide-y divide-border">
                     {history.map((h, i) => (
                       <div
-                        key={i}
-                        className="p-4 flex items-center justify-between group hover:bg-white/5 transition-all"
+                        key={h.email + "-" + i}
+                        className="flex items-center justify-between gap-2 px-4 py-3 hover:bg-muted/50"
                       >
                         <div
                           className="min-w-0 flex-1 cursor-pointer"
@@ -746,18 +741,18 @@ export default function TempMailPage() {
                             setProvider(h.provider);
                           }}
                         >
-                          <p className="text-[11px] font-bold text-foreground truncate uppercase">
+                          <p className="truncate text-[11px] font-bold text-foreground">
                             {h.email}
                           </p>
-                          <p className="text-[8px] font-black text-foreground/20 uppercase">
+                          <p className="text-[8px] font-black uppercase tracking-wider text-blue-600/70">
                             {h.provider}
                           </p>
                         </div>
                         <button
                           onClick={() => handleCopyText(h.email, `hist-${i}`)}
-                          className="p-2 text-foreground/10 hover:text-primary transition-colors"
+                          className="rounded-lg p-2 text-foreground/35 hover:bg-blue-600/10 hover:text-blue-600"
                         >
-                          <Copy className="w-3.5 h-3.5" />
+                          <Copy className="h-3.5 w-3.5" />
                         </button>
                       </div>
                     ))}
@@ -768,100 +763,116 @@ export default function TempMailPage() {
           </div>
 
           {/* Right Column: Registry & Reader */}
-          <div className="lg:col-span-8 space-y-8 animate-in fade-in slide-in-from-right-6 duration-1000 h-full overflow-hidden flex flex-col">
-            <Card className="glass-card border-border shadow-2xl overflow-hidden relative flex flex-col flex-1 bg-background/10">
-              <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
-              <CardHeader className="py-8 border-b border-border bg-secondary/30 flex flex-col gap-6 shrink-0">
-                <div className="flex flex-row items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shadow-inner">
-                      <Inbox className="w-5 h-5" />
-                    </div>
-                    <CardTitle className="text-[10px] font-black text-primary uppercase tracking-[0.5em]">
-                      Linguistic Registry
+          <div className="lg:col-span-8 flex h-full flex-col space-y-8 overflow-hidden">
+            <Card className="relative flex flex-1 flex-col overflow-hidden rounded-[1.8rem] border border-border bg-card shadow-xl">
+              <div className="h-1 w-full shrink-0 bg-gradient-to-r from-blue-600 via-sky-400 to-orange-400" />
+
+              <CardHeader className="flex shrink-0 flex-col gap-5 border-b border-border bg-muted/40 py-5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600/10 text-blue-600">
+                      <Inbox className="h-5 w-5" />
+                    </span>
+                    <CardTitle className="text-[11px] font-black uppercase tracking-[0.28em] text-foreground">
+                      Mail Box
                     </CardTitle>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => fetchMessages()}
+                    disabled={isRefreshing || !email}
+                    className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border bg-muted/40 px-3 text-[10px] font-black uppercase tracking-widest text-foreground/70 hover:text-blue-600 disabled:opacity-40"
+                  >
+                    <RefreshCcw
+                      className={
+                        isRefreshing
+                          ? "h-3.5 w-3.5 animate-spin"
+                          : "h-3.5 w-3.5"
+                      }
+                    />
+                    Sync
+                  </button>
                   {messages.length > 0 && (
-                    <Badge className="bg-primary text-white text-[8px] font-black px-2 py-0.5 rounded-full">
-                      {messages.length} Signals
+                    <Badge className="rounded-full bg-blue-600 px-2.5 py-0.5 text-[8px] font-black text-white">
+                      {messages.length} Mail
                     </Badge>
                   )}
                 </div>
 
-                <div className="relative group/search">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/20 group-focus-within/search:text-primary transition-colors" />
+                <div className="relative">
+                  <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/35" />
                   <Input
-                    placeholder="Filter signals by sender or subject..."
+                    placeholder="Filter by sender or subject..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="h-12 pl-12 bg-background/50 border-white/5 rounded-xl text-[10px] font-black uppercase"
+                    className="h-11 rounded-xl border-border bg-muted/40 pl-11 text-sm"
                   />
                 </div>
               </CardHeader>
 
-              <CardContent className="flex-1 p-0 overflow-hidden flex flex-col">
-                <div className="flex-1 overflow-y-auto custom-scrollbar no-scrollbar">
+              <CardContent className="flex min-h-0 flex-1 flex-col overflow-hidden p-0">
+                <div className="custom-scrollbar min-h-0 flex-1 overflow-y-auto">
                   {filteredMessages.length === 0 ? (
-                    <div className="h-full flex flex-col items-center justify-center py-40 opacity-10 gap-6 grayscale">
-                      <Inbox className="w-24 h-24 text-primary" />
-                      <p className="text-sm font-black uppercase tracking-[0.3em]">
-                        Signal Buffer Empty
+                    <div className="flex h-full flex-col items-center justify-center gap-3 py-24 text-foreground/30">
+                      <Inbox className="h-12 w-12 text-blue-600/40" />
+                      <p className="text-xs font-black uppercase tracking-widest">
+                        Inbox empty
                       </p>
                     </div>
                   ) : (
-                    <div className="divide-y divide-white/5">
+                    <div className="divide-y divide-border">
                       {filteredMessages.map((msg) => {
                         const isPinned = pinnedIds.has(msg.id);
                         return (
                           <div
                             key={msg.id}
                             className={cn(
-                              "flex group hover:bg-primary/[0.03] transition-all cursor-pointer relative",
-                              isPinned && "bg-primary/[0.05]",
+                              "flex cursor-pointer items-center",
+                              isPinned ? "bg-blue-600/5" : "hover:bg-muted/50",
                             )}
                             onClick={() => readMessage(msg)}
                           >
-                            <div className="flex-1 flex items-center gap-6 p-6 min-w-0">
+                            <div className="flex min-w-0 flex-1 items-center gap-4 px-5 py-4">
                               <div
                                 className={cn(
-                                  "w-12 h-12 rounded-2xl flex items-center justify-center shadow-inner shrink-0",
+                                  "flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl",
                                   isPinned
-                                    ? "bg-primary/20 text-primary"
-                                    : "bg-secondary border border-border text-primary/30",
+                                    ? "bg-blue-600/15 text-blue-600"
+                                    : "border border-border bg-muted text-blue-600/50",
                                 )}
                               >
-                                <MessageSquare className="w-5 h-5" />
+                                <MessageSquare className="h-5 w-5" />
                               </div>
                               <div className="min-w-0 flex-1">
-                                <h4 className="text-sm font-bold text-foreground truncate uppercase">
+                                <h4 className="truncate text-sm font-bold text-foreground">
                                   {msg.subject || "(No Subject)"}
                                 </h4>
-                                <p className="text-[9px] font-bold text-foreground/20 uppercase truncate">
+                                <p className="truncate text-[11px] text-foreground/50">
                                   {msg.from}
                                 </p>
                               </div>
                             </div>
-                            <div className="p-6 flex items-center gap-4 shrink-0 border-l border-white/5">
+                            <div className="flex shrink-0 items-center gap-2 border-l border-border px-4 py-4">
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   togglePin(msg.id);
                                 }}
                                 className={cn(
-                                  "p-2 rounded-xl transition-all",
+                                  "rounded-xl p-2",
                                   isPinned
-                                    ? "text-primary bg-primary/10"
-                                    : "text-white/10 hover:text-primary",
+                                    ? "bg-blue-600/10 text-blue-600"
+                                    : "text-foreground/35 hover:bg-muted hover:text-blue-600",
                                 )}
                               >
                                 {isPinned ? (
-                                  <PinOff className="w-4 h-4" />
+                                  <PinOff className="h-4 w-4" />
                                 ) : (
-                                  <Pin className="w-4 h-4" />
+                                  <Pin className="h-4 w-4" />
                                 )}
                               </button>
-                              <div className="w-8 h-8 rounded-lg bg-background border border-border flex items-center justify-center text-foreground/10 group-hover:text-primary">
-                                <ArrowRight className="w-4 h-4" />
+                              <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-border text-foreground/35">
+                                <ArrowRight className="h-4 w-4" />
                               </div>
                             </div>
                           </div>
@@ -874,31 +885,93 @@ export default function TempMailPage() {
             </Card>
           </div>
         </div>
+        <section className="mx-auto mt-16 max-w-3xl px-4 pb-20">
+          <div className="mb-8 flex items-center gap-3">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600/10 text-blue-600">
+              <HelpCircle className="h-5 w-5" />
+            </span>
+            <div>
+              <h2 className="text-xl font-bold text-foreground">
+                Temp Mail FAQ
+              </h2>
+              <p className="text-sm text-foreground/55">
+                Quick answers before you use the inbox
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            {[
+              {
+                q: "What is Temp Mail?",
+                a: "A disposable email you can use to receive messages without your real address.",
+                icon: Mail,
+              },
+              {
+                q: "Is it free?",
+                a: "Yes. My Kit Tool Temp Mail is free to use in your browser.",
+                icon: CheckCircle2,
+              },
+              {
+                q: "Do I need to sign up?",
+                a: "No account is required to generate an address and read incoming mail.",
+                icon: ShieldCheck,
+              },
+              {
+                q: "Is it private?",
+                a: "Use it for signups and one-time codes. Do not use it for banking or important accounts.",
+                icon: Lock,
+              },
+            ].map((item) => (
+              <div
+                key={item.q}
+                className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm"
+              >
+                <div className="h-1 bg-gradient-to-r from-blue-600 via-sky-400 to-orange-400" />
+                <div className="flex gap-4 p-5">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-600/10 text-blue-600">
+                    <item.icon className="h-5 w-5" />
+                  </span>
+                  <div>
+                    <h3 className="text-sm font-bold text-foreground">
+                      {item.q}
+                    </h3>
+                    <p className="mt-1 text-sm leading-relaxed text-foreground/60">
+                      {item.a}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
       </div>
 
       {/* Custom Node Modal */}
       <Dialog open={showAddNode} onOpenChange={setShowAddNode}>
-        <DialogContent className="glass-card max-w-2xl w-[calc(100%-32px)] border-white/20 p-0 overflow-hidden flex flex-col max-h-[90vh]">
-          <DialogHeader className="p-6 border-b border-white/5 bg-secondary/30 shrink-0">
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shadow-inner border border-primary/20">
-                <Settings className="w-5 h-5" />
+        <DialogContent className="fixed left-1/2 top-[5.5rem] z-50 flex h-[min(36rem,calc(100vh-7rem))] w-[calc(100%-24px)] max-w-2xl -translate-x-1/2 flex-col overflow-hidden rounded-2xl border border-border bg-card p-0 text-foreground translate-y-0">
+          <div className="h-1 w-full bg-gradient-to-r from-blue-600 via-sky-400 to-orange-400" />
+
+          <DialogHeader className="shrink-0 border-b border-border bg-muted/40 px-5 py-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-blue-500/20 bg-blue-600/10 text-blue-600">
+                <Settings className="h-5 w-5" />
               </div>
               <div className="min-w-0">
-                <DialogTitle className="text-xl font-headline font-black text-foreground uppercase tracking-tight">
+                <DialogTitle className="text-lg font-black tracking-tight text-foreground">
                   Add Custom Server
                 </DialogTitle>
-                <DialogDescription className="text-[10px] font-bold text-foreground/40 uppercase tracking-widest">
-                  Register a sovereign linguistic identity node
+                <DialogDescription className="text-xs text-foreground/55">
+                  Connect your own temp-mail API
                 </DialogDescription>
               </div>
             </div>
           </DialogHeader>
 
-          <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-8 bg-transparent">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <div className="custom-scrollbar flex-1 space-y-6 overflow-y-auto bg-card p-5">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label className="text-[9px] font-black uppercase text-foreground/30 ml-1">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-foreground/50">
                   Server Label
                 </Label>
                 <Input
@@ -907,11 +980,11 @@ export default function TempMailPage() {
                     setNewNode({ ...newNode, label: e.target.value })
                   }
                   placeholder="e.g. My Secure Node"
-                  className="h-11 bg-secondary/50 border-border text-xs font-bold"
+                  className="h-11 rounded-xl border-border bg-muted/40 text-sm font-medium"
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-[9px] font-black uppercase text-foreground/30 ml-1">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-foreground/50">
                   Base API URL
                 </Label>
                 <Input
@@ -920,19 +993,19 @@ export default function TempMailPage() {
                     setNewNode({ ...newNode, baseUrl: e.target.value })
                   }
                   placeholder="https://api.temp.com"
-                  className="h-11 bg-secondary/50 border-border text-xs font-mono"
+                  className="h-11 rounded-xl border-border bg-muted/40 font-mono text-sm"
                 />
               </div>
             </div>
 
-            <div className="space-y-4">
-              <Label className="text-[10px] font-black uppercase text-primary tracking-widest ml-1">
-                Protocol Handshakes
+            <div className="space-y-3">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-blue-600">
+                Endpoints
               </Label>
-              <div className="grid grid-cols-1 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-[8px] font-black uppercase text-foreground/20">
-                    Create Endpoint
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-semibold text-foreground/45">
+                    Create
                   </Label>
                   <Input
                     value={newNode.createUrl}
@@ -940,12 +1013,12 @@ export default function TempMailPage() {
                       setNewNode({ ...newNode, createUrl: e.target.value })
                     }
                     placeholder="/new or {baseUrl}/generate"
-                    className="h-10 bg-secondary/30 border-border text-[10px] font-mono"
+                    className="h-11 rounded-xl border-border bg-muted/30 font-mono text-xs"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label className="text-[8px] font-black uppercase text-foreground/20">
-                    Inbox Endpoint
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-semibold text-foreground/45">
+                    Inbox
                   </Label>
                   <Input
                     value={newNode.inboxUrl}
@@ -953,12 +1026,12 @@ export default function TempMailPage() {
                       setNewNode({ ...newNode, inboxUrl: e.target.value })
                     }
                     placeholder="/inbox?email={email}"
-                    className="h-10 bg-secondary/30 border-border text-[10px] font-mono"
+                    className="h-11 rounded-xl border-border bg-muted/30 font-mono text-xs"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label className="text-[8px] font-black uppercase text-foreground/20">
-                    Read Endpoint
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-semibold text-foreground/45">
+                    Read
                   </Label>
                   <Input
                     value={newNode.readUrl}
@@ -966,21 +1039,21 @@ export default function TempMailPage() {
                       setNewNode({ ...newNode, readUrl: e.target.value })
                     }
                     placeholder="/message?id={id}"
-                    className="h-10 bg-secondary/30 border-border text-[10px] font-mono"
+                    className="h-11 rounded-xl border-border bg-muted/30 font-mono text-xs"
                   />
                 </div>
               </div>
             </div>
 
-            <div className="space-y-4 pt-4 border-t border-white/5">
-              <Label className="text-[10px] font-black uppercase text-primary tracking-widest ml-1">
-                Linguistic Path Hints
+            <div className="space-y-3 border-t border-border pt-4">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-blue-600">
+                Response paths
               </Label>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {Object.keys(newNode.paths).map((key) => (
                   <div key={key} className="space-y-1.5">
-                    <Label className="text-[8px] font-black uppercase text-foreground/30 ml-1">
-                      {key} path
+                    <Label className="text-[10px] font-semibold text-foreground/45">
+                      {key}
                     </Label>
                     <Input
                       value={newNode.paths[key as keyof typeof newNode.paths]}
@@ -991,63 +1064,62 @@ export default function TempMailPage() {
                         })
                       }
                       placeholder="e.g. data.email"
-                      className="h-9 bg-secondary/20 border-border text-[10px] font-mono"
+                      className="h-10 rounded-xl border-border bg-muted/30 font-mono text-xs"
                     />
                   </div>
                 ))}
               </div>
             </div>
 
-            <div className="space-y-4 pt-4 border-t border-white/5">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-[9px] font-black uppercase text-foreground/30 ml-1">
-                    Optional Headers (JSON)
-                  </Label>
-                  <Input
-                    value={newNode.headers}
-                    onChange={(e) =>
-                      setNewNode({ ...newNode, headers: e.target.value })
-                    }
-                    className="h-11 bg-secondary/20 border-border text-[10px] font-mono"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[9px] font-black uppercase text-foreground/30 ml-1">
-                    Optional API Key
-                  </Label>
-                  <Input
-                    value={newNode.apiKey}
-                    onChange={(e) =>
-                      setNewNode({ ...newNode, apiKey: e.target.value })
-                    }
-                    type="password"
-                    placeholder="••••••••"
-                    className="h-11 bg-secondary/20 border-border text-[10px] font-mono"
-                  />
-                </div>
+            <div className="grid grid-cols-1 gap-4 border-t border-border pt-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-foreground/50">
+                  Headers (JSON)
+                </Label>
+                <Input
+                  value={newNode.headers}
+                  onChange={(e) =>
+                    setNewNode({ ...newNode, headers: e.target.value })
+                  }
+                  placeholder='{"Authorization":"Bearer ..."}'
+                  className="h-11 rounded-xl border-border bg-muted/30 font-mono text-xs"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-foreground/50">
+                  API Key
+                </Label>
+                <Input
+                  value={newNode.apiKey}
+                  onChange={(e) =>
+                    setNewNode({ ...newNode, apiKey: e.target.value })
+                  }
+                  type="password"
+                  placeholder="••••••••"
+                  className="h-11 rounded-xl border-border bg-muted/30 font-mono text-xs"
+                />
               </div>
             </div>
           </div>
 
-          <DialogFooter className="p-6 border-t border-white/5 bg-secondary/30 shrink-0">
-            <div className="flex gap-3 w-full">
+          <DialogFooter className="shrink-0 border-t border-border bg-muted/40 p-4">
+            <div className="flex w-full gap-3">
               <Button
                 variant="outline"
                 onClick={() => setShowAddNode(false)}
-                className="h-12 flex-1 rounded-xl border-white/5 bg-white/5 text-[9px] font-black uppercase"
+                className="h-11 flex-1 rounded-xl border-border text-[10px] font-black uppercase"
               >
                 Cancel
               </Button>
               <Button
                 onClick={handleTestAndConnectNode}
                 disabled={isTestingNode}
-                className="h-12 flex-[2] bg-primary text-white font-black uppercase text-[10px] tracking-widest rounded-xl shadow-xl shadow-primary/30"
+                className="h-11 flex-[2] rounded-xl bg-blue-600 text-[10px] font-black uppercase tracking-widest text-white"
               >
                 {isTestingNode ? (
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
-                  <Zap className="w-4 h-4 mr-2" />
+                  <Zap className="mr-2 h-4 w-4" />
                 )}
                 Test & Connect
               </Button>
@@ -1057,113 +1129,69 @@ export default function TempMailPage() {
       </Dialog>
 
       {/* Message Modal */}
+
       <Dialog open={!!selectedMsg} onOpenChange={() => setSelectedMsg(null)}>
-        <DialogContent className="fixed left-1/2 top-[48%] z-[80] w-[calc(100%-1.5rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 p-0 gap-0 overflow-hidden rounded-2xl border border-border bg-background shadow-2xl outline-none flex flex-col max-h-[80vh] select-text">
+        <DialogContent className="fixed left-1/2 top-[5.5rem] z-50 flex h-[min(42rem,calc(100vh-7rem))] w-[calc(100%-24px)] max-w-4xl -translate-x-1/2 translate-y-0 flex-col gap-0 overflow-hidden rounded-2xl border border-border bg-card p-0 shadow-2xl [&>button]:hidden">
           {selectedMsg && (
             <>
-              <DialogHeader className="px-6 py-4 border-b border-white/5 bg-secondary/30 shrink-0">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="min-w-0 flex-1">
-                    <DialogTitle className="text-xl font-headline font-black text-foreground uppercase tracking-tight line-clamp-1">
-                      {selectedMsg.subject || "(NO SUBJECT)"}
-                    </DialogTitle>
-                    <DialogDescription className="text-[10px] font-bold text-foreground/40 uppercase truncate">
-                      From: {selectedMsg.from} • {selectedMsg.date}
-                    </DialogDescription>
-                  </div>
-                  <button
-                    onClick={() => setSelectedMsg(null)}
-                    className="p-2 rounded-lg text-foreground/20 hover:text-white"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-              </DialogHeader>
+              <DialogTitle className="sr-only">
+                {selectedMsg.subject || "Email"}
+              </DialogTitle>
+              <DialogDescription className="sr-only">
+                From {selectedMsg.from || "unknown"}
+              </DialogDescription>
 
-              {detectedOtp && (
-                <div className="px-6 py-3 bg-primary/[0.05] border-b border-primary/20 flex items-center justify-between gap-4 shrink-0">
-                  <div className="flex items-center gap-3">
-                    <KeyRound className="w-4 h-4 text-primary" />
-                    <span className="text-[10px] font-black uppercase text-primary tracking-widest">
-                      Verification Code:
-                    </span>
-                    <span className="text-base font-mono font-black text-foreground tracking-widest select-all">
-                      {detectedOtp}
-                    </span>
-                  </div>
-                  <Button
-                    onClick={() => handleCopyText(detectedOtp, "otp")}
-                    size="sm"
-                    className="h-9 px-4 bg-primary text-white font-black text-[9px] uppercase tracking-widest rounded-xl"
-                  >
-                    Copy Code
-                  </Button>
-                </div>
-              )}
+              <div className="h-1 shrink-0 bg-gradient-to-r from-blue-600 via-sky-400 to-orange-400" />
 
-              <div className="flex-1 overflow-auto custom-scrollbar p-0 bg-white select-text">
-                <div
-                  className="w-full min-h-full block select-text"
-                  style={{ writingMode: "horizontal-tb", direction: "ltr" }}
+              <div className="flex shrink-0 items-start justify-between gap-4 border-b border-border px-5 py-4">
+                <div className="flex min-w-0 items-start gap-3">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blue-600 text-sm font-black text-white">
+                    {(selectedMsg.from || "M")
+                      .toString()
+                      .charAt(0)
+                      .toUpperCase()}
+                  </div>
+                  <div className="min-w-0">
+                    <h2 className="truncate text-[17px] font-bold leading-tight text-foreground">
+                      {selectedMsg.subject || "(No subject)"}
+                    </h2>
+                    <p className="mt-1 truncate text-[13px] text-foreground/70">
+                      {selectedMsg.from || "Unknown sender"}
+                    </p>
+                    {selectedMsg.date ? (
+                      <p className="mt-0.5 text-[11px] text-foreground/45">
+                        {selectedMsg.date}
+                      </p>
+                    ) : null}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedMsg(null)}
+                  className="rounded-lg p-2 text-foreground/40 hover:bg-muted hover:text-foreground"
                 >
-                  {selectedMsg.htmlBody ? (
-                    <div
-                      className="text-slate-900 leading-relaxed text-base w-full p-6 sm:p-10 block select-text"
-                      style={{
-                        whiteSpace: "normal",
-                        wordBreak: "normal",
-                        overflowWrap: "anywhere",
-                        display: "block",
-                        textAlign: "left",
-                        userSelect: "text",
-                        WebkitUserSelect: "text",
-                      }}
-                      onPointerDown={(e) => e.stopPropagation()}
-                      dangerouslySetInnerHTML={{
-                        __html: DOMPurify.sanitize(selectedMsg.htmlBody),
-                      }}
-                    />
-                  ) : (
-                    <pre
-                      className="text-slate-800 font-mono text-sm whitespace-pre-wrap p-6 sm:p-10 bg-slate-50 w-full block select-text"
-                      style={{
-                        wordBreak: "normal",
-                        overflowWrap: "anywhere",
-                        display: "block",
-                        textAlign: "left",
-                        userSelect: "text",
-                        WebkitUserSelect: "text",
-                      }}
-                      onPointerDown={(e) => e.stopPropagation()}
-                    >
-                      {selectedMsg.body}
-                    </pre>
-                  )}
-                </div>
+                  <X className="h-4 w-4" />
+                </button>
               </div>
 
-              <div className="px-6 py-4 border-t border-white/5 bg-secondary/30 shrink-0 flex items-center justify-between">
-                <span className="text-[8px] font-black text-foreground/20 uppercase tracking-widest">
-                  Verified Local Protocol
-                </span>
-                <div className="flex items-center gap-3">
-                  <Button
-                    onClick={() => handleDownload("html")}
-                    variant="outline"
-                    size="sm"
-                    className="h-9 px-4 rounded-xl border-white/5 bg-white/5 text-[8px] font-black uppercase tracking-widest hover:text-primary transition-all"
-                  >
-                    <FileCode className="w-3.5 h-3.5 mr-2" /> HTML
-                  </Button>
-                  <Button
-                    onClick={() => handleDownload("eml")}
-                    variant="outline"
-                    size="sm"
-                    className="h-9 px-4 rounded-xl border-white/5 bg-white/5 text-[8px] font-black uppercase tracking-widest hover:text-primary transition-all"
-                  >
-                    <FileDown className="w-3.5 h-3.5 mr-2" /> EML
-                  </Button>
-                </div>
+              <div className="min-h-0 flex-1 bg-[#f8fafc]">
+                <iframe
+                  title="email-body"
+                  sandbox="allow-same-origin allow-popups"
+                  className="h-full w-full border-0 bg-white"
+                  srcDoc={
+                    "<!DOCTYPE html><html><head><meta charset='utf-8'><style>body{margin:20px;font-family:Arial,sans-serif;font-size:14px;line-height:1.6;color:#202124}img{max-width:100%}</style></head><body>" +
+                    String(
+                      (selectedMsg as any).html ||
+                        (selectedMsg as any).bodyHtml ||
+                        (selectedMsg as any).body ||
+                        (selectedMsg as any).message ||
+                        (selectedMsg as any).text ||
+                        "<p>No message body</p>",
+                    ) +
+                    "</body></html>"
+                  }
+                />
               </div>
             </>
           )}
