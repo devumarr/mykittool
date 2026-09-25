@@ -1,126 +1,58 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useRef, useState } from "react";
 import {
   Unlock,
-  Lock,
   Upload,
-  Download,
   Trash2,
-  Sparkles,
   Loader2,
-  Info,
-  CheckCircle2,
-  FileText,
-  Settings2,
-  KeyRound,
   Eye,
   EyeOff,
   AlertCircle,
-  Zap,
-  Activity,
+  CheckCircle2,
   ShieldCheck,
+  FileText,
+  Info,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { PDFDocument } from "pdf-lib";
+import { PDFDocument } from "@cantoo/pdf-lib";
 
 export default function PdfUnlockPage() {
   const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
   const formatSize = (bytes: number) => {
-    if (bytes === 0) return "0 Bytes";
-    const k = 1024;
-    const sizes = ["Bytes", "KB", "MB", "GB"];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
+    if (!bytes) return "0 B";
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${["B", "KB", "MB", "GB"][i]}`;
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
-    if (selectedFile) {
-      if (selectedFile.type !== "application/pdf") {
-        toast({
-          variant: "destructive",
-          title: "Invalid Protocol",
-          description: "Only PDF documents are supported for decryption.",
-        });
-        return;
-      }
-      setFile(selectedFile);
-      setError(null);
-      toast({
-        title: "Asset Imported",
-        description: "Matrix ready for access negotiation.",
-      });
-    }
-  };
-
-  const executeUnlock = async () => {
-    if (!file) return;
-    if (!password) {
+    const selected = e.target.files?.[0];
+    if (!selected) return;
+    if (
+      selected.type !== "application/pdf" &&
+      !selected.name.toLowerCase().endsWith(".pdf")
+    ) {
       toast({
         variant: "destructive",
-        title: "Key Required",
-        description: "Please enter the security password.",
+        title: "PDF only",
+        description: "Upload a .pdf file.",
       });
       return;
     }
-
-    setIsProcessing(true);
+    setFile(selected);
     setError(null);
-
-    try {
-      const arrayBuffer = await file.arrayBuffer();
-
-      // Load the document with the provided password
-      // This will throw if the password is incorrect
-      const pdfDoc = await PDFDocument.load(arrayBuffer, {
-        password,
-        ignoreEncryption: false,
-      });
-
-      // Saving the loaded document with pdf-lib results in an unencrypted version
-      const pdfBytes = await pdfDoc.save();
-
-      const blob = new Blob([pdfBytes], { type: "application/pdf" });
-      const url = URL.createObjectURL(blob);
-
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `unlocked_${file.name}`;
-      link.click();
-
-      toast({
-        title: "Access Granted",
-        description: "Decrypted document exported to local storage.",
-      });
-      handleClear();
-    } catch (err: any) {
-      console.error(err);
-      setError(
-        "Matrix Access Denied: Incorrect security key or unsupported encryption algorithm.",
-      );
-      toast({
-        variant: "destructive",
-        title: "Negotiation Failed",
-        description:
-          "The provided password does not match the document header.",
-      });
-    } finally {
-      setIsProcessing(false);
-    }
   };
 
   const handleClear = () => {
@@ -128,249 +60,245 @@ export default function PdfUnlockPage() {
     setPassword("");
     setError(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
-    toast({ title: "Studio Reset", description: "Security buffer cleared." });
+  };
+
+  const executeUnlock = async () => {
+    if (!file) return;
+    setIsProcessing(true);
+    setError(null);
+
+    try {
+      const bytes = await file.arrayBuffer();
+      let pdfDoc: PDFDocument;
+
+      try {
+        pdfDoc = await PDFDocument.load(bytes, {
+          password: password || "",
+          ignoreEncryption: false,
+        });
+      } catch {
+        pdfDoc = await PDFDocument.load(bytes, {
+          password: password || "",
+          ignoreEncryption: true,
+        });
+      }
+
+      const out = await pdfDoc.save();
+      const blob = new Blob([out as BlobPart], { type: "application/pdf" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = file.name.replace(/\.pdf$/i, "") + "-unlocked.pdf";
+      a.click();
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: "Unlocked",
+        description: "Password removed. File downloaded.",
+      });
+    } catch {
+      setError(
+        "Wrong password or this encryption type is not supported in the browser.",
+      );
+      toast({
+        variant: "destructive",
+        title: "Unlock failed",
+        description:
+          "Check the password. AES / owner-only locks may still fail.",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
-    <div className="container mx-auto px-6 py-12 md:py-20 max-w-7xl">
-      <div className="mb-12 animate-reveal">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-primary/10 border border-primary/20 text-[9px] font-black text-primary uppercase tracking-widest mb-4">
-          <Unlock className="w-3.5 h-3.5" /> Security Suite
-        </div>
-        <h1 className="text-4xl md:text-7xl font-headline font-black text-foreground uppercase tracking-tight">
-          PDF <span className="text-primary italic">Unlock Studio</span>
+    <div className="container mx-auto max-w-5xl px-4 py-12 md:px-6 md:py-16">
+      <div className="mb-10">
+        <p className="mb-2 text-[11px] font-black uppercase tracking-[0.22em] text-blue-600">
+          PDF tools
+        </p>
+        <h1 className="text-3xl font-black tracking-tight text-foreground md:text-5xl">
+          PDF Unlock
         </h1>
-        <p className="text-foreground/40 text-sm md:text-base font-medium mt-4 max-w-2xl leading-relaxed">
-          Remove security protocols and passwords from known PDF masters. Unlock
-          protected documents and restore full access locally and privately
-          within your browser.
+        <p className="mt-3 max-w-xl text-sm text-foreground/60">
+          Remove a known password from a PDF in your browser. File never leaves
+          this device.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
-        {/* Input Panel */}
-        <div className="lg:col-span-7 space-y-8 animate-in fade-in slide-in-from-left-6 duration-700">
-          <Card className="glass-card border-border shadow-2xl overflow-hidden relative group">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
-
-            <CardHeader className="pb-8 border-b border-border bg-secondary/30 flex flex-row items-center justify-between">
-              <CardTitle className="text-xl font-headline flex items-center gap-4 text-foreground">
-                <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary ring-1 ring-primary/40 shadow-inner group-hover:scale-110 transition-transform">
-                  <Lock className="w-6 h-6" />
-                </div>
-                Inbound Payload
-              </CardTitle>
-              {file && (
-                <button
-                  onClick={handleClear}
-                  className="text-[10px] font-black uppercase text-foreground/30 hover:text-destructive transition-all"
-                >
-                  Clear
-                </button>
+      <div className="grid gap-6 lg:grid-cols-12">
+        <Card className="overflow-hidden rounded-[1.8rem] border-border shadow-xl lg:col-span-7">
+          <div className="h-1 bg-gradient-to-r from-blue-600 via-sky-400 to-orange-400" />
+          <CardHeader className="border-b border-border bg-muted/40">
+            <CardTitle className="flex items-center gap-3 text-sm">
+              <Unlock className="h-4 w-4 text-blue-600" /> Unlock file
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6 p-6">
+            <button
+              type="button"
+              onClick={() => !isProcessing && fileInputRef.current?.click()}
+              className={cn(
+                "flex h-40 w-full flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border bg-muted/30 transition hover:border-blue-600/40",
+                file && "border-solid border-blue-600/20",
               )}
-            </CardHeader>
-
-            <CardContent className="pt-10 space-y-10">
-              <div
-                onClick={() => !isProcessing && fileInputRef.current?.click()}
-                className={cn(
-                  "relative h-48 rounded-[2.5rem] border-2 border-dashed border-border hover:border-primary/40 flex flex-col items-center justify-center bg-secondary/30 transition-all cursor-pointer overflow-hidden group/upload",
-                  file && "border-solid border-primary/20",
-                  isProcessing && "cursor-not-allowed opacity-80",
-                )}
-              >
-                {file ? (
-                  <div className="text-center p-6 space-y-2">
-                    <CheckCircle2 className="w-10 h-10 text-primary mx-auto mb-2" />
-                    <p className="text-xs font-black uppercase text-foreground truncate max-w-[280px]">
-                      {file.name}
-                    </p>
-                    <p className="text-[10px] font-bold text-foreground/30 uppercase tracking-widest">
-                      {formatSize(file.size)} encrypted
-                    </p>
-                  </div>
-                ) : (
-                  <>
-                    <div className="w-16 h-16 rounded-[1.5rem] bg-background border border-border flex items-center justify-center text-foreground/10 group-hover/upload:text-primary transition-all mb-4 shadow-xl">
-                      <Upload className="w-8 h-8" />
-                    </div>
-                    <p className="text-[10px] font-black uppercase text-foreground/30 tracking-widest group-hover/upload:text-primary transition-colors">
-                      Import Protected PDF
-                    </p>
-                  </>
-                )}
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  accept="application/pdf"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                />
-              </div>
-
-              {file && (
-                <div className="space-y-10 animate-in zoom-in duration-500">
-                  <div className="space-y-4">
-                    <Label className="text-[10px] font-black text-foreground/40 uppercase tracking-[0.2em] ml-1">
-                      Document Password
-                    </Label>
-                    <div className="relative group/pass max-w-md mx-auto">
-                      <Input
-                        type={showPassword ? "text" : "password"}
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="h-16 bg-secondary border-border rounded-2xl text-center text-xl font-mono font-bold pr-14 focus:ring-primary/40"
-                        placeholder="••••••••"
-                      />
-                      <button
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-foreground/20 hover:text-primary transition-colors"
-                      >
-                        {showPassword ? (
-                          <EyeOff className="w-5 h-5" />
-                        ) : (
-                          <Eye className="w-5 h-5" />
-                        )}
-                      </button>
-                    </div>
-                    <p className="text-center text-[9px] text-foreground/20 font-bold uppercase tracking-widest">
-                      Provide the existing password to neutralize encryption
-                    </p>
-                  </div>
-
-                  {error && (
-                    <div className="p-4 rounded-2xl bg-destructive/5 border border-destructive/20 flex items-center gap-4 animate-in shake duration-500">
-                      <AlertCircle className="w-5 h-5 text-destructive shrink-0" />
-                      <p className="text-[11px] font-bold text-destructive uppercase tracking-widest leading-relaxed">
-                        {error}
-                      </p>
-                    </div>
-                  )}
-
-                  <div className="flex gap-4 pt-4">
-                    <Button
-                      onClick={executeUnlock}
-                      disabled={isProcessing || !password}
-                      className="flex-[2] h-16 bg-primary hover:bg-primary/90 text-white font-black rounded-2xl flex items-center justify-center gap-4 text-lg shadow-xl shadow-primary/30 transition-all active:scale-95 group/btn"
-                    >
-                      {isProcessing ? (
-                        <Loader2 className="w-6 h-6 animate-spin" />
-                      ) : (
-                        <Unlock className="w-6 h-6 group-hover:rotate-12 transition-transform" />
-                      )}
-                      Unlock Document
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={handleClear}
-                      className="flex-1 h-16 rounded-2xl border-border bg-secondary hover:bg-secondary/80 text-foreground/40 hover:text-destructive transition-all active:scale-95"
-                    >
-                      <Trash2 className="w-6 h-6" />
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Sidebar */}
-        <div className="lg:col-span-5 space-y-8 animate-in fade-in slide-in-from-right-6 duration-1000 stagger-2">
-          <Card className="glass-card border-border shadow-xl overflow-hidden relative group min-h-[300px]">
-            <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
-            <CardHeader className="py-8 border-b border-border bg-secondary/30">
-              <CardTitle className="text-[10px] font-black text-primary uppercase tracking-[0.5em] flex items-center gap-2">
-                <ShieldCheck className="w-3.5 h-3.5" /> Handshake Status
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-10 flex flex-col items-center justify-center text-center p-8 space-y-10">
-              {!file && !isProcessing && (
-                <div className="opacity-10 group-hover:opacity-20 transition-all duration-700">
-                  <Activity className="w-20 h-20 text-primary mb-4 mx-auto" />
-                  <p className="text-xs font-black uppercase tracking-[0.3em]">
-                    Studio Standby
+            >
+              {file ? (
+                <>
+                  <CheckCircle2 className="mb-2 h-8 w-8 text-blue-600" />
+                  <p className="max-w-[260px] truncate text-sm font-bold">
+                    {file.name}
                   </p>
-                </div>
+                  <p className="text-xs text-foreground/50">
+                    {formatSize(file.size)}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <Upload className="mb-2 h-8 w-8 text-foreground/30" />
+                  <p className="text-sm font-semibold text-foreground/60">
+                    Drop or click PDF
+                  </p>
+                </>
               )}
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="application/pdf"
+              className="hidden"
+              onChange={handleFileUpload}
+            />
 
-              {isProcessing && (
-                <div className="w-full space-y-8 animate-in fade-in duration-500">
-                  <div className="relative w-28 h-28 mx-auto">
-                    <div className="w-28 h-28 rounded-full border-4 border-primary/10 border-t-primary animate-spin" />
-                    <KeyRound className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 text-primary animate-pulse" />
-                  </div>
-                  <div className="space-y-2">
-                    <p className="text-[11px] font-black uppercase tracking-[0.4em] text-primary">
-                      Negotiating Access...
-                    </p>
-                    <p className="text-[9px] text-foreground/30 font-bold uppercase">
-                      Deconstructing Security Dictionary
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {file && !isProcessing && (
-                <div className="space-y-8 w-full animate-in zoom-in duration-500">
-                  <div className="w-24 h-24 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary mx-auto shadow-xl ring-4 ring-primary/5">
-                    <Zap className="w-10 h-10" />
-                  </div>
-                  <div className="space-y-3">
-                    <h3 className="text-sm font-black text-foreground uppercase tracking-widest">
-                      Binary Key Required
-                    </h3>
-                    <p className="text-[10px] text-foreground/40 font-medium leading-relaxed uppercase">
-                      Enter the known document password to startthe removal
-                      protocol.
-                    </p>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <div className="p-6 rounded-[2.5rem] bg-primary/5 border border-primary/10 flex items-start gap-5 group hover:bg-primary/10 transition-colors">
-            <Info className="w-6 h-6 text-primary mt-1 shrink-0" />
             <div className="space-y-2">
-              <h4 className="text-[11px] font-black text-primary uppercase tracking-widest">
-                Privacy Absolute
-              </h4>
-              <p className="text-[11px] text-foreground/40 leading-relaxed font-medium">
-                Decryption occurs entirely on your device using WebAssembly.
-                Your documents and passwords never leave your browser sandbox,
-                ensuring 100% data security.
-              </p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4">
-            <div className="flex items-start gap-4 p-5 rounded-2xl bg-secondary border border-border group transition-all hover:bg-secondary/80">
-              <Settings2 className="w-5 h-5 text-primary mt-0.5 shrink-0" />
-              <div className="space-y-1">
-                <p className="text-[10px] font-black text-foreground uppercase tracking-widest">
-                  Protocol Sync
-                </p>
-                <p className="text-[10px] text-foreground/60 leading-relaxed font-medium">
-                  Supports standard PDF owner and user password removal via
-                  re-synthesis.
-                </p>
+              <Label>Password</Label>
+              <div className="relative">
+                <Input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Document password"
+                  className="h-12 rounded-xl pr-12"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground/40"
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
               </div>
             </div>
-          </div>
+
+            {error && (
+              <div className="flex items-start gap-2 rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-600">
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                {error}
+              </div>
+            )}
+
+            <div className="flex gap-3">
+              <Button
+                onClick={executeUnlock}
+                disabled={!file || isProcessing}
+                className="h-12 flex-1 rounded-xl bg-blue-600 text-white hover:bg-blue-700"
+              >
+                {isProcessing ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Unlock className="mr-2 h-4 w-4" />
+                )}
+                Unlock
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleClear}
+                className="h-12 w-12 rounded-xl"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="space-y-4 lg:col-span-5">
+          <Card className="overflow-hidden rounded-[1.8rem] border-border shadow-xl">
+            <div className="h-1 bg-gradient-to-r from-blue-600 to-orange-400" />
+            <CardContent className="space-y-4 p-6">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-600/10 text-blue-600">
+                <ShieldCheck className="h-5 w-5" />
+              </div>
+              <h3 className="font-bold">Private unlock</h3>
+              <p className="text-sm text-foreground/60">
+                Runs locally. No upload server. You must already know the
+                password.
+              </p>
+              <div className="flex items-start gap-3 rounded-xl bg-muted/50 p-3 text-sm text-foreground/60">
+                <Info className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" />
+                Some AES-256 / owner-only files still cannot be opened in the
+                browser.
+              </div>
+              <div className="flex items-start gap-3 rounded-xl bg-muted/50 p-3 text-sm text-foreground/60">
+                <FileText className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" />
+                Unlocked file downloads as name-unlocked.pdf
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
+      <section className="mx-auto mt-16 max-w-3xl">
+        <div className="mb-8 flex items-center gap-3">
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600/10 text-blue-600">
+            <Unlock className="h-5 w-5" />
+          </span>
+          <div>
+            <h2 className="text-xl font-bold text-foreground">
+              PDF Unlock FAQ
+            </h2>
+            <p className="text-sm text-foreground/55">
+              Quick answers before you unlock
+            </p>
+          </div>
+        </div>
 
-      <style jsx global>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          @apply bg-transparent;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          @apply bg-primary/20 rounded-full;
-        }
-      `}</style>
+        <div className="space-y-3">
+          {[
+            {
+              q: "Can I unlock a PDF without the password?",
+              a: "No. This tool only removes a password you already know.",
+            },
+            {
+              q: "Is my PDF uploaded?",
+              a: "No. Unlocking runs in your browser. The file stays on your device.",
+            },
+            {
+              q: "Is it free?",
+              a: "Yes. PDF Unlock on My Kit Tool is free to use.",
+            },
+            {
+              q: "Why did unlock fail?",
+              a: "Wrong password, or the PDF uses an encryption type the browser cannot open.",
+            },
+          ].map((item) => (
+            <div
+              key={item.q}
+              className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm"
+            >
+              <div className="h-1 bg-gradient-to-r from-blue-600 via-sky-400 to-orange-400" />
+              <div className="p-5">
+                <h3 className="text-sm font-bold text-foreground">{item.q}</h3>
+                <p className="mt-1 text-sm leading-relaxed text-foreground/60">
+                  {item.a}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }
