@@ -24,7 +24,7 @@ export function NavSearch() {
   }, [open]);
   const input = useRef<HTMLInputElement>(null);
 
-  const hits = useMemo(() => searchTools(TOOLS as any, q, 6).slice(0, 5), [q]);
+  const hits = useMemo(() => searchTools(TOOLS as any, q, 6), [q]);
 
   useEffect(() => {
     if (open) setTimeout(() => input.current?.focus(), 50);
@@ -84,8 +84,8 @@ export function NavSearch() {
               </button>
             )}
           </div>
-          <div className="max-h-72 py-1">
-            {(q ? hits : TOOLS.slice(0, 5)).map((t: any) => (
+          <div className="max-h-72 py-1 max-h-[280px] overflow-y-auto">
+            {(q ? hits : TOOLS).map((t: any) => (
               <button
                 key={t.href}
                 type="button"

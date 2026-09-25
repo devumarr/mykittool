@@ -1,443 +1,343 @@
 "use client";
 
-import React, { useState, useRef, useCallback } from "react";
+import React, { useRef, useState } from "react";
 import {
   FileText,
   Upload,
   Download,
   Trash2,
-  Sparkles,
   Loader2,
   Info,
-  CheckCircle2,
   FileImage,
   ArrowUp,
   ArrowDown,
-  Settings2,
-  Maximize,
-  Layout,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { jsPDF } from "jspdf";
 
-interface ImageItem {
+type Item = {
   id: string;
   src: string;
   name: string;
   size: number;
   width: number;
   height: number;
+};
+type Mode = "fit" | "a4" | "original";
+
+function pageSize(img: Item, mode: Mode) {
+  if (mode === "a4") {
+    const a4w = 595;
+    const a4h = 842;
+    const landscape = img.width > img.height;
+    const W = landscape ? a4h : a4w;
+    const H = landscape ? a4w : a4h;
+    const r = Math.min((W - 24) / img.width, (H - 24) / img.height);
+    return {
+      pageW: W,
+      pageH: H,
+      w: img.width * r,
+      h: img.height * r,
+      x: (W - img.width * r) / 2,
+      y: (H - img.height * r) / 2,
+    };
+  }
+  const w = mode === "fit" ? 600 : img.width;
+  const h = (img.height / img.width) * w;
+  return { pageW: w, pageH: h, w, h, x: 0, y: 0 };
 }
 
 export default function ImageToPdfPage() {
   const { toast } = useToast();
-  const [images, setImages] = useState<ImageItem[]>([]);
-  const [isProcessing, setIsProcessing] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [images, setImages] = useState<Item[]>([]);
+  const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [pageSetting, setPageSetting] = useState<"fit" | "a4" | "original">(
-    "fit",
-  );
+  const [mode, setMode] = useState<Mode>("a4");
+  const [drag, setDrag] = useState(false);
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    if (files.length === 0) return;
-
-    setIsProcessing(true);
-    let loadedCount = 0;
-
-    files.forEach((file) => {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const src = event.target?.result as string;
-        const img = new Image();
-        img.onload = () => {
-          const newItem: ImageItem = {
-            id: Math.random().toString(36).substr(2, 9),
-            src,
-            name: file.name,
-            size: file.size,
-            width: img.width,
-            height: img.height,
-          };
-          setImages((prev) => [...prev, newItem]);
-          loadedCount++;
-          if (loadedCount === files.length) {
-            setIsProcessing(false);
-            toast({
-              title: "Assets Imported",
-              description: `Added ${files.length} images to the pipeline.`,
-            });
-          }
-        };
-        img.src = src;
-      };
-      reader.readAsDataURL(file);
-    });
-
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  };
-
-  const removeImage = (id: string) => {
-    setImages((prev) => prev.filter((img) => img.id !== id));
-  };
-
-  const moveImage = (index: number, direction: "up" | "down") => {
-    if (direction === "up" && index === 0) return;
-    if (direction === "down" && index === images.length - 1) return;
-
-    const newImages = [...images];
-    const targetIndex = direction === "up" ? index - 1 : index + 1;
-    [newImages[index], newImages[targetIndex]] = [
-      newImages[targetIndex],
-      newImages[index],
-    ];
-    setImages(newImages);
-  };
-
-  const convertToPdf = async () => {
-    if (images.length === 0) return;
-    setIsProcessing(true);
-    setProgress(0);
-
-    try {
-      const pdf = new jsPDF({
-        orientation: "p",
-        unit: "px",
-        format: pageSetting === "a4" ? "a4" : undefined,
+  const addFiles = async (list: FileList | File[]) => {
+    const files = Array.from(list).filter((f) => f.type.startsWith("image/"));
+    if (!files.length) {
+      toast({ variant: "destructive", title: "Images only" });
+      return;
+    }
+    setBusy(true);
+    const next: Item[] = [];
+    for (const file of files) {
+      const src = await new Promise<string>((res, rej) => {
+        const r = new FileReader();
+        r.onload = () => res(String(r.result));
+        r.onerror = rej;
+        r.readAsDataURL(file);
       });
+      const img = await new Promise<HTMLImageElement>((res, rej) => {
+        const el = new Image();
+        el.onload = () => res(el);
+        el.onerror = rej;
+        el.src = src;
+      });
+      next.push({
+        id: file.name + "-" + file.size + "-" + Date.now() + Math.random(),
+        src,
+        name: file.name,
+        size: file.size,
+        width: img.width,
+        height: img.height,
+      });
+    }
+    setImages((p) => [...p, ...next]);
+    setBusy(false);
+  };
 
+  const convert = async () => {
+    if (!images.length) return;
+    setBusy(true);
+    setProgress(0);
+    try {
+      const first = pageSize(images[0], mode);
+      const pdf = new jsPDF({
+        orientation: first.pageW > first.pageH ? "l" : "p",
+        unit: "px",
+        format: [first.pageW, first.pageH],
+        compress: true,
+      });
       for (let i = 0; i < images.length; i++) {
-        const img = images[i];
-        const canvas = document.createElement("canvas");
-        const ctx = canvas.getContext("2d");
-        if (!ctx) continue;
-
-        // Ensure we work with original resolution
-        canvas.width = img.width;
-        canvas.height = img.height;
-
-        const imageElement = await new Promise<HTMLImageElement>((resolve) => {
-          const resImg = new Image();
-          resImg.onload = () => resolve(resImg);
-          resImg.src = img.src;
-        });
-
-        ctx.drawImage(imageElement, 0, 0);
-        const dataUrl = canvas.toDataURL("image/jpeg", 0.95);
-
-        let pdfWidth, pdfHeight;
-
-        if (pageSetting === "a4") {
-          // A4 dimensions in px at 72dpi are 595 x 842
-          const a4W = 595;
-          const a4H = 842;
-          const ratio = Math.min(a4W / img.width, a4H / img.height);
-          pdfWidth = img.width * ratio;
-          pdfHeight = img.height * ratio;
-        } else if (pageSetting === "original") {
-          pdfWidth = img.width;
-          pdfHeight = img.height;
-        } else {
-          // Default Fit (Standard Canvas)
-          pdfWidth = 600;
-          pdfHeight = (img.height / img.width) * 600;
-        }
-
-        // Add the correct page size and content
-        pdf.addPage([pdfWidth, pdfHeight], pdfWidth > pdfHeight ? "l" : "p");
-        pdf.addImage(dataUrl, "JPEG", 0, 0, pdfWidth, pdfHeight);
-
-        // Remove the initial default blank page upon adding the first actual image page
-        if (i === 0) {
-          pdf.deletePage(1);
-        }
-
+        const s = pageSize(images[i], mode);
+        if (i > 0)
+          pdf.addPage([s.pageW, s.pageH], s.pageW > s.pageH ? "l" : "p");
+        const type = images[i].name.toLowerCase().endsWith(".png")
+          ? "PNG"
+          : "JPEG";
+        pdf.addImage(images[i].src, type, s.x, s.y, s.w, s.h);
         setProgress(Math.round(((i + 1) / images.length) * 100));
       }
-
-      pdf.save(`mykittool-bundle-${Date.now()}.pdf`);
-      toast({
-        title: "PDF Master Exported",
-        description: "Your document is ready for production.",
-      });
-    } catch (err) {
-      console.error(err);
-      toast({
-        variant: "destructive",
-        title: "Production Failed",
-        description: "An error occurred during PDF synthesis.",
-      });
+      pdf.save("images.pdf");
+      toast({ title: "PDF ready" });
+    } catch {
+      toast({ variant: "destructive", title: "Convert failed" });
     } finally {
-      setIsProcessing(false);
-      setProgress(0);
+      setBusy(false);
     }
   };
 
-  const handleClear = () => {
-    setImages([]);
-    toast({ title: "Studio Reset", description: "Pipeline cleared." });
+  const move = (i: number, d: -1 | 1) => {
+    const n = i + d;
+    if (n < 0 || n >= images.length) return;
+    const copy = [...images];
+    [copy[i], copy[n]] = [copy[n], copy[i]];
+    setImages(copy);
   };
 
   return (
-    <div className="container mx-auto px-6 py-12 md:py-20">
-      <div className="mb-12 animate-reveal">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-primary/10 border border-primary/20 text-[9px] font-black text-primary uppercase tracking-widest mb-4">
-          <FileText className="w-3.5 h-3.5" /> Document Suite
-        </div>
-        <h1 className="text-3xl md:text-5xl font-headline font-black text-foreground uppercase tracking-tight">
-          Image to <span className="text-primary italic">PDF Master</span>
+    <div className="container mx-auto max-w-5xl px-4 py-12 md:px-6 md:py-16">
+      <div className="mb-10">
+        <p className="mb-2 text-[11px] font-black uppercase tracking-[0.22em] text-blue-600">
+          PDF tools
+        </p>
+        <h1 className="text-3xl font-black tracking-tight md:text-5xl">
+          Image to PDF
         </h1>
-        <p className="text-foreground/40 text-sm md:text-base font-medium mt-4 max-w-2xl">
-          Convert multiple visual assets into a single high-resolution PDF
-          document. 100% private client-side synthesis for secure professional
-          documentation.
+        <p className="mt-3 max-w-xl text-sm text-foreground/60">
+          Combine photos into one PDF. Reorder first, then convert.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
-        {/* Controls & Upload */}
-        <div className="lg:col-span-7 space-y-8 animate-in fade-in slide-in-from-left-6 duration-700">
-          <Card className="glass-card border-border shadow-2xl overflow-hidden relative group">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
-
-            <CardHeader className="pb-8 border-b border-border bg-secondary/30">
-              <CardTitle className="text-xl font-headline flex items-center gap-4 text-foreground">
-                <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary ring-1 ring-primary/40 shadow-inner group-hover:scale-110 transition-transform">
-                  <FileImage className="w-6 h-6" />
-                </div>
-                Visual Payload
-              </CardTitle>
-            </CardHeader>
-
-            <CardContent className="pt-10 space-y-8">
-              <div
-                onClick={() => !isProcessing && fileInputRef.current?.click()}
-                className={cn(
-                  "relative group/upload h-48 rounded-[2.5rem] border-2 border-dashed border-border hover:border-primary/40 transition-all flex flex-col items-center justify-center bg-secondary/30 overflow-hidden cursor-pointer",
-                  images.length > 0 && "border-solid border-primary/40",
-                  isProcessing && "cursor-not-allowed opacity-80",
-                )}
-              >
-                <div className="w-12 h-12 rounded-2xl bg-background border border-border flex items-center justify-center text-foreground/20 group-hover:text-primary group-hover:scale-110 transition-all mb-4 shadow-xl">
-                  <Upload className="w-6 h-6" />
-                </div>
-                <p className="text-[10px] font-black uppercase text-foreground/40 tracking-widest group-hover:text-primary transition-colors">
-                  Select or Drop Images
-                </p>
-                <p className="text-[8px] text-foreground/20 uppercase font-bold mt-2">
-                  JPG, PNG, WebP up to 10MB
-                </p>
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  accept="image/*"
-                  multiple
-                  onChange={handleFileUpload}
-                  className="hidden"
-                />
-              </div>
-
-              {images.length > 0 && (
-                <div className="space-y-4 animate-in fade-in duration-500">
-                  <div className="flex items-center justify-between px-2">
-                    <Label className="text-[10px] font-black text-foreground/50 uppercase tracking-[0.2em]">
-                      Queue Pipeline ({images.length})
-                    </Label>
-                    <button
-                      onClick={handleClear}
-                      className="text-[10px] font-black uppercase text-destructive hover:opacity-70 transition-all"
-                    >
-                      Clear All
-                    </button>
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                    {images.map((img, index) => (
-                      <div
-                        key={img.id}
-                        className="group/item flex items-center gap-4 p-4 rounded-2xl bg-secondary border border-border hover:border-primary/20 transition-all"
-                      >
-                        <div className="w-16 h-16 rounded-xl overflow-hidden bg-background border border-border shrink-0">
-                          <img
-                            src={img.src}
-                            alt="Thumb"
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-bold text-foreground truncate uppercase">
-                            {img.name}
-                          </p>
-                          <p className="text-[9px] text-foreground/40 font-bold uppercase tracking-widest">
-                            {(img.size / 1024).toFixed(1)} KB | {img.width}x
-                            {img.height}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-1.5 opacity-0 group-hover/item:opacity-100 transition-opacity">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => moveImage(index, "up")}
-                            disabled={index === 0}
-                            className="h-8 w-8 rounded-lg"
-                          >
-                            <ArrowUp className="w-3.5 h-3.5" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => moveImage(index, "down")}
-                            disabled={index === images.length - 1}
-                            className="h-8 w-8 rounded-lg"
-                          >
-                            <ArrowDown className="w-3.5 h-3.5" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => removeImage(img.id)}
-                            className="h-8 w-8 rounded-lg text-destructive hover:bg-destructive/10"
-                          >
-                            <X className="w-3.5 h-3.5" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+      <div className="grid gap-6 lg:grid-cols-12">
+        <Card className="overflow-hidden rounded-[1.8rem] border-border shadow-xl lg:col-span-7">
+          <div className="h-1 bg-gradient-to-r from-blue-600 via-sky-400 to-orange-400" />
+          <CardHeader className="border-b border-border bg-muted/40">
+            <CardTitle className="flex items-center gap-3 text-sm">
+              <FileImage className="h-4 w-4 text-blue-600" /> Images
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4 p-6">
+            <button
+              type="button"
+              onClick={() => inputRef.current?.click()}
+              onDragOver={(e) => {
+                e.preventDefault();
+                setDrag(true);
+              }}
+              onDragLeave={() => setDrag(false)}
+              onDrop={(e) => {
+                e.preventDefault();
+                setDrag(false);
+                addFiles(e.dataTransfer.files);
+              }}
+              className={cn(
+                "flex h-36 w-full flex-col items-center justify-center rounded-2xl border-2 border-dashed",
+                drag
+                  ? "border-blue-600 bg-blue-600/5"
+                  : "border-border bg-muted/30",
               )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Settings & Synthesis */}
-        <div className="lg:col-span-5 space-y-8 animate-in fade-in slide-in-from-right-6 duration-1000">
-          <Card className="glass-card border-border shadow-2xl overflow-hidden relative group">
-            <CardHeader className="pb-8 border-b border-border bg-secondary/30">
-              <CardTitle className="text-[10px] font-black uppercase tracking-[0.3em] flex items-center gap-4 text-foreground">
-                <Settings2 className="w-5 h-5 text-primary" /> Synthesis
-                Configuration
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-10 space-y-8">
-              <div className="space-y-4">
-                <Label className="text-[10px] font-black text-foreground/50 uppercase tracking-[0.2em]">
-                  Page Orientation & Sizing
-                </Label>
-                <Select
-                  value={pageSetting}
-                  onValueChange={(val: any) => setPageSetting(val)}
-                >
-                  <SelectTrigger className="h-14 bg-secondary border-border rounded-2xl text-foreground font-bold">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="glass-card">
-                    <SelectItem
-                      value="fit"
-                      className="text-xs font-bold uppercase"
-                    >
-                      Dynamic Fit (Auto)
-                    </SelectItem>
-                    <SelectItem
-                      value="a4"
-                      className="text-xs font-bold uppercase"
-                    >
-                      A4 Standard (ISO)
-                    </SelectItem>
-                    <SelectItem
-                      value="original"
-                      className="text-xs font-bold uppercase"
-                    >
-                      Original Resolution
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="p-6 rounded-[2rem] bg-primary/5 border border-primary/10 flex items-start gap-5">
-                <Info className="w-6 h-6 text-primary mt-1 shrink-0" />
-                <div className="space-y-2">
-                  <h4 className="text-[11px] font-black text-primary uppercase tracking-widest">
-                    Privacy Absolute
-                  </h4>
-                  <p className="text-[11px] text-foreground/40 leading-relaxed font-medium">
-                    PDF synthesis occurs entirely on your device using
-                    WebAssembly. Your imagery never leaves your browser sandbox.
-                  </p>
-                </div>
-              </div>
-
-              <div className="space-y-6 pt-4">
-                {isProcessing && progress > 0 && (
-                  <div className="space-y-3 animate-in fade-in duration-500">
-                    <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-primary">
-                      <span className="flex items-center gap-2">
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />{" "}
-                        Synthesizing Document...
-                      </span>
-                      <span>{progress}%</span>
+            >
+              <Upload className="mb-2 h-7 w-7 text-blue-600" />
+              <p className="text-sm font-semibold">Drop images or click</p>
+            </button>
+            <input
+              ref={inputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={(e) => {
+                if (e.target.files) addFiles(e.target.files);
+                e.target.value = "";
+              }}
+            />
+            {images.length > 0 && (
+              <div className="max-h-[380px] space-y-2 overflow-auto">
+                {images.map((img, i) => (
+                  <div
+                    key={img.id}
+                    className="flex items-center gap-3 rounded-2xl border border-border bg-background p-2"
+                  >
+                    <img
+                      src={img.src}
+                      alt=""
+                      className="h-12 w-12 rounded-lg object-cover"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold">
+                        {img.name}
+                      </p>
+                      <p className="text-xs text-foreground/50">
+                        {img.width}×{img.height}
+                      </p>
                     </div>
-                    <Progress value={progress} className="h-2" />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      disabled={i === 0}
+                      onClick={() => move(i, -1)}
+                    >
+                      <ArrowUp className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      disabled={i === images.length - 1}
+                      onClick={() => move(i, 1)}
+                    >
+                      <ArrowDown className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() =>
+                        setImages((p) => p.filter((x) => x.id !== img.id))
+                      }
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
                   </div>
-                )}
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-                <Button
-                  onClick={convertToPdf}
-                  disabled={isProcessing || images.length === 0}
-                  className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-black rounded-xl flex items-center justify-center gap-3 text-[10px] uppercase tracking-widest shadow-xl shadow-primary/30 transition-all active:scale-95 group/btn"
-                >
-                  {isProcessing ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Sparkles className="w-4 h-4 group-hover:rotate-12 transition-transform" />
+        <Card className="overflow-hidden rounded-[1.8rem] border-border shadow-xl lg:col-span-5">
+          <div className="h-1 bg-gradient-to-r from-blue-600 to-orange-400" />
+          <CardHeader className="border-b border-border bg-muted/40">
+            <CardTitle className="text-sm">Convert</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4 p-6">
+            <div className="grid grid-cols-3 gap-2">
+              {(["a4", "fit", "original"] as const).map((id) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setMode(id)}
+                  className={cn(
+                    "rounded-xl border py-3 text-xs font-bold capitalize",
+                    mode === id
+                      ? "border-blue-600 bg-blue-600 text-white"
+                      : "border-border bg-muted/30",
                   )}
-                  Convert
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+                >
+                  {id}
+                </button>
+              ))}
+            </div>
+            {busy && progress > 0 && (
+              <Progress value={progress} className="h-2" />
+            )}
+            <Button
+              onClick={convert}
+              disabled={!images.length || busy}
+              className="h-12 w-full rounded-xl bg-blue-600 text-white hover:bg-blue-700"
+            >
+              {busy ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Download className="mr-2 h-4 w-4" />
+              )}
+              Create PDF
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setImages([])}
+              className="h-12 w-full rounded-xl"
+            >
+              <Trash2 className="mr-2 h-4 w-4" /> Clear
+            </Button>
+            <div className="flex gap-2 text-sm text-foreground/60">
+              <Info className="h-4 w-4 shrink-0 text-blue-600" />
+              Conversion stays on this device. A4 keeps margins.
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
-          <div className="grid grid-cols-1 gap-6">
-            <div className="flex items-start gap-4 p-5 rounded-2xl bg-secondary border border-border group">
-              <Maximize className="w-5 h-5 text-primary mt-0.5 shrink-0" />
-              <div className="space-y-1">
-                <p className="text-[11px] font-black text-foreground uppercase tracking-widest">
-                  Master Quality
-                </p>
-                <p className="text-[11px] text-foreground/60 leading-relaxed font-medium">
-                  Original asset fidelity preserved in bundle.
-                </p>
-              </div>
-            </div>
-            <div className="flex items-start gap-4 p-5 rounded-2xl bg-secondary border border-border group">
-              <Layout className="w-5 h-5 text-primary mt-0.5 shrink-0" />
-              <div className="space-y-1">
-                <p className="text-[11px] font-black text-foreground uppercase tracking-widest">
-                  Adaptive Framing
-                </p>
-                <p className="text-[11px] text-foreground/60 leading-relaxed font-medium">
-                  Automatic orientation detection (P/L).
-                </p>
-              </div>
-            </div>
+      <section className="mx-auto mt-16 max-w-3xl">
+        <div className="mb-8 flex items-center gap-3">
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600/10 text-blue-600">
+            <FileText className="h-5 w-5" />
+          </span>
+          <div>
+            <h2 className="text-xl font-bold">Image to PDF FAQ</h2>
+            <p className="text-sm text-foreground/55">How conversion works</p>
           </div>
         </div>
-      </div>
+        <div className="space-y-3">
+          {[
+            {
+              q: "Which images can I convert?",
+              a: "JPG, PNG, WebP and other common image files. Add more than one and reorder them.",
+            },
+            {
+              q: "Do you upload my photos?",
+              a: "No. The PDF is built in your browser. Images stay on your device.",
+            },
+            {
+              q: "What is A4 vs Fit vs Original?",
+              a: "A4 uses a standard page with margins. Fit scales to a fixed width. Original keeps the photo size.",
+            },
+            {
+              q: "Is Image to PDF free?",
+              a: "Yes. This tool on My Kit Tool is free.",
+            },
+          ].map((item) => (
+            <div
+              key={item.q}
+              className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm"
+            >
+              <div className="h-1 bg-gradient-to-r from-blue-600 via-sky-400 to-orange-400" />
+              <div className="p-5">
+                <h3 className="text-sm font-bold">{item.q}</h3>
+                <p className="mt-1 text-sm text-foreground/60">{item.a}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }

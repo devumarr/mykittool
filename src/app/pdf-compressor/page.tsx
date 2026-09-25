@@ -1,416 +1,410 @@
-"use client"
+"use client";
 
-import React, { useState, useRef, useMemo } from 'react';
-import { 
-  FileArchive, 
-  Upload, 
-  Download, 
-  Trash2, 
-  Sparkles, 
-  Loader2, 
+import React, { useRef, useState } from "react";
+import {
+  FileArchive,
+  Upload,
+  Download,
+  Trash2,
+  Loader2,
   Info,
   CheckCircle2,
   FileText,
-  Settings2,
-  Zap,
-  Activity,
-  ArrowDownCircle,
-  TrendingDown,
-  Layers,
-  FileDown,
   X,
   Plus,
   ShieldCheck,
-  Maximize
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Progress } from '@/components/ui/progress';
-import { useToast } from '@/hooks/use-toast';
-import { cn } from '@/lib/utils';
-import { PDFDocument } from 'pdf-lib';
-import JSZip from 'jszip';
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
+import { PDFDocument } from "pdf-lib";
+import JSZip from "jszip";
 
-interface PDFItem {
+type Level = "low" | "medium" | "high";
+type Item = {
   id: string;
   file: File;
-  status: 'idle' | 'processing' | 'completed' | 'error';
-  originalSize: number;
-  compressedSize: number | null;
-  compressedBlob: Blob | null;
-  compressedUrl: string | null;
+  status: "idle" | "working" | "done" | "error";
+  original: number;
+  result: number | null;
+  url: string | null;
+  blob: Blob | null;
+};
+
+function formatSize(n: number) {
+  if (n < 1024) return n + " B";
+  if (n < 1024 * 1024) return (n / 1024).toFixed(1) + " KB";
+  return (n / (1024 * 1024)).toFixed(2) + " MB";
 }
 
 export default function PdfCompressorPage() {
   const { toast } = useToast();
-  const [items, setItems] = useState<PDFItem[]>([]);
-  const [isProcessing, setIsProcessing] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [items, setItems] = useState<Item[]>([]);
+  const [level, setLevel] = useState<Level>("medium");
+  const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [level, setLevel] = useState<'low' | 'medium' | 'high'>('medium');
-  
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [drag, setDrag] = useState(false);
 
-  const formatSize = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
-  };
-
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    if (files.length === 0) return;
-
-    const newItems: PDFItem[] = files.filter(f => f.type === 'application/pdf').map(file => ({
-      id: Math.random().toString(36).substr(2, 9),
-      file,
-      status: 'idle',
-      originalSize: file.size,
-      compressedSize: null,
-      compressedBlob: null,
-      compressedUrl: null
-    }));
-
-    if (newItems.length < files.length) {
-      toast({ variant: "destructive", title: "Invalid Files", description: "Some files were skipped. Only PDF format is supported." });
+  const addFiles = (list: FileList | File[]) => {
+    const files = Array.from(list).filter(
+      (f) =>
+        f.type === "application/pdf" || f.name.toLowerCase().endsWith(".pdf"),
+    );
+    if (!files.length) {
+      toast({ variant: "destructive", title: "PDF only" });
+      return;
     }
-
-    setItems(prev => [...prev, ...newItems]);
-    toast({ title: "Assets Imported", description: `Added ${newItems.length} document(s) to the pipeline.` });
-    
-    if (fileInputRef.current) fileInputRef.current.value = '';
+    setItems((prev) => [
+      ...prev,
+      ...files.map((file) => ({
+        id: file.name + "-" + file.size + "-" + Date.now() + Math.random(),
+        file,
+        status: "idle" as const,
+        original: file.size,
+        result: null,
+        url: null,
+        blob: null,
+      })),
+    ]);
   };
 
-  const compressSinglePdf = async (item: PDFItem): Promise<Blob | null> => {
+  const compressOne = async (item: Item): Promise<Partial<Item>> => {
     try {
-      const arrayBuffer = await item.file.arrayBuffer();
-      const pdfDoc = await PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
-      
-      // Optimization Protocol:
-      // Client-side JS compression is limited, but re-saving with pdf-lib 
-      // automatically removes unreferenced objects and compacts the structure.
-      const newPdf = await PDFDocument.create();
-      const copiedPages = await newPdf.copyPages(pdfDoc, pdfDoc.getPageIndices());
-      copiedPages.forEach(page => newPdf.addPage(page));
-
-      // We use a high-quality save which often reduces size by cleaning internal dictionaries
-      const pdfBytes = await newPdf.save({ 
-        useObjectStreams: level === 'high',
-        addDefaultPage: false 
+      const src = await PDFDocument.load(await item.file.arrayBuffer(), {
+        ignoreEncryption: true,
       });
-
-      return new Blob([pdfBytes], { type: 'application/pdf' });
-    } catch (err) {
-      console.error(err);
-      return null;
+      const out = await PDFDocument.create();
+      const pages = await out.copyPages(src, src.getPageIndices());
+      pages.forEach((p) => out.addPage(p));
+      if (level !== "low") {
+        out.setTitle("");
+        out.setAuthor("");
+        out.setSubject("");
+        out.setKeywords([]);
+        out.setProducer("My Kit Tool");
+        out.setCreator("My Kit Tool");
+      }
+      const bytes = await out.save({
+        useObjectStreams: level !== "low",
+        addDefaultPage: false,
+      });
+      const blob = new Blob([bytes as BlobPart], { type: "application/pdf" });
+      const finalBlob = blob.size >= item.original ? item.file : blob;
+      return {
+        status: "done",
+        blob: finalBlob,
+        result: finalBlob.size,
+        url: URL.createObjectURL(finalBlob),
+      };
+    } catch {
+      return { status: "error" };
     }
   };
 
-  const processAll = async () => {
-    if (items.length === 0) return;
-    setIsProcessing(true);
-    setProgress(0);
-
-    const updatedItems = [...items];
-    for (let i = 0; i < updatedItems.length; i++) {
-      const item = updatedItems[i];
-      if (item.status === 'completed') continue;
-
-      updatedItems[i].status = 'processing';
-      setItems([...updatedItems]);
-
-      const blob = await compressSinglePdf(item);
-      if (blob) {
-        updatedItems[i].status = 'completed';
-        updatedItems[i].compressedBlob = blob;
-        updatedItems[i].compressedSize = blob.size;
-        updatedItems[i].compressedUrl = URL.createObjectURL(blob);
-      } else {
-        updatedItems[i].status = 'error';
-      }
-
-      setProgress(Math.round(((i + 1) / items.length) * 100));
-      setItems([...updatedItems]);
+  const run = async () => {
+    if (!items.length) return;
+    setBusy(true);
+    const next = [...items];
+    for (let i = 0; i < next.length; i++) {
+      if (next[i].status === "done") continue;
+      next[i] = { ...next[i], status: "working" };
+      setItems([...next]);
+      if (next[i].url) URL.revokeObjectURL(next[i].url as string);
+      next[i] = { ...next[i], ...(await compressOne(next[i])) };
+      setProgress(Math.round(((i + 1) / next.length) * 100));
+      setItems([...next]);
     }
-
-    setIsProcessing(false);
-    toast({ title: "Optimization Complete", description: "All documents processed locally." });
+    setBusy(false);
+    toast({ title: "Compressed", description: "Ready to download" });
   };
 
   const downloadAll = async () => {
-    const ready = items.filter(i => i.status === 'completed' && i.compressedBlob);
-    if (ready.length === 0) return;
-
+    const ready = items.filter((i) => i.status === "done" && i.blob);
+    if (!ready.length) return;
     if (ready.length === 1) {
-      const link = document.createElement('a');
-      link.href = ready[0].compressedUrl!;
-      link.download = `optimized_${ready[0].file.name}`;
-      link.click();
-    } else {
-      const zip = new JSZip();
-      ready.forEach(item => {
-        zip.file(`optimized_${item.file.name}`, item.compressedBlob!);
-      });
-      const content = await zip.generateAsync({ type: "blob" });
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(content);
-      link.download = `optimized_bundle_${Date.now()}.zip`;
-      link.click();
+      const a = document.createElement("a");
+      a.href = ready[0].url!;
+      a.download = "compressed_" + ready[0].file.name;
+      a.click();
+      return;
     }
+    const zip = new JSZip();
+    ready.forEach((i) => zip.file("compressed_" + i.file.name, i.blob!));
+    const blob = await zip.generateAsync({ type: "blob" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "compressed_pdfs.zip";
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
   };
 
-  const removeItem = (id: string) => {
-    setItems(prev => {
-      const item = prev.find(i => i.id === id);
-      if (item?.compressedUrl) URL.revokeObjectURL(item.compressedUrl);
-      return prev.filter(i => i.id !== id);
-    });
-  };
-
-  const clearAll = () => {
-    items.forEach(i => i.compressedUrl && URL.revokeObjectURL(i.compressedUrl));
-    setItems([]);
-    setProgress(0);
-    toast({ title: "Studio Reset", description: "Buffers cleared." });
-  };
-
-  const totalOriginal = items.reduce((acc, i) => acc + i.originalSize, 0);
-  const totalCompressed = items.reduce((acc, i) => acc + (i.compressedSize || i.originalSize), 0);
-  const reduction = totalOriginal > 0 ? Math.max(0, Math.round((1 - totalCompressed / totalOriginal) * 100)) : 0;
+  const orig = items.reduce((s, i) => s + i.original, 0);
+  const after = items.reduce((s, i) => s + (i.result ?? i.original), 0);
+  const saved =
+    orig > 0 ? Math.max(0, Math.round((1 - after / orig) * 100)) : 0;
+  const done = items.filter((i) => i.status === "done").length;
 
   return (
-    <div className="container mx-auto px-6 py-12 md:py-20">
-      <div className="mb-12 animate-reveal">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-primary/10 border border-primary/20 text-[9px] font-black text-primary uppercase tracking-widest mb-4">
-          <FileArchive className="w-3.5 h-3.5" /> Performance Suite
-        </div>
-        <h1 className="text-3xl md:text-5xl font-headline font-black text-foreground uppercase tracking-tight">
-          PDF <span className="text-primary italic">Compressor Studio</span>
+    <div className="container mx-auto max-w-5xl px-4 py-12 md:px-6 md:py-16">
+      <div className="mb-10">
+        <p className="mb-2 text-[11px] font-black uppercase tracking-[0.22em] text-blue-600">
+          PDF tools
+        </p>
+        <h1 className="text-3xl font-black tracking-tight md:text-5xl">
+          PDF Compressor
         </h1>
-        <p className="text-foreground/40 text-sm md:text-base font-medium mt-4 max-w-2xl leading-relaxed">
-          Professional browser-side PDF optimization. Reduce document overhead and structural waste locally with absolute privacy using WebAssembly synthesis.
+        <p className="mt-3 max-w-xl text-sm text-foreground/60">
+          Compress PDFs privately in the browser. Multiple files supported.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
-        {/* Controls & List */}
-        <div className="lg:col-span-7 space-y-8 animate-in fade-in slide-in-from-left-6 duration-700">
-          <Card className="glass-card border-border shadow-2xl overflow-hidden relative group min-h-[450px]">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
-            
-            <CardHeader className="pb-8 border-b border-border bg-secondary/30 flex flex-row items-center justify-between">
-              <CardTitle className="text-xl font-headline flex items-center gap-4 text-foreground">
-                <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary ring-1 ring-primary/40 shadow-inner group-hover:scale-110 transition-transform">
-                  <FileText className="w-6 h-6" />
-                </div>
-                Production Pipeline
-              </CardTitle>
-              {items.length > 0 && (
-                 <div className="px-3 py-1 rounded-lg bg-primary/10 border border-primary/20 text-[9px] font-black text-primary uppercase tracking-widest">
-                   {items.length} Documents
-                 </div>
-              )}
-            </CardHeader>
-            
-            <CardContent className="p-0">
-              {!items.length ? (
-                <div 
-                  onClick={() => !isProcessing && fileInputRef.current?.click()}
-                  className="h-[450px] flex flex-col items-center justify-center cursor-pointer group hover:bg-primary/5 transition-all"
-                >
-                  <div className="w-20 h-20 rounded-[2.5rem] bg-background border border-border flex items-center justify-center text-foreground/10 group-hover:text-primary group-hover:scale-110 transition-all mb-6 shadow-xl">
-                    <Upload className="w-10 h-10" />
-                  </div>
-                  <p className="text-[10px] font-black uppercase text-foreground/30 tracking-[0.2em] group-hover:text-primary transition-colors text-center px-10">
-                    Import PDF Documents for optimization<br />
-                    <span className="text-[8px] opacity-40 uppercase font-bold">(Up to 50MB per file)</span>
-                  </p>
-                  <input type="file" ref={fileInputRef} accept="application/pdf" multiple onChange={handleFileUpload} className="hidden" />
-                </div>
-              ) : (
-                <div className="divide-y divide-border max-h-[600px] overflow-auto custom-scrollbar">
-                  {items.map((item) => (
-                    <div key={item.id} className="flex items-center gap-4 p-5 hover:bg-secondary/20 transition-all">
-                      <div className={cn(
-                        "w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border border-border shadow-inner",
-                        item.status === 'completed' ? "bg-green-500/10 text-green-500 border-green-500/20" : "bg-background text-primary/40"
-                      )}>
-                        <FileText className="w-6 h-6" />
-                      </div>
-                      
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-black uppercase text-foreground truncate">{item.file.name}</p>
-                        <div className="flex items-center gap-3 mt-1">
-                           <span className="text-[9px] font-bold text-foreground/20 uppercase tracking-widest">{formatSize(item.originalSize)}</span>
-                           {item.compressedSize && (
-                             <>
-                               <ArrowDownCircle className="w-3 h-3 text-primary/40" />
-                               <span className="text-[9px] font-black text-primary uppercase tracking-widest">{formatSize(item.compressedSize)}</span>
-                               <span className="text-[8px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-black">-{Math.max(0, Math.round((1 - item.compressedSize / item.originalSize) * 100))}%</span>
-                             </>
-                           )}
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                         {item.status === 'processing' && <Loader2 className="w-4 h-4 animate-spin text-primary" />}
-                         {item.status === 'completed' && <CheckCircle2 className="w-4 h-4 text-green-500" />}
-                         <Button variant="ghost" size="icon" onClick={() => removeItem(item.id)} className="h-10 w-10 rounded-xl text-foreground/20 hover:text-destructive">
-                           <X className="w-4 h-4" />
-                         </Button>
-                      </div>
+      <div className="grid gap-6 lg:grid-cols-12">
+        <Card className="overflow-hidden rounded-[1.8rem] border-border shadow-xl lg:col-span-7">
+          <div className="h-1 bg-gradient-to-r from-blue-600 via-sky-400 to-orange-400" />
+          <CardHeader className="flex flex-row items-center justify-between border-b border-border bg-muted/40">
+            <CardTitle className="flex items-center gap-3 text-sm">
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600/10 text-blue-600">
+                <FileText className="h-4 w-4" />
+              </span>
+              Your files
+            </CardTitle>
+            {items.length > 0 && (
+              <span className="rounded-full bg-blue-600/10 px-3 py-1 text-[11px] font-bold text-blue-600">
+                {items.length}
+              </span>
+            )}
+          </CardHeader>
+          <CardContent className="p-6">
+            {!items.length ? (
+              <button
+                type="button"
+                onClick={() => inputRef.current?.click()}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setDrag(true);
+                }}
+                onDragLeave={() => setDrag(false)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setDrag(false);
+                  addFiles(e.dataTransfer.files);
+                }}
+                className={cn(
+                  "flex h-52 w-full flex-col items-center justify-center rounded-2xl border-2 border-dashed bg-muted/30 transition",
+                  drag
+                    ? "border-blue-600 bg-blue-600/5"
+                    : "border-border hover:border-blue-600/40",
+                )}
+              >
+                <Upload className="mb-3 h-8 w-8 text-blue-600" />
+                <p className="text-sm font-semibold">
+                  Drop PDFs or click to upload
+                </p>
+                <p className="mt-1 text-xs text-foreground/45">
+                  Multiple files allowed
+                </p>
+              </button>
+            ) : (
+              <div className="max-h-[420px] space-y-2 overflow-auto">
+                {items.map((item) => (
+                  <div
+                    key={item.id}
+                    className="flex items-center gap-3 rounded-2xl border border-border bg-background px-3 py-3"
+                  >
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-600/10 text-blue-600">
+                      <FileText className="h-4 w-4" />
                     </div>
-                  ))}
-                  <div className="p-6 bg-secondary/30 flex justify-center">
-                     <Button variant="ghost" onClick={() => fileInputRef.current?.click()} className="text-[9px] font-black uppercase tracking-widest text-primary hover:bg-primary/10">
-                        <Plus className="w-3.5 h-3.5 mr-2" /> Inject More Assets
-                     </Button>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold">
+                        {item.file.name}
+                      </p>
+                      <p className="text-xs text-foreground/50">
+                        {formatSize(item.original)}
+                        {item.result != null && (
+                          <span className="text-blue-600">
+                            {" "}
+                            → {formatSize(item.result)}
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                    {item.status === "working" && (
+                      <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                    )}
+                    {item.status === "done" && (
+                      <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (item.url) URL.revokeObjectURL(item.url);
+                        setItems((p) => p.filter((x) => x.id !== item.id));
+                      }}
+                      className="rounded-lg p-1 hover:bg-muted"
+                    >
+                      <X className="h-4 w-4 text-foreground/40" />
+                    </button>
                   </div>
-                </div>
-              )}
+                ))}
+                <Button
+                  variant="ghost"
+                  onClick={() => inputRef.current?.click()}
+                  className="w-full rounded-xl"
+                >
+                  <Plus className="mr-2 h-4 w-4" /> Add more
+                </Button>
+              </div>
+            )}
+            <input
+              ref={inputRef}
+              type="file"
+              accept="application/pdf"
+              multiple
+              className="hidden"
+              onChange={(e) => {
+                if (e.target.files) addFiles(e.target.files);
+                e.target.value = "";
+              }}
+            />
+          </CardContent>
+        </Card>
+
+        <div className="space-y-6 lg:col-span-5">
+          <Card className="overflow-hidden rounded-[1.8rem] border-border shadow-xl">
+            <div className="h-1 bg-gradient-to-r from-blue-600 to-orange-400" />
+            <CardHeader className="border-b border-border bg-muted/40">
+              <CardTitle className="text-sm">Settings</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 p-6">
+              <div className="grid grid-cols-3 gap-2">
+                {(["low", "medium", "high"] as const).map((id) => (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => setLevel(id)}
+                    className={cn(
+                      "rounded-xl border py-3 text-xs font-bold capitalize",
+                      level === id
+                        ? "border-blue-600 bg-blue-600 text-white shadow-md shadow-blue-600/20"
+                        : "border-border bg-muted/30 hover:border-blue-600/30",
+                    )}
+                  >
+                    {id}
+                  </button>
+                ))}
+              </div>
+              {busy && <Progress value={progress} className="h-2" />}
+              <Button
+                onClick={run}
+                disabled={!items.length || busy}
+                className="h-12 w-full rounded-xl bg-blue-600 text-white hover:bg-blue-700"
+              >
+                {busy ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <FileArchive className="mr-2 h-4 w-4" />
+                )}
+                Compress
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  items.forEach((i) => i.url && URL.revokeObjectURL(i.url));
+                  setItems([]);
+                  setProgress(0);
+                }}
+                className="h-12 w-full rounded-xl"
+              >
+                <Trash2 className="mr-2 h-4 w-4" /> Clear
+              </Button>
             </CardContent>
           </Card>
-        </div>
 
-        {/* Sidebar Settings */}
-        <div className="lg:col-span-5 space-y-8 animate-in fade-in slide-in-from-right-6 duration-1000 stagger-2">
-          <Card className="glass-card border-border shadow-xl overflow-hidden relative group">
-             <CardHeader className="py-6 border-b border-border bg-secondary/30">
-                <CardTitle className="text-[10px] font-black uppercase tracking-[0.3em] flex items-center gap-3 text-primary">
-                  <Settings2 className="w-4 h-4" /> Optimization Config
-                </CardTitle>
-             </CardHeader>
-             <CardContent className="pt-8 space-y-8">
-                <div className="space-y-4">
-                   <Label className="text-[10px] font-black text-foreground/50 uppercase tracking-[0.2em] ml-1">Compression Protocol</Label>
-                   <div className="grid grid-cols-1 gap-3">
-                      {[
-                        { id: 'low', label: 'Eco (Fastest)', desc: 'Surface structural cleanup' },
-                        { id: 'medium', label: 'Standard (Balanced)', desc: 'Deep dictionary minification' },
-                        { id: 'high', label: 'Intensive (Smallest)', desc: 'Max structural sanitization' },
-                      ].map((mode) => (
-                        <button
-                          key={mode.id}
-                          onClick={() => setLevel(mode.id as any)}
-                          className={cn(
-                            "flex flex-col items-start gap-1 p-4 rounded-2xl border transition-all text-left",
-                            level === mode.id ? "bg-primary text-white border-primary shadow-lg" : "bg-background border-border text-foreground/40 hover:border-primary/20"
-                          )}
-                        >
-                           <span className="text-[10px] font-black uppercase tracking-widest">{mode.label}</span>
-                           <span className={cn("text-[9px] font-medium opacity-60", level === mode.id ? "text-white" : "text-foreground/40")}>{mode.desc}</span>
-                        </button>
-                      ))}
-                   </div>
-                </div>
-
-                <div className="p-6 rounded-[2rem] bg-primary/5 border border-primary/10 flex items-start gap-5">
-                  <Info className="w-6 h-6 text-primary mt-1 shrink-0" />
-                  <div className="space-y-1">
-                    <h4 className="text-[11px] font-black text-primary uppercase tracking-widest">WASM Sandbox</h4>
-                    <p className="text-[11px] text-foreground/40 leading-relaxed font-medium">Optimization occurs locally in your browser memory. Documents never touch our infrastructure.</p>
+          {done > 0 && (
+            <Card className="overflow-hidden rounded-[1.8rem] border-border shadow-xl">
+              <div className="h-1 bg-gradient-to-r from-blue-600 to-orange-400" />
+              <CardContent className="space-y-4 p-6">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-2xl bg-muted/40 p-4">
+                    <p className="text-[11px] text-foreground/50">Before</p>
+                    <p className="text-sm font-bold">{formatSize(orig)}</p>
+                  </div>
+                  <div className="rounded-2xl bg-blue-600/10 p-4">
+                    <p className="text-[11px] text-blue-600">After</p>
+                    <p className="text-sm font-bold text-blue-600">
+                      {formatSize(after)}
+                    </p>
                   </div>
                 </div>
-
-                <div className="space-y-6 pt-4">
-                   {isProcessing && (
-                     <div className="space-y-2 animate-in fade-in">
-                        <div className="flex justify-between text-[10px] font-black text-primary uppercase tracking-widest">
-                           <span>Synthesizing Matrix...</span>
-                           <span>{progress}%</span>
-                        </div>
-                        <Progress value={progress} className="h-1.5" />
-                     </div>
-                   )}
-                   
-                   <div className="flex gap-3">
-                      <Button 
-                        onClick={processAll}
-                        disabled={isProcessing || items.length === 0}
-                        className="flex-1 h-14 bg-primary hover:bg-primary/90 text-white font-black rounded-2xl flex items-center justify-center gap-4 text-sm shadow-xl shadow-primary/30 transition-all active:scale-95"
-                      >
-                        {isProcessing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Zap className="w-5 h-5" />}
-                        Execute Purge
-                      </Button>
-                      {items.length > 0 && (
-                        <Button variant="outline" onClick={clearAll} className="w-14 h-14 rounded-2xl border-border bg-secondary hover:text-destructive">
-                           <Trash2 className="w-5 h-5" />
-                        </Button>
-                      )}
-                   </div>
-                </div>
-             </CardContent>
-          </Card>
-
-          {items.some(i => i.status === 'completed') && (
-            <Card className="glass-card border-border shadow-2xl overflow-hidden animate-in zoom-in duration-500">
-               <CardHeader className="py-6 border-b border-border bg-primary/5">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-[10px] font-black uppercase tracking-[0.3em] flex items-center gap-3 text-primary">
-                      <TrendingDown className="w-4 h-4" /> Production Analytics
-                    </CardTitle>
-                    <div className="px-2 py-0.5 rounded bg-primary text-white text-[8px] font-black uppercase">Ready</div>
-                  </div>
-               </CardHeader>
-               <CardContent className="pt-8 space-y-8">
-                  <div className="grid grid-cols-2 gap-4">
-                     <div className="p-5 rounded-2xl bg-secondary border border-border text-center space-y-1">
-                        <p className="text-[8px] font-black uppercase text-foreground/30 tracking-widest">Original Volume</p>
-                        <p className="text-sm font-headline font-black text-foreground">{formatSize(totalOriginal)}</p>
-                     </div>
-                     <div className="p-5 rounded-2xl bg-primary/10 border border-primary/20 text-center space-y-1">
-                        <p className="text-[8px] font-black uppercase text-primary tracking-widest">Optimized Matrix</p>
-                        <p className="text-sm font-headline font-black text-primary">{formatSize(totalCompressed)}</p>
-                     </div>
-                  </div>
-
-                  <div className="p-6 rounded-[2.5rem] bg-secondary border border-border flex items-center justify-between">
-                     <div className="space-y-1">
-                        <p className="text-[11px] font-black text-foreground uppercase tracking-widest">Total Reduction</p>
-                        <p className="text-3xl font-headline font-black text-primary">{reduction}%</p>
-                     </div>
-                     <div className="w-12 h-12 rounded-full border-4 border-primary/20 border-t-primary flex items-center justify-center">
-                        <ArrowDownCircle className="w-5 h-5 text-primary" />
-                     </div>
-                  </div>
-
-                  <Button 
-                    onClick={downloadAll}
-                    className="w-full h-16 bg-white text-black hover:bg-white/90 font-black rounded-2xl flex items-center justify-center gap-4 text-lg shadow-2xl transition-all active:scale-95"
-                  >
-                    <Download className="w-6 h-6" />
-                    Download {items.filter(i => i.status === 'completed').length > 1 ? 'ZIP Archive' : 'PDF Master'}
-                  </Button>
-               </CardContent>
+                <p className="text-2xl font-black text-blue-600">
+                  {saved}% smaller
+                </p>
+                <Button
+                  onClick={downloadAll}
+                  className="h-12 w-full rounded-xl bg-blue-600 text-white hover:bg-blue-700"
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  {done > 1 ? "Download ZIP" : "Download PDF"}
+                </Button>
+              </CardContent>
             </Card>
           )}
 
-          <div className="grid grid-cols-1 gap-6">
-             <div className="p-6 rounded-[2.5rem] bg-secondary border border-border flex items-start gap-5 group">
-                <Maximize className="w-6 h-6 text-primary mt-1 shrink-0" />
-                <div className="space-y-1">
-                   <h4 className="text-[11px] font-black text-foreground uppercase tracking-widest">Binary Precision</h4>
-                   <p className="text-[11px] text-foreground/40 leading-relaxed font-medium">Original document fidelity is preserved. Reduction occurs via structural dictionary minification.</p>
-                </div>
-             </div>
-             <div className="p-6 rounded-[2.5rem] bg-secondary border border-border flex items-start gap-5 group">
-                <ShieldCheck className="w-6 h-6 text-primary mt-1 shrink-0" />
-                <div className="space-y-1">
-                   <h4 className="text-[11px] font-black text-foreground uppercase tracking-widest">Zero Metadata</h4>
-                   <p className="text-[11px] text-foreground/40 leading-relaxed font-medium">Re-synthesis inherently purges internal structural metadata for absolute privacy.</p>
-                </div>
-             </div>
+          <div className="flex items-start gap-3 rounded-2xl border border-border bg-muted/30 p-4">
+            <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" />
+            <p className="text-sm text-foreground/60">
+              Compression stays on this device. Image-heavy PDFs may not shrink
+              much.
+            </p>
           </div>
         </div>
       </div>
-      
-      <style jsx global>{`
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-track { @apply bg-transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { @apply bg-primary/20 rounded-full; }
-      `}</style>
+      <section className="mx-auto mt-16 max-w-3xl">
+        <div className="mb-8 flex items-center gap-3">
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600/10 text-blue-600">
+            <FileText className="h-5 w-5" />
+          </span>
+          <div>
+            <h2 className="text-xl font-bold">PDF Compressor FAQ</h2>
+            <p className="text-sm text-foreground/55">How compression works</p>
+          </div>
+        </div>
+        <div className="space-y-3">
+          {[
+            {
+              q: "Is PDF Compressor free?",
+              a: "Yes. Compress PDFs on My Kit Tool at no cost.",
+            },
+            {
+              q: "Do you upload my PDF?",
+              a: "No. Compression runs in your browser. The file stays on your device.",
+            },
+            {
+              q: "Can I compress more than one PDF?",
+              a: "Yes. Add multiple files and download a ZIP when more than one is ready.",
+            },
+            {
+              q: "Why did my file stay the same size?",
+              a: "If a rebuild is larger, the original is kept. Image-heavy PDFs often cannot shrink much in the browser.",
+            },
+          ].map((item) => (
+            <div
+              key={item.q}
+              className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm"
+            >
+              <div className="h-1 bg-gradient-to-r from-blue-600 via-sky-400 to-orange-400" />
+              <div className="p-5">
+                <h3 className="text-sm font-bold">{item.q}</h3>
+                <p className="mt-1 text-sm text-foreground/60">{item.a}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }

@@ -1,328 +1,343 @@
-"use client"
+"use client";
 
-import React, { useState, useRef, useEffect } from 'react';
-import { 
-  FileStack, 
-  Upload, 
-  Download, 
-  Trash2, 
-  Sparkles, 
-  Loader2, 
+import React, { useEffect, useRef, useState } from "react";
+import {
+  FileStack,
+  Upload,
+  Download,
+  Trash2,
+  Loader2,
   Info,
   CheckCircle2,
   FileText,
   ArrowUp,
   ArrowDown,
-  Settings2,
-  Layers,
   X,
   Plus,
   ShieldCheck,
-  Zap,
-  Activity,
-  HelpCircle
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Progress } from '@/components/ui/progress';
-import { useToast } from '@/hooks/use-toast';
-import { cn } from '@/lib/utils';
-import { PDFDocument } from 'pdf-lib';
-import { GetHelp } from '@/components/mykittool/get-help';
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
+import { PDFDocument } from "pdf-lib";
 
-interface PDFFileItem {
-  id: string;
-  file: File;
-  name: string;
-  size: number;
+type Item = { id: string; file: File; name: string; size: number };
+
+function formatSize(n: number) {
+  if (n < 1024) return n + " B";
+  if (n < 1024 * 1024) return (n / 1024).toFixed(1) + " KB";
+  return (n / (1024 * 1024)).toFixed(2) + " MB";
 }
 
 export default function PdfMergerPage() {
   const { toast } = useToast();
-  const [files, setFiles] = useState<PDFFileItem[]>([]);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [mergedUrl, setMergedUrl] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [files, setFiles] = useState<Item[]>([]);
+  const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState(0);
-  
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [url, setUrl] = useState<string | null>(null);
+  const [drag, setDrag] = useState(false);
 
   useEffect(() => {
     return () => {
-      if (mergedUrl) URL.revokeObjectURL(mergedUrl);
+      if (url) URL.revokeObjectURL(url);
     };
-  }, [mergedUrl]);
+  }, [url]);
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFiles = Array.from(e.target.files || []);
-    if (selectedFiles.length === 0) return;
-
-    const newItems: PDFFileItem[] = selectedFiles.map(file => ({
-      id: Math.random().toString(36).substr(2, 9),
-      file,
-      name: file.name,
-      size: file.size
-    }));
-
-    setFiles(prev => [...prev, ...newItems]);
-    setMergedUrl(null);
-    toast({ title: "Assets Imported", description: `Added ${selectedFiles.length} PDF(s) to the pipeline.` });
-    
-    if (fileInputRef.current) fileInputRef.current.value = '';
-  };
-
-  const removeFile = (id: string) => {
-    setFiles(prev => prev.filter(f => f.id !== id));
-  };
-
-  const moveFile = (index: number, direction: 'up' | 'down') => {
-    if (direction === 'up' && index === 0) return;
-    if (direction === 'down' && index === files.length - 1) return;
-
-    const newFiles = [...files];
-    const targetIndex = direction === 'up' ? index - 1 : index + 1;
-    [newFiles[index], newFiles[targetIndex]] = [newFiles[targetIndex], newFiles[index]];
-    setFiles(newFiles);
-  };
-
-  const mergePdfs = async () => {
-    if (files.length < 2) {
-      toast({ variant: "destructive", title: "Payload Incomplete", description: "At least 2 PDF documents are required for merging." });
+  const addFiles = (list: FileList | File[]) => {
+    const pdfs = Array.from(list).filter(
+      (f) =>
+        f.type === "application/pdf" || f.name.toLowerCase().endsWith(".pdf"),
+    );
+    if (!pdfs.length) {
+      toast({ variant: "destructive", title: "PDF files only" });
       return;
     }
+    setFiles((prev) => [
+      ...prev,
+      ...pdfs.map((file) => ({
+        id: file.name + "-" + file.size + "-" + Date.now() + Math.random(),
+        file,
+        name: file.name,
+        size: file.size,
+      })),
+    ]);
+    if (url) URL.revokeObjectURL(url);
+    setUrl(null);
+  };
 
-    setIsProcessing(true);
-    setProgress(0);
+  const move = (index: number, dir: -1 | 1) => {
+    const next = index + dir;
+    if (next < 0 || next >= files.length) return;
+    const copy = [...files];
+    [copy[index], copy[next]] = [copy[next], copy[index]];
+    setFiles(copy);
+    if (url) URL.revokeObjectURL(url);
+    setUrl(null);
+  };
 
+  const mergeNow = async () => {
+    if (files.length < 2) {
+      toast({ variant: "destructive", title: "Add at least 2 PDFs" });
+      return;
+    }
+    setBusy(true);
+    setProgress(5);
     try {
-      const mergedPdf = await PDFDocument.create();
-      
+      const out = await PDFDocument.create();
+      let ok = 0;
       for (let i = 0; i < files.length; i++) {
-        const item = files[i];
-        const arrayBuffer = await item.file.arrayBuffer();
-        const pdf = await PDFDocument.load(arrayBuffer);
-        const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
-        copiedPages.forEach((page) => mergedPdf.addPage(page));
-        
-        setProgress(Math.round(((i + 1) / files.length) * 100));
+        try {
+          const src = await PDFDocument.load(
+            await files[i].file.arrayBuffer(),
+            {
+              ignoreEncryption: true,
+            },
+          );
+          const pages = await out.copyPages(src, src.getPageIndices());
+          pages.forEach((p) => out.addPage(p));
+          ok++;
+        } catch {
+          toast({
+            variant: "destructive",
+            title: "Skipped " + files[i].name,
+          });
+        }
+        setProgress(Math.round(((i + 1) / files.length) * 90));
       }
-
-      const mergedPdfBytes = await mergedPdf.save();
-      const blob = new Blob([mergedPdfBytes], { type: 'application/pdf' });
-      const url = URL.createObjectURL(blob);
-      
-      setMergedUrl(url);
-      toast({ title: "Production Complete", description: "Documents successfully unified." });
-    } catch (err) {
-      console.error(err);
-      toast({ variant: "destructive", title: "Merge Failed", description: "Failed to process PDF matrix. Ensure files are valid." });
+      if (ok === 0) throw new Error("none");
+      const bytes = await out.save();
+      const blob = new Blob([bytes as BlobPart], { type: "application/pdf" });
+      if (url) URL.revokeObjectURL(url);
+      setUrl(URL.createObjectURL(blob));
+      setProgress(100);
+      toast({ title: "Merged", description: ok + " PDF(s) combined" });
+    } catch {
+      toast({ variant: "destructive", title: "Merge failed" });
     } finally {
-      setIsProcessing(false);
+      setBusy(false);
     }
   };
 
-  const handleClear = () => {
-    setFiles([]);
-    setMergedUrl(null);
-    setProgress(0);
-    toast({ title: "Studio Reset", description: "Pipeline cleared." });
-  };
-
-  const formatSize = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
-  };
+  const total = files.reduce((s, f) => s + f.size, 0);
 
   return (
-    <div className="container mx-auto px-6 py-12 md:py-20 max-w-7xl">
-      <div className="mb-12 animate-reveal flex flex-col md:flex-row md:items-end justify-between gap-8">
-        <div className="min-w-0">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-primary/10 border border-primary/20 text-[10px] font-black text-primary uppercase tracking-widest mb-4">
-            <FileStack className="w-3.5 h-3.5" /> Document Suite
-          </div>
-          <h1 className="text-3xl md:text-5xl font-headline font-black text-foreground uppercase tracking-tight">
-            PDF <span className="text-primary italic">Merger Studio</span>
-          </h1>
-          <p className="text-foreground/40 text-sm md:text-base font-medium mt-4 max-w-2xl leading-relaxed">
-            Professional-grade document unification. Combine multiple PDF documents into a single master file locally in your browser with precision reordering.
-          </p>
-        </div>
-        <div className="shrink-0 pb-2">
-           <GetHelp toolId="pdf-merger" />
-        </div>
+    <div className="container mx-auto max-w-5xl px-4 py-12 md:px-6 md:py-16">
+      <div className="mb-10">
+        <p className="mb-2 text-[11px] font-black uppercase tracking-[0.22em] text-blue-600">
+          PDF tools
+        </p>
+        <h1 className="text-3xl font-black tracking-tight md:text-5xl">
+          PDF Merger
+        </h1>
+        <p className="mt-3 max-w-xl text-sm text-foreground/60">
+          Combine PDFs in order. Reorder, then download one file.
+        </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
-        {/* Sequence Manager */}
-        <div className="lg:col-span-7 space-y-8 animate-in fade-in slide-in-from-left-6 duration-700">
-          <Card className="glass-card border-border shadow-2xl overflow-hidden relative group">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
-            
-            <CardHeader className="pb-8 border-b border-border bg-secondary/30">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-xl font-headline flex items-center gap-4 text-foreground">
-                  <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary ring-1 ring-primary/40 shadow-inner group-hover:scale-110 transition-transform">
-                    <Plus className="w-6 h-6" />
-                  </div>
-                  Sequence Manager
-                </CardTitle>
-                <div className="px-3 py-1 rounded-lg bg-secondary border border-border">
-                  <span className="text-[10px] font-mono text-primary font-black uppercase">{files.length} Docs</span>
-                </div>
-              </div>
-            </CardHeader>
-            
-            <CardContent className="pt-10 space-y-8">
-              <div 
-                onClick={() => !isProcessing && fileInputRef.current?.click()}
-                className={cn(
-                  "relative group/upload h-40 rounded-[2.5rem] border-2 border-dashed border-border hover:border-primary/40 transition-all flex flex-col items-center justify-center bg-secondary/30 overflow-hidden cursor-pointer",
-                  isProcessing && "cursor-not-allowed opacity-80"
-                )}
-              >
-                <div className="w-12 h-12 rounded-2xl bg-background border border-border flex items-center justify-center text-foreground/20 group-hover:text-primary group-hover:scale-110 transition-all mb-4 shadow-xl">
-                  <Upload className="w-6 h-6" />
-                </div>
-                <p className="text-[10px] font-black uppercase text-foreground/40 tracking-widest group-hover:text-primary transition-colors">Import PDF Documents</p>
-                <p className="text-[8px] text-foreground/20 uppercase font-bold mt-2">Add multiple files at once</p>
-                <input type="file" ref={fileInputRef} accept="application/pdf" multiple onChange={handleFileUpload} className="hidden" />
-              </div>
-
-              {files.length > 0 && (
-                <div className="space-y-4 animate-in fade-in duration-500">
-                  <div className="flex items-center justify-between px-2">
-                    <Label className="text-[10px] font-black text-foreground/50 uppercase tracking-[0.2em]">Production Pipeline</Label>
-                    <button onClick={handleClear} className="text-[10px] font-black uppercase text-destructive hover:opacity-70 transition-all">Purge All</button>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 gap-3 max-h-[440px] overflow-y-auto pr-2 custom-scrollbar">
-                    {files.map((f, index) => (
-                      <div key={f.id} className="group/item flex items-center gap-4 p-5 rounded-3xl bg-secondary border border-border hover:border-primary/20 transition-all relative overflow-hidden">
-                        <div className="w-10 h-10 rounded-xl bg-background border border-border flex items-center justify-center text-red-500/40 shrink-0">
-                          <FileText className="w-5 h-5" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-bold text-foreground truncate uppercase pr-20">{f.name}</p>
-                          <p className="text-[9px] text-foreground/40 font-bold uppercase tracking-widest mt-1">{formatSize(f.size)} Payload</p>
-                        </div>
-                        <div className="flex items-center gap-1.5 opacity-0 group-hover/item:opacity-100 transition-opacity absolute right-4 top-1/2 -translate-y-1/2 bg-secondary/80 backdrop-blur-md pl-4 py-2 rounded-xl">
-                          <Button variant="ghost" size="icon" onClick={() => moveFile(index, 'up')} disabled={index === 0} className="h-8 w-8 rounded-lg">
-                            <ArrowUp className="w-3.5 h-3.5" />
-                          </Button>
-                          <Button variant="ghost" size="icon" onClick={() => moveFile(index, 'down')} disabled={index === files.length - 1} className="h-8 w-8 rounded-lg">
-                            <ArrowDown className="w-3.5 h-3.5" />
-                          </Button>
-                          <Button variant="ghost" size="icon" onClick={() => removeFile(f.id)} className="h-8 w-8 rounded-lg text-destructive hover:bg-destructive/10">
-                            <X className="w-3.5 h-3.5" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="p-6 rounded-[2.5rem] bg-primary/5 border border-primary/10 flex items-center justify-between">
-                     <div className="space-y-1">
-                        <p className="text-[10px] font-black text-primary uppercase tracking-widest">Master Payload</p>
-                        <p className="text-lg font-headline font-black text-foreground uppercase">{formatSize(files.reduce((acc, f) => acc + f.size, 0))} TOTAL</p>
-                     </div>
-                     <Button 
-                      onClick={mergePdfs}
-                      disabled={isProcessing || files.length < 2}
-                      className="h-14 px-8 bg-primary hover:bg-primary/90 text-primary-foreground font-black rounded-2xl flex items-center justify-center gap-3 text-sm shadow-xl shadow-primary/30 transition-all active:scale-95 group/btn"
-                    >
-                      {isProcessing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5 group-hover:rotate-12 transition-transform" />}
-                      Merge Documents
-                    </Button>
-                  </div>
-                </div>
+      <div className="grid gap-6 lg:grid-cols-12">
+        <Card className="overflow-hidden rounded-[1.8rem] border-border shadow-xl lg:col-span-7">
+          <div className="h-1 bg-gradient-to-r from-blue-600 via-sky-400 to-orange-400" />
+          <CardHeader className="flex flex-row items-center justify-between border-b border-border bg-muted/40">
+            <CardTitle className="flex items-center gap-3 text-sm">
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600/10 text-blue-600">
+                <FileStack className="h-4 w-4" />
+              </span>
+              Files
+            </CardTitle>
+            <span className="text-xs font-bold text-blue-600">
+              {files.length}
+            </span>
+          </CardHeader>
+          <CardContent className="space-y-4 p-6">
+            <button
+              type="button"
+              onClick={() => !busy && inputRef.current?.click()}
+              onDragOver={(e) => {
+                e.preventDefault();
+                setDrag(true);
+              }}
+              onDragLeave={() => setDrag(false)}
+              onDrop={(e) => {
+                e.preventDefault();
+                setDrag(false);
+                addFiles(e.dataTransfer.files);
+              }}
+              className={cn(
+                "flex h-32 w-full flex-col items-center justify-center rounded-2xl border-2 border-dashed",
+                drag
+                  ? "border-blue-600 bg-blue-600/5"
+                  : "border-border bg-muted/30 hover:border-blue-600/40",
               )}
-            </CardContent>
-          </Card>
-        </div>
+            >
+              <Upload className="mb-2 h-7 w-7 text-blue-600" />
+              <p className="text-sm font-semibold">Drop PDFs or click</p>
+            </button>
+            <input
+              ref={inputRef}
+              type="file"
+              accept="application/pdf"
+              multiple
+              className="hidden"
+              onChange={(e) => {
+                if (e.target.files) addFiles(e.target.files);
+                e.target.value = "";
+              }}
+            />
 
-        {/* Output Sidebar */}
-        <div className="lg:col-span-5 space-y-8 animate-in fade-in slide-in-from-right-6 duration-1000 stagger-2">
-          <Card className="glass-card border-border shadow-2xl overflow-hidden relative group min-h-[300px]">
-            <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
-            <CardHeader className="py-8 border-b border-border bg-secondary/30">
-              <CardTitle className="text-[10px] font-black text-primary uppercase tracking-[0.5em] flex items-center gap-2">
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                Production Status
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-10 space-y-8">
-              <div className="relative group/output min-h-[260px] flex flex-col items-center justify-center rounded-[2.5rem] bg-secondary/30 border border-border p-10 text-center">
-                {!mergedUrl && !isProcessing && (
-                  <div className="opacity-10 group-hover:opacity-20 transition-opacity">
-                    <Activity className="w-20 h-20 text-primary mb-4 mx-auto" />
-                    <p className="text-xs font-black uppercase tracking-[0.3em]">Studio Standby</p>
-                  </div>
-                )}
-
-                {isProcessing && (
-                  <div className="w-full space-y-6 animate-in fade-in duration-500">
-                    <div className="relative w-24 h-24 mx-auto">
-                      <div className="w-24 h-24 rounded-full border-4 border-primary/10 border-t-primary animate-spin" />
-                      <Layers className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 text-primary animate-pulse" />
+            {files.length > 0 && (
+              <div className="max-h-[380px] space-y-2 overflow-auto">
+                {files.map((f, i) => (
+                  <div
+                    key={f.id}
+                    className="flex items-center gap-2 rounded-2xl border border-border bg-background px-3 py-3"
+                  >
+                    <span className="w-6 text-xs font-bold text-foreground/40">
+                      {i + 1}
+                    </span>
+                    <FileText className="h-4 w-4 shrink-0 text-blue-600" />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold">{f.name}</p>
+                      <p className="text-xs text-foreground/50">
+                        {formatSize(f.size)}
+                      </p>
                     </div>
-                    <div className="space-y-4">
-                      <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-primary">
-                        <span className="flex items-center gap-2"><Loader2 className="w-3.5 h-3.5 animate-spin" /> Synthesizing...</span>
-                        <span>{progress}%</span>
-                      </div>
-                      <Progress value={progress} className="h-2" />
-                    </div>
-                  </div>
-                )}
-
-                {mergedUrl && (
-                  <div className="space-y-8 w-full animate-in zoom-in duration-500">
-                    <div className="w-24 h-24 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary mx-auto shadow-xl">
-                      <CheckCircle2 className="w-12 h-12" />
-                    </div>
-                    <div className="space-y-2">
-                      <h3 className="text-sm font-black text-foreground uppercase tracking-widest">PDF Master Unified</h3>
-                      <p className="text-[10px] text-foreground/40 font-medium uppercase tracking-widest">Document stack processed</p>
-                    </div>
-                    
-                    <Button 
-                      asChild
-                      className="w-full h-16 bg-primary hover:bg-primary/90 text-primary-foreground font-black rounded-2xl flex items-center justify-center gap-4 text-lg shadow-xl shadow-primary/30 transition-all active:scale-95"
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      disabled={i === 0}
+                      onClick={() => move(i, -1)}
                     >
-                      <a href={mergedUrl} download={`master-bundle-${Date.now()}.pdf`}>
-                        <Download className="w-6 h-6" />
-                        Download Master PDF
-                      </a>
+                      <ArrowUp className="h-4 w-4" />
                     </Button>
-                    <button onClick={handleClear} className="text-[9px] font-black uppercase tracking-widest text-foreground/30 hover:text-primary transition-all">Start New Project</button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      disabled={i === files.length - 1}
+                      onClick={() => move(i, 1)}
+                    >
+                      <ArrowDown className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() =>
+                        setFiles((p) => p.filter((x) => x.id !== f.id))
+                      }
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
                   </div>
-                )}
+                ))}
               </div>
+            )}
+          </CardContent>
+        </Card>
 
-              <div className="p-6 rounded-[2rem] bg-primary/5 border border-primary/10 flex items-start gap-5">
-                <ShieldCheck className="w-6 h-6 text-primary mt-1 shrink-0" />
-                <div className="space-y-2">
-                  <h4 className="text-[11px] font-black text-primary uppercase tracking-widest">Privacy Absolute</h4>
-                  <p className="text-[11px] text-foreground/40 leading-relaxed font-medium">
-                    Synthesis occurs entirely on your device using WebAssembly. Your documents never leave your browser, ensuring 100% data security.
-                  </p>
-                </div>
+        <Card className="overflow-hidden rounded-[1.8rem] border-border shadow-xl lg:col-span-5">
+          <div className="h-1 bg-gradient-to-r from-blue-600 to-orange-400" />
+          <CardHeader className="border-b border-border bg-muted/40">
+            <CardTitle className="text-sm">Merge</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4 p-6">
+            <p className="text-sm text-foreground/60">
+              Total size {formatSize(total)}
+            </p>
+            {busy && <Progress value={progress} className="h-2" />}
+            <Button
+              onClick={mergeNow}
+              disabled={files.length < 2 || busy}
+              className="h-12 w-full rounded-xl bg-blue-600 text-white hover:bg-blue-700"
+            >
+              {busy ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Plus className="mr-2 h-4 w-4" />
+              )}
+              Merge PDFs
+            </Button>
+            {url && (
+              <Button
+                asChild
+                className="h-12 w-full rounded-xl bg-blue-600 text-white hover:bg-blue-700"
+              >
+                <a href={url} download="merged.pdf">
+                  <Download className="mr-2 h-4 w-4" /> Download
+                </a>
+              </Button>
+            )}
+            <Button
+              variant="outline"
+              onClick={() => {
+                if (url) URL.revokeObjectURL(url);
+                setFiles([]);
+                setUrl(null);
+                setProgress(0);
+              }}
+              className="h-12 w-full rounded-xl"
+            >
+              <Trash2 className="mr-2 h-4 w-4" /> Clear
+            </Button>
+            {url && (
+              <div className="flex items-center gap-2 text-sm text-emerald-600">
+                <CheckCircle2 className="h-4 w-4" /> Ready
               </div>
-
-              <div className="flex items-start gap-4 p-5 rounded-2xl bg-secondary border border-border group transition-all hover:bg-secondary/80">
-                <Zap className="w-5 h-5 text-primary mt-0.5 shrink-0" />
-                <div className="space-y-1">
-                  <p className="text-[11px] font-black text-foreground uppercase tracking-widest">Master Protocol</p>
-                  <p className="text-[11px] text-foreground/60 leading-relaxed font-medium">1:1 binary page copying maintains original resolution and metadata.</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+            )}
+            <div className="flex gap-2 text-sm text-foreground/60">
+              <ShieldCheck className="h-4 w-4 shrink-0 text-blue-600" />
+              Merge runs on this device. Broken files are skipped.
+            </div>
+          </CardContent>
+        </Card>
       </div>
+
+      <section className="mx-auto mt-16 max-w-3xl">
+        <div className="mb-8 flex items-center gap-3">
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600/10 text-blue-600">
+            <FileText className="h-5 w-5" />
+          </span>
+          <div>
+            <h2 className="text-xl font-bold">PDF Merger FAQ</h2>
+            <p className="text-sm text-foreground/55">How merge works</p>
+          </div>
+        </div>
+        <div className="space-y-3">
+          {[
+            {
+              q: "How many PDFs can I merge?",
+              a: "Add two or more PDF files, set the order with the arrows, then merge.",
+            },
+            {
+              q: "Is my file uploaded?",
+              a: "No. Merging runs in your browser. Files stay on your device.",
+            },
+            {
+              q: "What if one PDF is broken?",
+              a: "That file is skipped. The rest are still merged.",
+            },
+            {
+              q: "Is PDF Merger free?",
+              a: "Yes. This tool on My Kit Tool is free.",
+            },
+          ].map((item) => (
+            <div
+              key={item.q}
+              className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm"
+            >
+              <div className="h-1 bg-gradient-to-r from-blue-600 via-sky-400 to-orange-400" />
+              <div className="p-5">
+                <h3 className="text-sm font-bold">{item.q}</h3>
+                <p className="mt-1 text-sm text-foreground/60">{item.a}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }
