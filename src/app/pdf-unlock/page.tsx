@@ -69,21 +69,30 @@ export default function PdfUnlockPage() {
 
     try {
       const bytes = await file.arrayBuffer();
-      let pdfDoc: PDFDocument;
+      let src: PDFDocument | null = null;
 
-      try {
-        pdfDoc = await PDFDocument.load(bytes, {
-          password: password || "",
-          ignoreEncryption: false,
-        });
-      } catch {
-        pdfDoc = await PDFDocument.load(bytes, {
-          password: password || "",
-          ignoreEncryption: true,
-        });
+      const tries = [
+        { password: password || "", ignoreEncryption: false },
+        { password: password || "", ignoreEncryption: true },
+        { password: "", ignoreEncryption: true },
+      ];
+
+      for (const opts of tries) {
+        try {
+          src = await PDFDocument.load(bytes, opts);
+          break;
+        } catch {
+          src = null;
+        }
       }
 
-      const out = await pdfDoc.save();
+      if (!src) throw new Error("Could not open this PDF");
+
+      const outDoc = await PDFDocument.create();
+      const pages = await outDoc.copyPages(src, src.getPageIndices());
+      pages.forEach((p) => outDoc.addPage(p));
+
+      const out = await outDoc.save();
       const blob = new Blob([out as BlobPart], { type: "application/pdf" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -94,23 +103,22 @@ export default function PdfUnlockPage() {
 
       toast({
         title: "Unlocked",
-        description: "Password removed. File downloaded.",
+        description: "New PDF downloaded without password.",
       });
     } catch {
       setError(
-        "Wrong password or this encryption type is not supported in the browser.",
+        "This PDF could not be unlocked in the browser. Check the password.",
       );
       toast({
         variant: "destructive",
         title: "Unlock failed",
         description:
-          "Check the password. AES / owner-only locks may still fail.",
+          "Wrong password, or encryption is too strong for the browser.",
       });
     } finally {
       setIsProcessing(false);
     }
   };
-
   return (
     <div className="container mx-auto max-w-5xl px-4 py-12 md:px-6 md:py-16">
       <div className="mb-10">
