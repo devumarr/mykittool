@@ -1,643 +1,474 @@
 "use client";
 
-import React, { useState, useRef, useCallback, useEffect } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Image as ImageIcon,
-  Download,
-  Trash2,
   Upload,
-  CheckCircle2,
-  Info,
-  Loader2,
-  Maximize,
   FileArchive,
-  LayoutGrid,
-  Monitor,
-  Smartphone,
-  MousePointer2,
-  Box,
+  Trash2,
   Copy,
+  Download,
+  Loader2,
+  LayoutGrid,
   Code2,
-  Terminal,
-  FileCode,
-  Layers,
-  Sparkles,
-  Search,
-  Globe,
-  Settings2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import JSZip from "jszip";
 
-interface FaviconSize {
-  size: number;
-  label: string;
-  filename: string;
-  desc: string;
-  icon: any;
-  dataUrl: string | null;
+const SIZES = [
+  { size: 16, file: "favicon-16x16.png", desc: "Tab small" },
+  { size: 32, file: "favicon-32x32.png", desc: "Standard tab" },
+  { size: 48, file: "favicon-48x48.png", desc: "Windows" },
+  { size: 180, file: "apple-touch-icon.png", desc: "iOS" },
+  { size: 192, file: "android-chrome-192x192.png", desc: "Android" },
+  { size: 512, file: "android-chrome-512x512.png", desc: "PWA" },
+];
+
+type IconOut = { size: number; file: string; desc: string; url: string };
+
+function dataUrlToBytes(url: string) {
+  const b64 = url.split(",")[1];
+  const bin = atob(b64);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
 }
 
-const TARGET_SIZES: Omit<FaviconSize, "dataUrl">[] = [
-  {
-    size: 16,
-    label: "16x16",
-    filename: "favicon-16x16.png",
-    desc: "Legacy Browser Support",
-    icon: MousePointer2,
-  },
-  {
-    size: 32,
-    label: "32x32",
-    filename: "favicon-32x32.png",
-    desc: "Standard Favicon Layer",
-    icon: Monitor,
-  },
-  {
-    size: 48,
-    label: "48x48",
-    filename: "favicon-48x48.png",
-    desc: "Desktop Taskbar",
-    icon: Box,
-  },
-  {
-    size: 96,
-    label: "96x96",
-    filename: "favicon-96x96.png",
-    desc: "High-DPI Desktop",
-    icon: Monitor,
-  },
-  {
-    size: 180,
-    label: "180x180",
-    filename: "apple-touch-icon.png",
-    desc: "iOS Home Screen",
-    icon: Smartphone,
-  },
-  {
-    size: 192,
-    label: "192x192",
-    filename: "android-chrome-192x192.png",
-    desc: "Android PWA Small",
-    icon: Layers,
-  },
-  {
-    size: 512,
-    label: "512x512",
-    filename: "android-chrome-512x512.png",
-    desc: "Android PWA Large",
-    icon: LayoutGrid,
-  },
-];
+function pngsToIco(pngs: Uint8Array[]) {
+  const count = pngs.length;
+  let offset = 6 + 16 * count;
+  const header = new Uint8Array(
+    offset + pngs.reduce((n, p) => n + p.length, 0),
+  );
+  const view = new DataView(header.buffer);
+  view.setUint16(0, 0, true);
+  view.setUint16(2, 1, true);
+  view.setUint16(4, count, true);
+  let pos = 6;
+  let dataAt = offset;
+  pngs.forEach((png) => {
+    const size = Math.min(256, Math.round(Math.sqrt(png.length)) || 32);
+    header[pos] = size >= 256 ? 0 : size;
+    header[pos + 1] = size >= 256 ? 0 : size;
+    header[pos + 2] = 0;
+    header[pos + 3] = 0;
+    view.setUint16(pos + 4, 1, true);
+    view.setUint16(pos + 6, 32, true);
+    view.setUint32(pos + 8, png.length, true);
+    view.setUint32(pos + 12, dataAt, true);
+    header.set(png, dataAt);
+    dataAt += png.length;
+    pos += 16;
+  });
+  return header;
+}
 
 export default function FaviconGeneratorPage() {
   const { toast } = useToast();
-  const [sourceImage, setSourceImage] = useState<string | null>(null);
-  const [fileInfo, setFileInfo] = useState<{
-    name: string;
-    size: number;
-  } | null>(null);
-  const [favicons, setFavicons] = useState<FaviconSize[]>(
-    TARGET_SIZES.map((s) => ({ ...s, dataUrl: null })),
-  );
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [isCopied, setIsCopied] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [src, setSrc] = useState<string | null>(null);
+  const [name, setName] = useState("");
+  const [icons, setIcons] = useState<IconOut[]>([]);
+  const [busy, setBusy] = useState(false);
+  const [pad, setPad] = useState(8);
+  const [bg, setBg] = useState("#ffffff");
+  const [clearBg, setClearBg] = useState(true);
+  const [app, setApp] = useState("My App");
+  const [theme, setTheme] = useState("#2563eb");
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 20 * 1024 * 1024) {
-        toast({
-          variant: "destructive",
-          title: "Heavy Payload",
-          description: "Standard limit for icons is 20MB.",
-        });
-        return;
-      }
-      setFileInfo({ name: file.name, size: file.size });
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setSourceImage(reader.result as string);
-        toast({
-          title: "Asset Imported",
-          description: "Ready for studio synthesis.",
-        });
-      };
-      reader.readAsDataURL(file);
+  const loadFile = (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      toast({ variant: "destructive", title: "Image only" });
+      return;
     }
+    if (file.size > 15 * 1024 * 1024) {
+      toast({ variant: "destructive", title: "Max 15MB" });
+      return;
+    }
+    setName(file.name);
+    const r = new FileReader();
+    r.onload = () => setSrc(String(r.result));
+    r.readAsDataURL(file);
   };
 
-  const generateFavicons = useCallback(() => {
-    if (!sourceImage) return;
-    setIsProcessing(true);
-
+  const build = useCallback(async () => {
+    if (!src) return;
+    setBusy(true);
     const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.src = sourceImage;
-    img.onload = () => {
-      const updatedFavicons = [...favicons];
-
-      const minDim = Math.min(img.width, img.height);
-      const sx = (img.width - minDim) / 2;
-      const sy = (img.height - minDim) / 2;
-
-      updatedFavicons.forEach((favicon, index) => {
-        const canvas = document.createElement("canvas");
-        canvas.width = favicon.size;
-        canvas.height = favicon.size;
-        const ctx = canvas.getContext("2d");
-        if (!ctx) return;
-
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = "high";
-        ctx.drawImage(
-          img,
-          sx,
-          sy,
-          minDim,
-          minDim,
-          0,
-          0,
-          favicon.size,
-          favicon.size,
-        );
-        updatedFavicons[index].dataUrl = canvas.toDataURL("image/png");
-      });
-
-      setFavicons(updatedFavicons);
-      setIsProcessing(false);
-      toast({
-        title: "Synthesis Complete",
-        description: "All sizes generated with 1:1 pixel mapping.",
-      });
-    };
-  }, [sourceImage, favicons, toast]);
+    img.src = src;
+    await new Promise((ok, err) => {
+      img.onload = () => ok(null);
+      img.onerror = () => err(new Error("bad image"));
+    });
+    const side = Math.min(img.width, img.height);
+    const sx = (img.width - side) / 2;
+    const sy = (img.height - side) / 2;
+    const out: IconOut[] = SIZES.map((s) => {
+      const c = document.createElement("canvas");
+      c.width = s.size;
+      c.height = s.size;
+      const ctx = c.getContext("2d")!;
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
+      if (!clearBg) {
+        ctx.fillStyle = bg;
+        ctx.fillRect(0, 0, s.size, s.size);
+      }
+      const inset = Math.round((s.size * pad) / 100);
+      ctx.drawImage(
+        img,
+        sx,
+        sy,
+        side,
+        side,
+        inset,
+        inset,
+        s.size - inset * 2,
+        s.size - inset * 2,
+      );
+      return { ...s, url: c.toDataURL("image/png") };
+    });
+    setIcons(out);
+    setBusy(false);
+  }, [src, pad, bg, clearBg]);
 
   useEffect(() => {
-    if (sourceImage) {
-      generateFavicons();
-    }
-  }, [sourceImage]);
+    if (src) build();
+  }, [src, build]);
 
-  const handleCopyCode = (code: string, label: string) => {
-    navigator.clipboard.writeText(code);
-    setIsCopied(label);
-    toast({
-      title: "Snippet Copied",
-      description: `${label} implementation ready.`,
-    });
-    setTimeout(() => setIsCopied(null), 2000);
+  const downloadOne = (item: IconOut) => {
+    const a = document.createElement("a");
+    a.href = item.url;
+    a.download = item.file;
+    a.click();
   };
 
   const downloadZip = async () => {
-    const hasIcons = favicons.some((f) => f.dataUrl);
-    if (!hasIcons) return;
-
-    setIsProcessing(true);
+    if (!icons.length) return;
+    setBusy(true);
     const zip = new JSZip();
-
-    // Add all PNGs
-    favicons.forEach((f) => {
-      if (f.dataUrl) {
-        const base64Data = f.dataUrl.split(",")[1];
-        zip.file(f.filename, base64Data, { base64: true });
-
-        // Map 32x32 to favicon.ico as requested (standard polyfill naming)
-        if (f.size === 32) {
-          zip.file("favicon.ico", base64Data, { base64: true });
-        }
-      }
-    });
-
-    // Create functional SVG wrapper (Vector Favicon)
-    if (favicons[6]?.dataUrl) {
-      const svgContent = `<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
-  <image href="${favicons[6].dataUrl}" width="512" height="512"/>
-</svg>`;
-      zip.file("favicon.svg", svgContent);
-    }
-
-    // Create site.webmanifest
-    const manifest = {
-      name: "Brand Master App",
-      short_name: "App",
-      icons: [
+    icons.forEach((i) =>
+      zip.file(i.file, i.url.split(",")[1], { base64: true }),
+    );
+    const icoPngs = icons
+      .filter((i) => [16, 32, 48].includes(i.size))
+      .map((i) => dataUrlToBytes(i.url));
+    if (icoPngs.length) zip.file("favicon.ico", pngsToIco(icoPngs));
+    zip.file(
+      "site.webmanifest",
+      JSON.stringify(
         {
-          src: "/android-chrome-192x192.png",
-          sizes: "192x192",
-          type: "image/png",
+          name: app,
+          short_name: app,
+          icons: [
+            {
+              src: "/android-chrome-192x192.png",
+              sizes: "192x192",
+              type: "image/png",
+            },
+            {
+              src: "/android-chrome-512x512.png",
+              sizes: "512x512",
+              type: "image/png",
+            },
+          ],
+          theme_color: theme,
+          background_color: clearBg ? "#ffffff" : bg,
+          display: "standalone",
         },
-        {
-          src: "/android-chrome-512x512.png",
-          sizes: "512x512",
-          type: "image/png",
-        },
-      ],
-      theme_color: "#ffffff",
-      background_color: "#ffffff",
-      display: "standalone",
-    };
-    zip.file("site.webmanifest", JSON.stringify(manifest, null, 2));
-
-    // Create README
-    const readme = `# Favicon Master Bundle
-Generated via MY KIT TOOL
-
-## Implementation
-1. Place all files in your web project's root directory (or /public).
-2. Copy the corresponding code snippet from the studio.
-3. Ensure 'favicon.ico' and 'favicon.svg' are primary targets.
-
-## Content
-- favicon.ico (Legacy/Compatibility)
-- favicon.svg (Modern/Vector)
-- apple-touch-icon.png (iOS)
-- android-chrome-*.png (Web App)
-- site.webmanifest (PWA Settings)
-
-## Metadata
-Created: ${new Date().toLocaleString()}
-Engine: Hardware-Accelerated Canvas Synthesis
-`;
-    zip.file("README.md", readme);
-
-    const content = await zip.generateAsync({ type: "blob" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(content);
-    link.download = `favicon-production-bundle-${Date.now()}.zip`;
-    link.click();
-
-    setIsProcessing(false);
-    toast({
-      title: "Bundle Exported",
-      description: "Full icon set and protocols saved to ZIP.",
-    });
+        null,
+        2,
+      ),
+    );
+    zip.file(
+      "README.txt",
+      "Put files in /public. Use the HTML snippet from the tool.",
+    );
+    const blob = await zip.generateAsync({ type: "blob" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "favicon-pack.zip";
+    a.click();
+    setBusy(false);
   };
 
-  const handleClear = () => {
-    setSourceImage(null);
-    setFileInfo(null);
-    setFavicons(TARGET_SIZES.map((s) => ({ ...s, dataUrl: null })));
-    if (fileInputRef.current) fileInputRef.current.value = "";
-    toast({ title: "Studio Reset", description: "Buffers cleared." });
-  };
-
-  const SNIPPETS = {
-    html: `<link rel="icon" href="/favicon.ico" sizes="any">
-<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  const snippet = `<link rel="icon" href="/favicon.ico" sizes="any">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<link rel="manifest" href="/site.webmanifest">`,
+<link rel="manifest" href="/site.webmanifest">`;
 
-    react: `// Add to your main layout head
-<link rel="icon" href="/favicon.ico" sizes="any" />
-<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-<link rel="manifest" href="/site.webmanifest" />`,
-
-    nextjs: `// In your app/layout.tsx
-export const metadata: Metadata = {
+  const nextSnippet = `export const metadata = {
   icons: {
-    icon: [
-      { url: '/favicon.ico', sizes: 'any' },
-      { url: '/favicon.svg', type: 'image/svg+xml' },
-    ],
-    apple: [
-      { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
-    ],
+    icon: "/favicon.ico",
+    apple: "/apple-touch-icon.png",
   },
-  manifest: '/site.webmanifest',
-};`,
-
-    rails: `<%= favicon_link_tag 'favicon.ico' %>
-<%= favicon_link_tag 'favicon.svg', type: 'image/svg+xml' %>
-<%= favicon_link_tag 'apple-touch-icon.png', rel: 'apple-touch-icon' %>`,
-
-    node: `// Serve static files from public directory
-app.use(express.static('public'));
-
-// Head HTML Template
-const head = \`
-  <link rel="icon" href="/favicon.ico" sizes="any">
-  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-\`;`,
-
-    gulp: `gulp.task('favicons', function() {
-  return gulp.src('src/assets/favicons/**/*')
-    .pipe(gulp.dest('dist/'));
-});`,
-
-    grunt: `copy: {
-  favicons: {
-    expand: true,
-    cwd: 'src/assets/favicons/',
-    src: '**',
-    dest: 'dist/',
-  },
-},`,
-  };
+  manifest: "/site.webmanifest",
+};`;
 
   return (
-    <div className="container mx-auto px-6 py-12 md:py-20 max-w-7xl">
-      <div className="mb-12 animate-reveal">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-primary/10 border border-primary/20 text-[9px] font-black text-primary uppercase tracking-widest mb-4">
-          <LayoutGrid className="w-3.5 h-3.5" /> Web Production Suite
-        </div>
-        <h1 className="text-3xl md:text-5xl font-headline font-black text-foreground uppercase tracking-tight">
-          Favicon <span className="text-primary italic">Master Studio</span>
+    <div className="container mx-auto max-w-6xl px-4 py-12 md:px-6 md:py-16">
+      <div className="mb-8">
+        <p className="mb-2 text-[11px] font-black uppercase tracking-[0.22em] text-blue-600">
+          Developer tools
+        </p>
+        <h1 className="text-3xl font-black tracking-tight md:text-5xl">
+          Favicon Generator
         </h1>
-        <p className="text-foreground/40 text-sm md:text-base font-medium mt-4 max-w-2xl leading-relaxed">
-          Professional multi-format icon synthesis. Generate optimized
-          production bundles featuring .ico, .svg, and web manifest sets with
-          hard-coded implementation protocols.
+        <p className="mt-3 max-w-xl text-sm text-foreground/60">
+          Make PNG pack, ICO and web manifest from one logo. Runs in the
+          browser.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
-        {/* Input & Controls */}
-        <div className="lg:col-span-4 space-y-8 animate-in fade-in slide-in-from-left-6 duration-700">
-          <Card className="glass-card border-border shadow-2xl overflow-hidden relative group">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
+      <div className="grid gap-6 lg:grid-cols-12">
+        <Card className="overflow-hidden rounded-[1.8rem] border border-border lg:col-span-4">
+          <div className="h-1 bg-gradient-to-r from-blue-600 via-sky-400 to-orange-400" />
+          <CardHeader>
+            <CardTitle className="text-sm">Source</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <button
+              type="button"
+              onClick={() => inputRef.current?.click()}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => {
+                e.preventDefault();
+                const f = e.dataTransfer.files?.[0];
+                if (f) loadFile(f);
+              }}
+              className="flex h-44 w-full flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-muted/30"
+            >
+              {src ? (
+                <img src={src} alt="" className="max-h-28 object-contain" />
+              ) : (
+                <>
+                  <Upload className="mb-2 h-6 w-6 text-blue-600" />
+                  <span className="text-sm text-foreground/55">
+                    Drop or click
+                  </span>
+                </>
+              )}
+            </button>
+            <input
+              ref={inputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) loadFile(f);
+              }}
+            />
+            {name && (
+              <p className="truncate text-xs text-foreground/50">{name}</p>
+            )}
 
-            <CardHeader className="pb-8 border-b border-border bg-secondary/30">
-              <CardTitle className="text-xl font-headline flex items-center gap-4 text-foreground">
-                <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary ring-1 ring-primary/40 shadow-inner group-hover:scale-110 transition-transform">
-                  <ImageIcon className="w-6 h-6" />
-                </div>
-                Source Imagery
-              </CardTitle>
-            </CardHeader>
-
-            <CardContent className="pt-10 space-y-8">
-              <div
-                onClick={() => !isProcessing && fileInputRef.current?.click()}
-                className={cn(
-                  "relative group/upload h-64 rounded-[2.5rem] border-2 border-dashed border-border hover:border-primary/40 transition-all flex flex-col items-center justify-center bg-secondary/30 overflow-hidden cursor-pointer",
-                  sourceImage && "border-solid border-primary/40",
-                  isProcessing && "cursor-not-allowed opacity-80",
-                )}
-              >
-                {sourceImage ? (
-                  <div className="w-full h-full p-8 flex flex-col items-center justify-center gap-4">
-                    <img
-                      src={sourceImage}
-                      alt="Source"
-                      className="max-h-32 w-auto rounded-xl shadow-2xl object-contain ring-1 ring-white/20"
-                    />
-                    <div className="text-center">
-                      <p className="text-xs font-black uppercase text-foreground truncate max-w-[200px]">
-                        {fileInfo?.name}
-                      </p>
-                      <p className="text-[10px] font-bold text-foreground/30 uppercase tracking-widest">
-                        {(fileInfo?.size || 0) > 0
-                          ? (fileInfo!.size / 1024).toFixed(1)
-                          : 0}{" "}
-                        KB detected
-                      </p>
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <div className="w-16 h-16 rounded-[1.5rem] bg-background border border-border flex items-center justify-center text-foreground/20 group-hover:text-primary group-hover:scale-110 transition-all mb-6 shadow-xl">
-                      <Upload className="w-8 h-8" />
-                    </div>
-                    <p className="text-[10px] font-black uppercase text-foreground/40 tracking-widest group-hover:text-primary transition-colors text-center px-10 leading-relaxed">
-                      Drop image
-                      <br />
-                      <span className="text-[8px] opacity-60">
-                        (Square high-res logo recommended)
-                      </span>
-                    </p>
-                  </>
-                )}
+            <div className="space-y-1">
+              <Label>Padding {pad}%</Label>
+              <input
+                type="range"
+                min={0}
+                max={30}
+                value={pad}
+                onChange={(e) => setPad(Number(e.target.value))}
+                className="w-full"
+              />
+            </div>
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={clearBg}
+                onChange={(e) => setClearBg(e.target.checked)}
+              />
+              Transparent background
+            </label>
+            {!clearBg && (
+              <div className="flex items-center gap-2">
+                <Label>Fill</Label>
                 <input
-                  type="file"
-                  ref={fileInputRef}
-                  accept="image/*"
-                  onChange={handleFileUpload}
-                  className="hidden"
+                  type="color"
+                  value={bg}
+                  onChange={(e) => setBg(e.target.value)}
                 />
               </div>
+            )}
+            <div className="space-y-1">
+              <Label>App name</Label>
+              <Input
+                value={app}
+                onChange={(e) => setApp(e.target.value)}
+                className="h-11 rounded-xl"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Label>Theme</Label>
+              <input
+                type="color"
+                value={theme}
+                onChange={(e) => setTheme(e.target.value)}
+              />
+            </div>
 
-              {sourceImage && (
-                <div className="space-y-4">
-                  <Button
-                    onClick={downloadZip}
-                    disabled={isProcessing}
-                    className="w-full h-16 bg-primary hover:bg-primary/90 text-primary-foreground font-black rounded-2xl flex items-center justify-center gap-4 text-lg shadow-xl shadow-primary/30 transition-all active:scale-95 group/btn"
-                  >
-                    {isProcessing ? (
-                      <Loader2 className="w-6 h-6 animate-spin" />
-                    ) : (
-                      <FileArchive className="w-6 h-6 group-hover:rotate-12 transition-transform" />
-                    )}
-                    .ZIP
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    onClick={handleClear}
-                    className="w-full text-[9px] font-black uppercase tracking-widest text-foreground/30 hover:text-destructive transition-colors"
-                  >
-                    Reset Workspace
-                  </Button>
-                </div>
+            <Button
+              className="h-12 w-full rounded-xl bg-blue-600 text-white hover:bg-blue-700"
+              disabled={!icons.length || busy}
+              onClick={downloadZip}
+            >
+              {busy ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <FileArchive className="mr-2 h-4 w-4" />
               )}
+              Download ZIP
+            </Button>
+            <Button
+              variant="outline"
+              className="h-11 w-full rounded-xl"
+              onClick={() => {
+                setSrc(null);
+                setIcons([]);
+                setName("");
+              }}
+            >
+              <Trash2 className="mr-2 h-4 w-4" /> Clear
+            </Button>
+          </CardContent>
+        </Card>
+
+        <div className="space-y-6 lg:col-span-8">
+          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+            {SIZES.map((s) => {
+              const item = icons.find((i) => i.size === s.size);
+              return (
+                <Card
+                  key={s.size}
+                  className="overflow-hidden rounded-2xl border border-border"
+                >
+                  <div className="h-1 bg-gradient-to-r from-blue-600 to-orange-400" />
+                  <CardContent className="space-y-3 p-4 text-center">
+                    <p className="text-xs font-bold">{s.file}</p>
+                    <div className="flex h-28 items-center justify-center bg-muted/30">
+                      {item ? (
+                        <img
+                          src={item.url}
+                          alt=""
+                          style={{ width: Math.min(96, s.size) }}
+                        />
+                      ) : (
+                        <ImageIcon className="h-8 w-8 text-foreground/20" />
+                      )}
+                    </div>
+                    <p className="text-[11px] text-foreground/50">{s.desc}</p>
+                    {item && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="w-full rounded-lg"
+                        onClick={() => downloadOne(item)}
+                      >
+                        <Download className="mr-1 h-3 w-3" /> PNG
+                      </Button>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+
+          <Card className="overflow-hidden rounded-[1.8rem] border border-border">
+            <div className="h-1 bg-gradient-to-r from-blue-600 to-sky-400" />
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="flex items-center gap-2 text-sm">
+                <Code2 className="h-4 w-4 text-blue-600" /> HTML
+              </CardTitle>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  navigator.clipboard.writeText(snippet);
+                  toast({ title: "Copied" });
+                }}
+              >
+                <Copy className="mr-1 h-4 w-4" /> Copy
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <pre className="overflow-auto rounded-xl bg-muted/40 p-4 text-xs">
+                {snippet}
+              </pre>
             </CardContent>
           </Card>
 
-          <div className="p-6 rounded-[2.5rem] bg-primary/5 border border-primary/10 flex items-start gap-5">
-            <Info className="w-6 h-6 text-primary mt-1 shrink-0" />
-            <div className="space-y-2">
-              <h4 className="text-[11px] font-black text-primary uppercase tracking-widest">
-                Master Protocol
-              </h4>
-              <p className="text-[11px] text-foreground/40 leading-relaxed font-medium">
-                Generating .ico for legacy support and high-fidelity .svg for
-                modern displays. All web app manifest icons (192/512) are
-                included in the master bundle.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Preview & Implementation */}
-        <div className="lg:col-span-8 space-y-10 animate-in fade-in slide-in-from-right-6 duration-1000">
-          <Tabs defaultValue="preview" className="w-full">
-            <TabsList className="bg-secondary p-1.5 rounded-2xl h-14 mb-8">
-              <TabsTrigger
-                value="preview"
-                className="rounded-xl text-[10px] font-black uppercase tracking-widest data-[state=active]:bg-background"
+          <Card className="overflow-hidden rounded-[1.8rem] border border-border">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="text-sm">Next.js</CardTitle>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  navigator.clipboard.writeText(nextSnippet);
+                  toast({ title: "Copied" });
+                }}
               >
-                <LayoutGrid className="w-3.5 h-3.5 mr-2" /> Asset Grid
-              </TabsTrigger>
-              <TabsTrigger
-                value="codes"
-                className="rounded-xl text-[10px] font-black uppercase tracking-widest data-[state=active]:bg-background"
-              >
-                <Code2 className="w-3.5 h-3.5 mr-2" /> Implementation
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="preview" className="mt-0">
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-                {favicons.map((favicon) => (
-                  <Card
-                    key={favicon.label}
-                    className="glass-card border-border shadow-xl overflow-hidden group hover:border-primary/20 transition-all"
-                  >
-                    <CardHeader className="py-4 border-b border-border bg-secondary/30 flex flex-row items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <favicon.icon className="w-3.5 h-3.5 text-primary/40 group-hover:text-primary transition-colors" />
-                        <span className="text-[10px] font-black uppercase tracking-widest text-foreground/60">
-                          {favicon.label}
-                        </span>
-                      </div>
-                      {favicon.dataUrl && (
-                        <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
-                      )}
-                    </CardHeader>
-                    <CardContent className="p-8 flex flex-col items-center justify-center min-h-[160px] relative">
-                      {favicon.dataUrl ? (
-                        <div className="space-y-4 text-center">
-                          <img
-                            src={favicon.dataUrl}
-                            alt={favicon.label}
-                            style={{
-                              width: Math.max(
-                                32,
-                                favicon.size > 128 ? 128 : favicon.size,
-                              ),
-                              height: "auto",
-                            }}
-                            className="shadow-xl bg-white ring-1 ring-border mx-auto"
-                          />
-                          <p className="text-[8px] font-black text-foreground/20 uppercase tracking-widest">
-                            {favicon.desc}
-                          </p>
-                        </div>
-                      ) : (
-                        <div className="opacity-5">
-                          <Sparkles className="w-10 h-10" />
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </TabsContent>
-
-            <TabsContent value="codes" className="mt-0 space-y-8">
-              <Card className="glass-card border-border shadow-2xl overflow-hidden">
-                <CardHeader className="py-6 border-b border-border bg-secondary/30">
-                  <CardTitle className="text-[10px] font-black uppercase tracking-[0.3em] flex items-center gap-3 text-primary">
-                    <Terminal className="w-4 h-4" /> Code Protocols
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-0">
-                  <Tabs defaultValue="html" className="w-full">
-                    <TabsList className="h-auto w-full justify-start rounded-none bg-background border-b border-border p-0 overflow-x-auto no-scrollbar">
-                      {Object.keys(SNIPPETS).map((key) => (
-                        <TabsTrigger
-                          key={key}
-                          value={key}
-                          className="h-full px-6 py-4 rounded-none text-[9px] font-black uppercase tracking-widest data-[state=active]:bg-primary/5 data-[state=active]:text-primary border-r border-border transition-all"
-                        >
-                          {key}
-                        </TabsTrigger>
-                      ))}
-                    </TabsList>
-
-                    {Object.entries(SNIPPETS).map(([key, code]) => (
-                      <TabsContent
-                        key={key}
-                        value={key}
-                        className="m-0 p-8 space-y-6 animate-in fade-in duration-500"
-                      >
-                        <div className="relative group/snippet">
-                          <pre className="p-8 rounded-[2rem] bg-background/90 text-green-500/80 font-mono text-[11px] leading-relaxed overflow-x-auto shadow-inner border border-white/5 custom-scrollbar max-h-[300px]">
-                            {code}
-                          </pre>
-                          <Button
-                            size="sm"
-                            onClick={() =>
-                              handleCopyCode(code, key.toUpperCase())
-                            }
-                            className="absolute top-4 right-4 h-10 px-4 rounded-xl bg-white/10 hover:bg-white/20 text-white font-black text-[9px] uppercase tracking-widest backdrop-blur-md border border-white/10"
-                          >
-                            {isCopied === key.toUpperCase() ? (
-                              <CheckCircle2 className="w-3.5 h-3.5 mr-2" />
-                            ) : (
-                              <Copy className="w-3.5 h-3.5 mr-2" />
-                            )}
-                            {isCopied === key.toUpperCase() ? "Copied" : "Copy"}
-                          </Button>
-                        </div>
-
-                        <div className="flex items-center gap-3 text-[10px] text-foreground/40 font-bold uppercase tracking-widest">
-                          <Settings2 className="w-3.5 h-3.5" />
-                          <span>
-                            Protocol:{" "}
-                            {key === "nextjs"
-                              ? "Metadata API"
-                              : "Direct Implementation"}
-                          </span>
-                        </div>
-                      </TabsContent>
-                    ))}
-                  </Tabs>
-                </CardContent>
-              </Card>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="p-6 rounded-[2.5rem] bg-secondary/50 border border-border flex items-start gap-5 group hover:border-primary/20 transition-all">
-                  <div className="w-10 h-10 rounded-xl bg-background border border-border flex items-center justify-center text-primary/40 group-hover:text-primary transition-all">
-                    <Globe className="w-5 h-5" />
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-[10px] font-black text-foreground uppercase tracking-widest">
-                      Cross-Platform Sync
-                    </p>
-                    <p className="text-[11px] text-foreground/40 leading-relaxed font-medium">
-                      Verified support for Safari, Chrome, Edge, and Android PWA
-                      environments.
-                    </p>
-                  </div>
-                </div>
-                <div className="p-6 rounded-[2.5rem] bg-secondary/50 border border-border flex items-start gap-5 group hover:border-primary/20 transition-all">
-                  <div className="w-10 h-10 rounded-xl bg-background border border-border flex items-center justify-center text-primary/40 group-hover:text-primary transition-all">
-                    <Maximize className="w-5 h-5" />
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-[10px] font-black text-foreground uppercase tracking-widest">
-                      SVG Scalability
-                    </p>
-                    <p className="text-[11px] text-foreground/40 leading-relaxed font-medium">
-                      Modern .svg favicon provides infinite resolution scaling
-                      for retina displays.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </TabsContent>
-          </Tabs>
+                <Copy className="mr-1 h-4 w-4" /> Copy
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <pre className="overflow-auto rounded-xl bg-muted/40 p-4 text-xs">
+                {nextSnippet}
+              </pre>
+            </CardContent>
+          </Card>
         </div>
       </div>
-
-      <style jsx global>{`
-        .no-scrollbar::-webkit-scrollbar {
-          display: none;
-        }
-        .no-scrollbar {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-      `}</style>
+      <section className="mx-auto mt-16 max-w-3xl">
+        <div className="mb-8 flex items-center gap-3">
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600/10 text-blue-600">
+            <LayoutGrid className="h-5 w-5" />
+          </span>
+          <div>
+            <h2 className="text-xl font-bold">Favicon Generator FAQ</h2>
+            <p className="text-sm text-foreground/55">
+              How to use the icon pack
+            </p>
+          </div>
+        </div>
+        <div className="space-y-3">
+          {[
+            {
+              q: "What sizes are generated?",
+              a: "16, 32, 48, 180 (Apple), 192 and 512 (Android/PWA), plus a multi-size favicon.ico in the ZIP.",
+            },
+            {
+              q: "Where do I put the files?",
+              a: "Put them in your site root or /public folder, then paste the HTML or Next.js snippet.",
+            },
+            {
+              q: "Does this upload my logo?",
+              a: "No. Icons are made in your browser.",
+            },
+            {
+              q: "Is Favicon Generator free?",
+              a: "Yes. This tool on My Kit Tool is free.",
+            },
+          ].map((item) => (
+            <div
+              key={item.q}
+              className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm"
+            >
+              <div className="h-1 bg-gradient-to-r from-blue-600 via-sky-400 to-orange-400" />
+              <div className="p-5">
+                <h3 className="text-sm font-bold">{item.q}</h3>
+                <p className="mt-1 text-sm text-foreground/60">{item.a}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }

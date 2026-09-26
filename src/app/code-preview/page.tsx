@@ -1,604 +1,617 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   Code2,
   Eye,
-  Upload,
+  Plus,
   Trash2,
+  FileArchive,
+  FolderOpen,
+  Download,
+  Image as ImageIcon,
   FileCode,
   FileJson,
   FileText,
-  FolderOpen,
-  RefreshCcw,
-  Maximize2,
-  Columns,
-  Monitor,
-  Smartphone,
-  Zap,
-  Info,
-  ChevronRight,
-  ChevronDown,
-  X,
-  Plus,
-  FileArchive,
-  Download,
   Layout,
-  Terminal,
-  Globe,
-  Settings2,
-  Image as ImageIcon,
-  CheckCircle2,
   Loader2,
-  ShieldCheck,
+  Maximize2,
+  Copy,
+  Smartphone,
+  Monitor,
+  RefreshCcw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import JSZip from "jszip";
 
-interface VirtualFile {
+type VFile = {
   name: string;
-  content: string | ArrayBuffer;
-  type: string;
   path: string;
-  isImage?: boolean;
+  content: string;
+  isImage: boolean;
   blobUrl?: string;
+};
+type View = "editor" | "split" | "preview";
+
+function mime(path: string) {
+  const p = path.toLowerCase();
+  if (p.endsWith(".html")) return "text/html";
+  if (p.endsWith(".css")) return "text/css";
+  if (p.endsWith(".js")) return "text/javascript";
+  if (p.endsWith(".json")) return "application/json";
+  if (p.endsWith(".svg")) return "image/svg+xml";
+  return "text/plain";
 }
+function isImg(path: string) {
+  return /\.(png|jpe?g|gif|webp|svg|ico|bmp)$/i.test(path);
+}
+
+const BLANK = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Preview</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <h1>Hello</h1>
+  <script src="script.js"></script>
+</body>
+</html>`;
 
 export default function CodePreviewPage() {
   const { toast } = useToast();
-  const [files, setFiles] = useState<Map<string, VirtualFile>>(new Map());
-  const [activeFile, setActiveFile] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const zipRef = useRef<HTMLInputElement>(null);
+  const frameWrap = useRef<HTMLDivElement>(null);
+  const previewUrls = useRef<string[]>([]);
+  const [files, setFiles] = useState<Map<string, VFile>>(new Map());
+  const [active, setActive] = useState<string | null>(null);
   const [code, setCode] = useState("");
-  const [previewDoc, setPreviewDoc] = useState("");
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [viewMode, setViewMode] = useState<"split" | "editor" | "preview">(
-    "split",
-  );
-  const [isMobile, setIsMobile] = useState(false);
+  const [html, setHtml] = useState("");
+  const [view, setView] = useState<View>("split");
+  const [busy, setBusy] = useState(false);
+  const [phone, setPhone] = useState(false);
+  const [drag, setDrag] = useState(false);
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const zipInputRef = useRef<HTMLInputElement>(null);
+  const list = useMemo(() => Array.from(files.values()), [files]);
+  const pickEntry = (map: Map<string, VFile>) => {
+    const keys = Array.from(map.keys());
+    return (
+      keys.find((k) => k.toLowerCase().endsWith("index.html")) ||
+      keys.find((k) => k.toLowerCase().endsWith(".html")) ||
+      keys[0] ||
+      null
+    );
+  };
+  const openFile = (path: string, map = files) => {
+    const f = map.get(path);
+    if (!f) return;
+    setActive(path);
+    setCode(f.isImage ? "" : f.content);
+  };
 
-  // Check mobile state
-  useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 1024);
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
-  }, []);
-
-  // Set default view on mobile
-  useEffect(() => {
-    if (isMobile && viewMode === "split") {
-      setViewMode("editor");
-    }
-  }, [isMobile]);
-
-  // File loading logic
-  const handleFiles = async (uploadedFiles: FileList | File[]) => {
-    setIsProcessing(true);
-    const newFiles = new Map<string, VirtualFile>(files);
-
-    for (const file of Array.from(uploadedFiles)) {
-      const path = file.webkitRelativePath || file.name;
-      const isImage = file.type.startsWith("image/");
-
-      if (isImage) {
-        const reader = new FileReader();
-        const promise = new Promise<void>((resolve) => {
-          reader.onload = (e) => {
-            const blobUrl = URL.createObjectURL(file);
-            newFiles.set(path, {
-              name: file.name,
-              content: e.target?.result as ArrayBuffer,
-              type: file.type,
-              path,
-              isImage: true,
-              blobUrl,
-            });
-            resolve();
-          };
-          reader.readAsArrayBuffer(file);
-        });
-        await promise;
-      } else {
-        const text = await file.text();
-        newFiles.set(path, {
+  const addFiles = async (incoming: File[]) => {
+    if (!incoming.length) return;
+    setBusy(true);
+    const next = new Map(files);
+    for (const file of incoming) {
+      const path =
+        (file as File & { webkitRelativePath?: string }).webkitRelativePath ||
+        file.name;
+      if (isImg(path) || file.type.startsWith("image/")) {
+        next.set(path, {
           name: file.name,
-          content: text,
-          type: file.type,
           path,
+          content: "",
+          isImage: true,
+          blobUrl: URL.createObjectURL(file),
+        });
+      } else {
+        next.set(path, {
+          name: file.name,
+          path,
+          content: await file.text(),
           isImage: false,
         });
       }
     }
-
-    setFiles(newFiles);
-
-    // Auto-select index.html or first available file
-    if (!activeFile) {
-      const keys = Array.from(newFiles.keys());
-      const index = keys.find((k) => k.toLowerCase().endsWith("index.html"));
-      const first = index || keys[0];
-      if (first) selectFile(first, newFiles);
-    }
-
-    setIsProcessing(false);
-    toast({
-      title: "Assets Imported",
-      description: `Matrix updated with ${uploadedFiles.length} file(s).`,
-    });
+    setFiles(next);
+    const first = pickEntry(next);
+    if (first) openFile(first, next);
+    setBusy(false);
+    toast({ title: `${incoming.length} file(s) added` });
   };
 
-  const handleZipUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setIsProcessing(true);
-
+  const loadZip = async (file: File) => {
+    setBusy(true);
     try {
-      const zip = new JSZip();
-      const contents = await zip.loadAsync(file);
-      const newFiles = new Map<string, VirtualFile>();
-
-      for (const [path, entry] of Object.entries(contents.files)) {
+      const zip = await JSZip.loadAsync(file);
+      const next = new Map<string, VFile>();
+      for (const [path, entry] of Object.entries(zip.files)) {
         if (entry.dir) continue;
-
-        const isImage = path.match(/\.(png|jpg|jpeg|gif|webp|svg)$/i);
-        if (isImage) {
+        const name = path.split("/").pop() || path;
+        if (isImg(path)) {
           const blob = await entry.async("blob");
-          const blobUrl = URL.createObjectURL(blob);
-          const buffer = await entry.async("arraybuffer");
-          newFiles.set(path, {
-            name: path.split("/").pop() || path,
-            content: buffer,
-            type: `image/${path.split(".").pop()}`,
+          next.set(path, {
+            name,
             path,
+            content: "",
             isImage: true,
-            blobUrl,
+            blobUrl: URL.createObjectURL(blob),
           });
         } else {
-          const text = await entry.async("text");
-          newFiles.set(path, {
-            name: path.split("/").pop() || path,
-            content: text,
-            type: path.endsWith(".html")
-              ? "text/html"
-              : path.endsWith(".css")
-                ? "text/css"
-                : "text/javascript",
+          next.set(path, {
+            name,
             path,
+            content: await entry.async("text"),
             isImage: false,
           });
         }
       }
-
-      setFiles(newFiles);
-      const keys = Array.from(newFiles.keys());
-      const index = keys.find((k) => k.toLowerCase().endsWith("index.html"));
-      if (index) selectFile(index, newFiles);
-      else if (keys[0]) selectFile(keys[0], newFiles);
-
-      toast({
-        title: "ZIP Extracted",
-        description: "Project directory reconstructed in memory.",
-      });
-    } catch (err) {
-      toast({
-        variant: "destructive",
-        title: "Archive Error",
-        description: "Failed to parse ZIP matrix.",
-      });
+      setFiles(next);
+      const first = pickEntry(next);
+      if (first) openFile(first, next);
+      toast({ title: "ZIP loaded" });
+    } catch {
+      toast({ variant: "destructive", title: "ZIP failed" });
     } finally {
-      setIsProcessing(false);
-      if (e.target) e.target.value = "";
+      setBusy(false);
     }
   };
 
-  const selectFile = (path: string, currentFiles = files) => {
-    const file = currentFiles.get(path);
-    if (file && !file.isImage) {
-      setActiveFile(path);
-      setCode(file.content as string);
-    } else {
-      setActiveFile(path);
-      setCode("");
-    }
+  const starter = () => {
+    const next = new Map<string, VFile>([
+      [
+        "index.html",
+        {
+          name: "index.html",
+          path: "index.html",
+          content: BLANK,
+          isImage: false,
+        },
+      ],
+      [
+        "style.css",
+        {
+          name: "style.css",
+          path: "style.css",
+          content: "body{font-family:sans-serif;padding:24px}",
+          isImage: false,
+        },
+      ],
+      [
+        "script.js",
+        {
+          name: "script.js",
+          path: "script.js",
+          content: "console.log('ready')",
+          isImage: false,
+        },
+      ],
+    ]);
+    setFiles(next);
+    openFile("index.html", next);
   };
 
-  const updateCurrentFile = (newContent: string) => {
-    setCode(newContent);
-    if (activeFile) {
-      const updatedFiles = new Map(files);
-      const file = updatedFiles.get(activeFile);
-      if (file) {
-        updatedFiles.set(activeFile, { ...file, content: newContent });
-        setFiles(updatedFiles);
-      }
+  const buildPreview = useCallback(() => {
+    previewUrls.current.forEach((u) => URL.revokeObjectURL(u));
+    previewUrls.current = [];
+    const entry =
+      Array.from(files.keys()).find((k) =>
+        k.toLowerCase().endsWith("index.html"),
+      ) ||
+      Array.from(files.keys()).find((k) => k.toLowerCase().endsWith(".html"));
+    if (!entry) {
+      setHtml("");
+      return;
     }
-  };
-
-  // Preview Generation Logic
-  const generatePreview = useCallback(() => {
-    const entryPath = Array.from(files.keys()).find((k) =>
-      k.toLowerCase().endsWith("index.html"),
-    );
-    if (!entryPath) return;
-
-    let html = (files.get(entryPath)?.content as string) || "";
-
-    // Replace relative paths with Blob URLs
+    let doc = String(files.get(entry)?.content || "");
     files.forEach((file, path) => {
-      if (path === entryPath) return;
-
-      // Handle images, css, js
-      const escapedPath = path.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      const regex = new RegExp(`(src|href)=["'](.*${escapedPath})["']`, "g");
-
-      if (file.isImage && file.blobUrl) {
-        html = html.replace(regex, `$1="${file.blobUrl}"`);
-      } else if (!file.isImage) {
-        const blob = new Blob([file.content], { type: file.type });
-        const url = URL.createObjectURL(blob);
-        html = html.replace(regex, `$1="${url}"`);
+      if (path === entry) return;
+      const names = [
+        path,
+        path.replace(/^.*\//, ""),
+        "./" + path.replace(/^.*\//, ""),
+      ];
+      let url = file.blobUrl;
+      if (!url) {
+        url = URL.createObjectURL(
+          new Blob([file.content], { type: mime(path) }),
+        );
+        previewUrls.current.push(url);
       }
+      names.forEach((n) => {
+        const safe = n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        doc = doc.replace(
+          new RegExp(`(src|href)=["']${safe}["']`, "gi"),
+          `$1="${url}"`,
+        );
+      });
     });
-
-    // Handle relative paths without directory prefix for simpler projects
-    files.forEach((file, path) => {
-      const fileName = path.split("/").pop() || path;
-      const regex = new RegExp(`(src|href)=["']${fileName}["']`, "g");
-
-      if (file.isImage && file.blobUrl) {
-        html = html.replace(regex, `$1="${file.blobUrl}"`);
-      } else if (!file.isImage) {
-        const blob = new Blob([file.content], { type: file.type });
-        const url = URL.createObjectURL(blob);
-        html = html.replace(regex, `$1="${url}"`);
-      }
-    });
-
-    setPreviewDoc(html);
+    setHtml(doc);
   }, [files]);
 
   useEffect(() => {
-    const timer = setTimeout(generatePreview, 500);
-    return () => clearTimeout(timer);
-  }, [files, generatePreview]);
+    const t = setTimeout(buildPreview, 350);
+    return () => clearTimeout(t);
+  }, [files, buildPreview]);
 
-  const clearStudio = () => {
+  const clearAll = () => {
     files.forEach((f) => f.blobUrl && URL.revokeObjectURL(f.blobUrl));
+    previewUrls.current.forEach((u) => URL.revokeObjectURL(u));
+    previewUrls.current = [];
     setFiles(new Map());
-    setActiveFile(null);
+    setActive(null);
     setCode("");
-    setPreviewDoc("");
-    toast({ title: "Studio Purged", description: "Project buffers cleared." });
+    setHtml("");
   };
 
-  const getFileIcon = (file: VirtualFile) => {
-    if (file.isImage) return <ImageIcon className="w-4 h-4 text-emerald-500" />;
-    if (file.name.endsWith(".html"))
-      return <Layout className="w-4 h-4 text-orange-500" />;
-    if (file.name.endsWith(".css"))
-      return <FileCode className="w-4 h-4 text-blue-500" />;
-    if (file.name.endsWith(".js"))
-      return <FileJson className="w-4 h-4 text-yellow-500" />;
-    return <FileText className="w-4 h-4 text-foreground/40" />;
+  const [full, setFull] = useState(false);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setFull(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  const openFull = () => {
+    if (!html) return;
+    setFull(true);
+  };
+
+  const icon = (f: VFile) => {
+    if (f.isImage) return <ImageIcon className="h-4 w-4 text-emerald-500" />;
+    if (f.name.endsWith(".html"))
+      return <Layout className="h-4 w-4 text-orange-500" />;
+    if (f.name.endsWith(".css"))
+      return <FileCode className="h-4 w-4 text-blue-500" />;
+    if (f.name.endsWith(".js"))
+      return <FileJson className="h-4 w-4 text-yellow-500" />;
+    return <FileText className="h-4 w-4 text-foreground/40" />;
   };
 
   return (
-    <div className="container mx-auto px-4 sm:px-6 py-12 md:py-20 max-w-full">
-      <div className="mb-10 animate-reveal">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-primary/10 border border-primary/20 text-[9px] font-black text-primary uppercase tracking-widest mb-4">
-          <Terminal className="w-3.5 h-3.5" /> Dev Production Suite
+    <div
+      className="container mx-auto max-w-7xl px-4 py-12 md:px-6 md:py-16"
+      onDragOver={(e) => {
+        e.preventDefault();
+        setDrag(true);
+      }}
+      onDragLeave={() => setDrag(false)}
+      onDrop={(e) => {
+        e.preventDefault();
+        setDrag(false);
+        addFiles(Array.from(e.dataTransfer.files || []));
+      }}
+    >
+      <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="mb-2 text-[11px] font-black uppercase tracking-[0.22em] text-blue-600">
+            Developer tools
+          </p>
+          <h1 className="text-3xl font-black tracking-tight md:text-5xl">
+            Code Preview
+          </h1>
+          <p className="mt-3 max-w-xl text-sm text-foreground/60">
+            Edit HTML/CSS/JS and preview live. Drop files or a ZIP.
+          </p>
         </div>
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-          <div>
-            <h1 className="text-3xl md:text-5xl font-headline font-black text-foreground uppercase tracking-tight leading-none">
-              Code <span className="text-primary italic">Preview Lab</span>
-            </h1>
-            <p className="text-foreground/40 text-sm md:text-base font-medium mt-4 max-w-2xl leading-relaxed">
-              Professional sandboxed environment for web projects. Upload
-              HTML/CSS/JS or ZIP archives to inspect, edit, and preview assets
-              locally with absolute privacy.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-1.5 p-1.5 rounded-2xl bg-secondary border border-border">
-            {[
-              { id: "editor", icon: Code2, label: "Editor" },
-              { id: "split", icon: Columns, label: "Split" },
-              { id: "preview", icon: Eye, label: "Visual" },
-            ].map((m) => (
-              <button
-                key={m.id}
-                onClick={() => setViewMode(m.id as any)}
-                className={cn(
-                  "flex items-center gap-2 px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all",
-                  viewMode === m.id
-                    ? "bg-primary text-primary-foreground shadow-lg"
-                    : "text-foreground/40 hover:text-primary",
-                )}
-              >
-                <m.icon className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">{m.label}</span>
-              </button>
-            ))}
-          </div>
+        <div className="flex rounded-xl border border-border p-1">
+          {(["editor", "split", "preview"] as View[]).map((id) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setView(id)}
+              className={cn(
+                "rounded-lg px-3 py-2 text-xs font-bold capitalize",
+                view === id ? "bg-blue-600 text-white" : "text-foreground/60",
+              )}
+            >
+              {id}
+            </button>
+          ))}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-8">
-        {files.size === 0 ? (
-          <Card className="glass-card border-border shadow-2xl overflow-hidden min-h-[500px] flex flex-col items-center justify-center text-center p-12 relative">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-[100px] -mr-32 -mt-32" />
-            <div className="w-24 h-24 rounded-[2.5rem] bg-secondary flex items-center justify-center text-foreground/10 mb-8 shadow-xl border border-border group-hover:scale-110 transition-transform">
-              <FolderOpen className="w-10 h-10" />
-            </div>
-            <h3 className="text-2xl font-headline font-black text-foreground/40 uppercase tracking-widest mb-4">
-              Awaiting Project Payload
-            </h3>
-            <p className="text-sm text-foreground/20 font-medium max-w-md mb-10 leading-relaxed uppercase tracking-tighter">
-              Upload a single HTML file, select a project folder, or drop a ZIP
-              archive to startthe Preview Lab.
-            </p>
+      <input
+        ref={fileRef}
+        type="file"
+        multiple
+        className="hidden"
+        onChange={(e) => addFiles(Array.from(e.target.files || []))}
+      />
+      <input
+        ref={zipRef}
+        type="file"
+        accept=".zip"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) loadZip(f);
+          e.target.value = "";
+        }}
+      />
 
-            <div className="flex flex-col sm:flex-row gap-4 w-full max-w-lg">
+      {files.size === 0 ? (
+        <Card
+          className={cn(
+            "overflow-hidden rounded-[1.8rem] border",
+            drag ? "border-blue-600" : "border-border",
+          )}
+        >
+          <div className="h-1 bg-gradient-to-r from-blue-600 via-sky-400 to-orange-400" />
+          <CardContent className="flex min-h-[360px] flex-col items-center justify-center gap-4 p-10 text-center">
+            <FolderOpen className="h-12 w-12 text-blue-600" />
+            <p className="text-sm text-foreground/60">
+              Drop files here or start a blank page
+            </p>
+            <div className="flex flex-wrap justify-center gap-3">
               <Button
-                onClick={() => fileInputRef.current?.click()}
-                className="flex-1 h-16 bg-primary hover:bg-primary/90 text-primary-foreground font-black rounded-2xl flex items-center justify-center gap-4 text-lg shadow-xl shadow-primary/30 transition-all active:scale-95"
+                className="rounded-xl bg-blue-600 text-white hover:bg-blue-700"
+                onClick={() => fileRef.current?.click()}
               >
-                <Plus className="w-6 h-6" />
-                Import Files
+                <Plus className="mr-2 h-4 w-4" /> Files
               </Button>
               <Button
                 variant="outline"
-                onClick={() => zipInputRef.current?.click()}
-                className="flex-1 h-16 bg-secondary border-border hover:bg-secondary/80 text-foreground font-black rounded-2xl flex items-center justify-center gap-4 text-lg transition-all active:scale-95"
+                className="rounded-xl"
+                onClick={() => zipRef.current?.click()}
               >
-                <FileArchive className="w-6 h-6 text-primary" />
-                Extract ZIP
+                <FileArchive className="mr-2 h-4 w-4" /> ZIP
+              </Button>
+              <Button
+                variant="outline"
+                className="rounded-xl"
+                onClick={starter}
+              >
+                Blank project
               </Button>
             </div>
-
-            <input
-              type="file"
-              ref={fileInputRef}
-              multiple
-              onChange={(e) => handleFiles(e.target.files!)}
-              className="hidden"
-            />
-            <input
-              type="file"
-              ref={zipInputRef}
-              accept=".zip"
-              onChange={handleZipUpload}
-              className="hidden"
-            />
+            {busy && <Loader2 className="h-5 w-5 animate-spin text-blue-600" />}
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-4 lg:grid-cols-12">
+          <Card className="overflow-hidden rounded-[1.8rem] border border-border lg:col-span-3">
+            <div className="h-1 bg-gradient-to-r from-blue-600 to-orange-400" />
+            <CardHeader className="flex flex-row items-center justify-between border-b border-border py-3">
+              <span className="text-sm font-bold">Files</span>
+              <button
+                type="button"
+                onClick={clearAll}
+                className="text-foreground/40 hover:text-red-500"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </CardHeader>
+            <CardContent className="max-h-[520px] space-y-1 overflow-auto p-2">
+              {list.map((f) => (
+                <button
+                  key={f.path}
+                  type="button"
+                  onClick={() => openFile(f.path)}
+                  className={cn(
+                    "flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm",
+                    active === f.path
+                      ? "bg-blue-600/10 text-blue-600"
+                      : "hover:bg-muted",
+                  )}
+                >
+                  {icon(f)}
+                  <span className="truncate">{f.name}</span>
+                </button>
+              ))}
+              <Button
+                variant="outline"
+                className="mt-2 h-10 w-full rounded-xl"
+                onClick={() => fileRef.current?.click()}
+              >
+                Add files
+              </Button>
+            </CardContent>
           </Card>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 h-[800px]">
-            {/* Sidebar File Tree */}
-            <aside className="lg:col-span-3 flex flex-col h-full overflow-hidden">
-              <Card className="glass-card border-border shadow-xl h-full flex flex-col overflow-hidden">
-                <CardHeader className="p-4 border-b border-border bg-secondary/30 flex flex-row items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <FolderOpen className="w-4 h-4 text-primary" />
-                    <span className="text-[10px] font-black uppercase tracking-widest text-foreground/60">
-                      Directory Matrix
-                    </span>
+
+          {(view === "split" || view === "editor") && (
+            <Card
+              className={cn(
+                "overflow-hidden rounded-[1.8rem] border border-border",
+                view === "split" ? "lg:col-span-4" : "lg:col-span-9",
+              )}
+            >
+              <div className="h-1 bg-gradient-to-r from-blue-600 to-sky-400" />
+              <CardHeader className="flex flex-row items-center justify-between border-b border-border py-3">
+                <span className="flex items-center gap-2 text-sm font-bold">
+                  <Code2 className="h-4 w-4 text-blue-600" />{" "}
+                  {active?.split("/").pop() || "Editor"}
+                </span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="rounded-lg"
+                  onClick={() => {
+                    navigator.clipboard.writeText(code);
+                    toast({ title: "Copied" });
+                  }}
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </CardHeader>
+              <CardContent className="p-0">
+                {active && files.get(active)?.isImage ? (
+                  <div className="flex min-h-[420px] items-center justify-center p-6">
+                    <img
+                      src={files.get(active)?.blobUrl}
+                      alt=""
+                      className="max-h-[380px] object-contain"
+                    />
                   </div>
-                  <button
-                    onClick={clearStudio}
-                    className="text-foreground/20 hover:text-destructive transition-colors"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </CardHeader>
-                <CardContent className="flex-1 p-2 overflow-y-auto custom-scrollbar">
-                  <div className="space-y-1">
-                    {Array.from(files.values()).map((file) => (
-                      <button
-                        key={file.path}
-                        onClick={() => selectFile(file.path)}
-                        className={cn(
-                          "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all border border-transparent",
-                          activeFile === file.path
-                            ? "bg-primary/10 text-primary border-primary/20 shadow-inner"
-                            : "text-foreground/40 hover:bg-secondary/50 hover:text-foreground/60",
-                        )}
-                      >
-                        {getFileIcon(file)}
-                        <span className="text-[11px] font-bold truncate uppercase tracking-tight">
-                          {file.name}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </CardContent>
-                <div className="p-4 bg-secondary/30 border-t border-border">
+                ) : (
+                  <textarea
+                    value={code}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setCode(v);
+                      if (!active) return;
+                      setFiles((prev) => {
+                        const n = new Map(prev);
+                        const f = n.get(active);
+                        if (f) n.set(active, { ...f, content: v });
+                        return n;
+                      });
+                    }}
+                    spellCheck={false}
+                    className="min-h-[420px] w-full resize-none bg-muted/20 p-4 font-mono text-sm outline-none"
+                  />
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {(view === "split" || view === "preview") && (
+            <Card
+              className={cn(
+                "overflow-hidden rounded-[1.8rem] border border-border",
+                view === "split" ? "lg:col-span-5" : "lg:col-span-9",
+              )}
+            >
+              <div className="h-1 bg-gradient-to-r from-blue-600 to-orange-400" />
+              <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2 border-b border-border py-3">
+                <span className="flex items-center gap-2 text-sm font-bold">
+                  <Eye className="h-4 w-4 text-blue-600" /> Preview
+                </span>
+                <div className="flex gap-1">
                   <Button
-                    variant="outline"
                     size="sm"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="w-full h-10 text-[9px] font-black uppercase tracking-widest border-dashed border-border hover:border-primary/40 hover:text-primary rounded-xl"
+                    variant="outline"
+                    className="rounded-lg"
+                    onClick={() => setPhone(false)}
                   >
-                    <Plus className="w-3.5 h-3.5 mr-2" /> Add Asset
+                    <Monitor className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="rounded-lg"
+                    onClick={() => setPhone(true)}
+                  >
+                    <Smartphone className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="rounded-lg"
+                    onClick={buildPreview}
+                  >
+                    <RefreshCcw className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="rounded-lg bg-blue-600 text-white hover:bg-blue-700"
+                    onClick={openFull}
+                  >
+                    <Maximize2 className="mr-1 h-4 w-4" /> Full
                   </Button>
                 </div>
-              </Card>
-            </aside>
-
-            {/* Editor & Preview Matrix */}
-            <div className="lg:col-span-9 grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
-              {(viewMode === "split" || viewMode === "editor") && (
-                <Card
+              </CardHeader>
+              <CardContent className="bg-muted/20 p-3">
+                <div
+                  ref={frameWrap}
                   className={cn(
-                    "glass-card border-border shadow-2xl overflow-hidden flex flex-col h-full",
-                    viewMode === "split" ? "lg:col-span-6" : "lg:col-span-12",
+                    "mx-auto overflow-hidden rounded-xl bg-white",
+                    phone
+                      ? "h-[560px] w-[360px] max-w-full"
+                      : "h-[420px] w-full",
                   )}
                 >
-                  <CardHeader className="p-4 border-b border-border bg-secondary/30 flex flex-row items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Code2 className="w-4 h-4 text-primary" />
-                      <span className="text-[10px] font-black uppercase tracking-widest text-foreground/60 truncate max-w-[150px]">
-                        {activeFile?.split("/").pop() || "Matrix Source"}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="px-2 py-0.5 rounded bg-primary/10 text-primary text-[8px] font-black uppercase tracking-widest">
-                        {files.get(activeFile || "")?.type.split("/")[1] ||
-                          "raw"}
-                      </span>
-                    </div>
-                  </CardHeader>
-                  <div className="flex-1 bg-background/5 relative">
-                    {activeFile && files.get(activeFile)?.isImage ? (
-                      <div className="absolute inset-0 flex items-center justify-center p-10">
-                        <div className="p-4 bg-white/5 rounded-[2rem] border border-white/10 shadow-2xl">
-                          <img
-                            src={files.get(activeFile)!.blobUrl}
-                            alt="Preview"
-                            className="max-h-[400px] w-auto object-contain"
-                          />
-                        </div>
-                      </div>
-                    ) : (
-                      <textarea
-                        value={code}
-                        onChange={(e) => updateCurrentFile(e.target.value)}
-                        placeholder="Matrix code input..."
-                        spellCheck={false}
-                        className="w-full h-full p-8 bg-transparent text-foreground font-mono text-sm leading-relaxed resize-none focus:outline-none custom-scrollbar"
-                      />
-                    )}
-                  </div>
-                </Card>
-              )}
-
-              {(viewMode === "split" || viewMode === "preview") && (
-                <Card
-                  className={cn(
-                    "glass-card border-border shadow-2xl overflow-hidden flex flex-col h-full",
-                    viewMode === "split" ? "lg:col-span-6" : "lg:col-span-12",
+                  {html ? (
+                    <iframe
+                      title="preview"
+                      sandbox="allow-scripts allow-same-origin allow-forms"
+                      srcDoc={html}
+                      className="h-full w-full bg-white"
+                    />
+                  ) : (
+                    <p className="p-8 text-sm text-foreground/50">
+                      Add an HTML file
+                    </p>
                   )}
-                >
-                  <CardHeader className="p-4 border-b border-border bg-secondary/30 flex flex-row items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Eye className="w-4 h-4 text-primary" />
-                      <span className="text-[10px] font-black uppercase tracking-widest text-foreground/60">
-                        Visual Master
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={generatePreview}
-                        className="p-2 rounded-lg hover:bg-secondary transition-colors"
-                        title="Sync Preview"
-                      >
-                        <RefreshCcw className="w-3.5 h-3.5 text-foreground/40" />
-                      </button>
-                      <button
-                        onClick={() => {
-                          const win = window.open();
-                          win?.document.write(previewDoc);
-                        }}
-                        className="p-2 rounded-lg hover:bg-secondary transition-colors"
-                        title="Open Fullscreen"
-                      >
-                        <Maximize2 className="w-3.5 h-3.5 text-foreground/40" />
-                      </button>
-                    </div>
-                  </CardHeader>
-                  <div className="flex-1 bg-white relative">
-                    {previewDoc ? (
-                      <iframe
-                        srcDoc={previewDoc}
-                        className="w-full h-full border-none"
-                        title="Preview"
-                        sandbox="allow-scripts allow-forms"
-                      />
-                    ) : (
-                      <div className="flex flex-col items-center justify-center h-full gap-4 p-12 text-center">
-                        <Loader2 className="w-10 h-10 text-primary/20 animate-spin" />
-                        <p className="text-[10px] font-black uppercase tracking-widest text-foreground/20">
-                          Synthesizing Preview Matrix...
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </Card>
-              )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+          {full && (
+            <div className="fixed inset-0 z-[200] bg-black">
+              <button
+                type="button"
+                onClick={() => setFull(false)}
+                className="absolute right-4 top-4 z-[201] rounded-xl bg-white px-4 py-2 text-sm font-bold text-black"
+              >
+                Back
+              </button>
+              <iframe
+                title="full-preview"
+                sandbox="allow-scripts allow-same-origin allow-forms"
+                srcDoc={html}
+                className="h-full w-full bg-white"
+              />
             </div>
-          </div>
-        )}
-
-        {/* Studio Intelligence Footer */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="p-6 rounded-[2.5rem] bg-primary/5 border border-primary/10 flex items-start gap-5 group hover:bg-primary/10 transition-colors">
-            <ShieldCheck className="w-6 h-6 text-primary mt-1 shrink-0" />
-            <div className="space-y-1">
-              <h4 className="text-[11px] font-black text-primary uppercase tracking-widest">
-                Sandboxed Logic
-              </h4>
-              <p className="text-[11px] text-foreground/40 leading-relaxed font-medium">
-                Preview engine runs in an isolated iframe. Hardware processing
-                occurs strictly in your browser session for 100% data privacy.
-              </p>
-            </div>
-          </div>
-          <div className="p-6 rounded-[2.5rem] bg-primary/5 border border-primary/10 flex items-start gap-5 group hover:bg-primary/10 transition-colors">
-            <Zap className="w-6 h-6 text-primary mt-1 shrink-0" />
-            <div className="space-y-1">
-              <h4 className="text-[11px] font-black text-primary uppercase tracking-widest">
-                Relative Sync
-              </h4>
-              <p className="text-[11px] text-foreground/40 leading-relaxed font-medium">
-                Automatic relative path resolution for linked CSS and JS files
-                using a high-performance virtual Blob filesystem.
-              </p>
-            </div>
-          </div>
-          <div className="p-6 rounded-[2.5rem] bg-primary/5 border border-primary/10 flex items-start gap-5 group hover:bg-primary/10 transition-colors">
-            <Layout className="w-6 h-6 text-primary mt-1 shrink-0" />
-            <div className="space-y-1">
-              <h4 className="text-[11px] font-black text-primary uppercase tracking-widest">
-                Entry Point Auto-Detect
-              </h4>
-              <p className="text-[11px] text-foreground/40 leading-relaxed font-medium">
-                System scans your directory matrix for "index.html" as the
-                primary ignition point for visual synthesis.
-              </p>
-            </div>
+          )}
+        </div>
+      )}
+      <section className="mx-auto mt-16 max-w-3xl">
+        <div className="mb-8 flex items-center gap-3">
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600/10 text-blue-600">
+            <Code2 className="h-5 w-5" />
+          </span>
+          <div>
+            <h2 className="text-xl font-bold">Code Preview FAQ</h2>
+            <p className="text-sm text-foreground/55">How live preview works</p>
           </div>
         </div>
-      </div>
-
-      <style jsx global>{`
-        .bg-checkered {
-          background-image:
-            linear-gradient(45deg, #f0f0f0 25%, transparent 25%),
-            linear-gradient(-45deg, #f0f0f0 25%, transparent 25%),
-            linear-gradient(45deg, transparent 75%, #f0f0f0 75%),
-            linear-gradient(-45deg, transparent 75%, #f0f0f0 75%);
-          background-size: 20px 20px;
-        }
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          @apply bg-transparent;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          @apply bg-primary/20 rounded-full;
-        }
-        .no-scrollbar::-webkit-scrollbar {
-          display: none;
-        }
-      `}</style>
+        <div className="space-y-3">
+          {[
+            {
+              q: "What files can I preview?",
+              a: "HTML, CSS, JS and images. You can also upload a ZIP of a small website.",
+            },
+            {
+              q: "Does Code Preview upload my project?",
+              a: "No. Files stay in your browser. Preview runs locally.",
+            },
+            {
+              q: "How do I open full screen?",
+              a: "Click Full. Use Back on that screen to return to the same editor.",
+            },
+            {
+              q: "Is this tool free?",
+              a: "Yes. Code Preview on My Kit Tool is free.",
+            },
+          ].map((item) => (
+            <div
+              key={item.q}
+              className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm"
+            >
+              <div className="h-1 bg-gradient-to-r from-blue-600 via-sky-400 to-orange-400" />
+              <div className="p-5">
+                <h3 className="text-sm font-bold">{item.q}</h3>
+                <p className="mt-1 text-sm text-foreground/60">{item.a}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }

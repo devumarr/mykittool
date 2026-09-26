@@ -1,46 +1,29 @@
 "use client";
 
-import React, { useState, useRef, useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Link as LinkIcon,
-  Upload as UploadIcon,
   Trash2,
-  Globe,
-  CheckCircle2,
   Copy,
   Loader2,
-  Info,
-  AlertCircle,
-  Zap,
-  Activity,
   ImageIcon,
-  RefreshCcw,
   RotateCcw,
-  Lock,
-  User,
-  AlertTriangle,
   History,
-  Maximize2,
   X,
-  ChevronDown,
-  ChevronUp,
   FileUp,
-  Eye,
   Settings2,
-  ArrowRight,
   KeyRound,
   Unplug,
-  ShieldCheck,
   FileCode,
   Code2,
   MessageSquare,
   ExternalLink,
   Star,
+  CheckCircle2,
+  ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -78,7 +61,6 @@ interface LinkMatrix {
   html: string;
   bbcode: string;
 }
-
 interface HistoryItem {
   id: string;
   uid: string;
@@ -89,32 +71,53 @@ interface HistoryItem {
   links: LinkMatrix;
 }
 
+const LOCAL_KEY = "mykit_image_to_link_local";
+
+function fileToDataUrl(file: File) {
+  return new Promise<string>((ok, err) => {
+    const r = new FileReader();
+    r.onload = () => ok(String(r.result));
+    r.onerror = () => err(new Error("Read failed"));
+    r.readAsDataURL(file);
+  });
+}
+
+async function compressDataUrl(dataUrl: string, max = 1600) {
+  const img = new Image();
+  img.src = dataUrl;
+  await new Promise((ok, err) => {
+    img.onload = () => ok(null);
+    img.onerror = () => err(new Error("Bad image"));
+  });
+  const scale = Math.min(1, max / Math.max(img.width, img.height));
+  if (scale >= 1 && dataUrl.length < 1_200_000) return dataUrl;
+  const c = document.createElement("canvas");
+  c.width = Math.round(img.width * scale);
+  c.height = Math.round(img.height * scale);
+  c.getContext("2d")!.drawImage(img, 0, 0, c.width, c.height);
+  return c.toDataURL("image/jpeg", 0.86);
+}
+
 export default function ImageToLinkPage() {
   const { toast } = useToast();
   const db = useFirestore();
   const { user, loading: authLoading } = useUser();
   const [image, setImage] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [busy, setBusy] = useState(false);
   const [links, setLinks] = useState<LinkMatrix | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [isCopied, setIsCopied] = useState<string | null>(null);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
-
-  // Custom Node State
-  const [showCustomNode, setShowCustomNode] = useState(false);
+  const [copied, setCopied] = useState<string | null>(null);
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [showKey, setShowKey] = useState(false);
   const [customKey, setCustomKey] = useState("");
   const [customLabel, setCustomLabel] = useState("");
-  const [isTestingNode, setIsTestingNode] = useState(false);
-  const [activeNode, setActiveNode] = useState<{
-    key: string;
-    label: string;
-  } | null>(null);
-  const [showDisconnectConfirm, setShowDisconnectConfirm] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [node, setNode] = useState<{ key: string; label: string } | null>(null);
+  const [askOff, setAskOff] = useState(false);
+  const [localHistory, setLocalHistory] = useState<HistoryItem[]>([]);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // --- Firestore Sync Matrix ---
   const historyQuery = useMemo(() => {
     if (!db || !user) return null;
     return query(
@@ -122,859 +125,603 @@ export default function ImageToLinkPage() {
       where("uid", "==", user.uid),
     );
   }, [db, user]);
-
   const { data: historyData, loading: historyLoading } =
-    useCollection<HistoryItem>(historyQuery);
+    useCollection<HistoryItem>(historyQuery as any);
+  const cloud = useMemo(
+    () =>
+      historyData
+        ? [...historyData].sort((a, b) => b.timestamp - a.timestamp)
+        : [],
+    [historyData],
+  );
+  const history = user ? cloud : localHistory;
 
-  const history = useMemo(() => {
-    if (!historyData) return [];
-    return [...historyData].sort((a, b) => b.timestamp - a.timestamp);
-  }, [historyData]);
-
-  // --- Persistence Matrix (Custom Nodes) ---
   useEffect(() => {
     if (user) {
-      const savedNode = localStorage.getItem(
-        `mykit_image_host_node_${user.uid}`,
-      );
-      if (savedNode) {
+      const s = localStorage.getItem(`mykit_image_host_node_${user.uid}`);
+      if (s)
         try {
-          setActiveNode(JSON.parse(savedNode));
-        } catch (e) {}
-      }
+          setNode(JSON.parse(s));
+        } catch {}
     }
+    try {
+      const raw = localStorage.getItem(LOCAL_KEY);
+      if (raw) setLocalHistory(JSON.parse(raw));
+    } catch {}
   }, [user]);
 
-  const saveToHistoryFirestore = (itemData: any) => {
-    if (!db || !user) return;
-
-    const docRef = doc(collection(db, "image_to_url_history"));
-    const payload = {
-      ...itemData,
-      id: docRef.id,
-      uid: user.uid,
-      isFavorite: false,
-    };
-
-    setDoc(docRef, payload).catch(async (serverError) => {
-      const permissionError = new FirestorePermissionError({
-        path: docRef.path,
-        operation: "create",
-        requestResourceData: payload,
-      });
-      errorEmitter.emit("permission-error", permissionError);
-    });
+  const persistLocal = (list: HistoryItem[]) => {
+    setLocalHistory(list);
+    localStorage.setItem(LOCAL_KEY, JSON.stringify(list));
   };
 
-  const removeFromHistory = (id: string) => {
-    if (!db || !user) return;
-    const docRef = doc(db, "image_to_url_history", id);
-    deleteDoc(docRef).catch(async (serverError) => {
-      const permissionError = new FirestorePermissionError({
-        path: docRef.path,
-        operation: "delete",
-      });
-      errorEmitter.emit("permission-error", permissionError);
-    });
-    toast({ title: "Identity Purged" });
-  };
-
-  const clearAllHistory = async () => {
-    if (!db || !user || history.length === 0) return;
-    const batch = writeBatch(db);
-    history.forEach((item) => {
-      batch.delete(doc(db, "image_to_url_history", item.id));
-    });
-
-    try {
-      await batch.commit();
-      toast({ title: "Archive Purged" });
-    } catch (e) {
-      toast({ variant: "destructive", title: "Purge Failed" });
+  const saveHistory = (
+    item: Omit<HistoryItem, "id" | "uid" | "isFavorite">,
+  ) => {
+    if (!db || !user) {
+      persistLocal(
+        [
+          { ...item, id: `l_${Date.now()}`, uid: "local", isFavorite: false },
+          ...localHistory,
+        ].slice(0, 30),
+      );
+      return;
     }
+    const ref = doc(collection(db, "image_to_url_history"));
+    const payload = { ...item, id: ref.id, uid: user.uid, isFavorite: false };
+    setDoc(ref, payload).catch(() => {
+      errorEmitter.emit(
+        "permission-error",
+        new FirestorePermissionError({
+          path: ref.path,
+          operation: "create",
+          requestResourceData: payload,
+        }),
+      );
+    });
   };
 
-  const toggleFavorite = (id: string) => {
+  const removeItem = (id: string) => {
+    if (!user) return persistLocal(localHistory.filter((x) => x.id !== id));
     if (!db) return;
+    const ref = doc(db, "image_to_url_history", id);
+    deleteDoc(ref).catch(() => {
+      errorEmitter.emit(
+        "permission-error",
+        new FirestorePermissionError({ path: ref.path, operation: "delete" }),
+      );
+    });
+  };
+
+  const clearAll = async () => {
+    if (!user) {
+      persistLocal([]);
+      toast({ title: "Cleared" });
+      return;
+    }
+    if (!db || !history.length) return;
+    const batch = writeBatch(db);
+    history.forEach((h) => batch.delete(doc(db, "image_to_url_history", h.id)));
+    await batch.commit();
+    toast({ title: "Cleared" });
+  };
+
+  const star = (id: string) => {
+    if (!user || !db) return;
     const item = history.find((h) => h.id === id);
     if (!item) return;
-
-    const docRef = doc(db, "image_to_url_history", id);
-    updateDoc(docRef, { isFavorite: !item.isFavorite }).catch(async () => {
-      const permissionError = new FirestorePermissionError({
-        path: docRef.path,
-        operation: "update",
-        requestResourceData: { isFavorite: !item.isFavorite },
-      });
-      errorEmitter.emit("permission-error", permissionError);
+    const ref = doc(db, "image_to_url_history", id);
+    updateDoc(ref, { isFavorite: !item.isFavorite }).catch(() => {
+      errorEmitter.emit(
+        "permission-error",
+        new FirestorePermissionError({
+          path: ref.path,
+          operation: "update",
+          requestResourceData: { isFavorite: !item.isFavorite },
+        }),
+      );
     });
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
-    if (selectedFile) {
-      if (selectedFile.size > 10 * 1024 * 1024) {
-        toast({
-          variant: "destructive",
-          title: "Heavy Payload",
-          description: "Standard limit for high-res uploads is 10MB.",
-        });
-        return;
-      }
-
-      setFile(selectedFile);
-      setLinks(null);
-      setError(null);
-
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImage(reader.result as string);
-        toast({
-          title: "Asset Buffered",
-          description: "Visual identity ready for transmission.",
-        });
-      };
-      reader.readAsDataURL(selectedFile);
-    }
+  const take = async (f: File) => {
+    if (!f.type.startsWith("image/"))
+      return toast({ variant: "destructive", title: "Image only" });
+    if (f.size > 12 * 1024 * 1024)
+      return toast({ variant: "destructive", title: "Max 12MB" });
+    setFile(f);
+    setLinks(null);
+    setError(null);
+    setImage(await fileToDataUrl(f));
   };
 
-  const executeUpload = async () => {
-    if (!image || !user) return;
-
-    setIsProcessing(true);
+  const upload = async () => {
+    if (!image) return;
+    setBusy(true);
     setError(null);
-    setLinks(null);
-
     try {
-      const response = await uploadToImgBB(image, activeNode?.key);
-
-      if (response.success && response.data) {
-        const d = response.data;
-        const matrix: LinkMatrix = {
-          direct: d.url,
-          view: d.url_viewer,
-          markdown: `![Identity](${d.url})`,
-          html: `<img src="${d.url}" alt="Identity">`,
-          bbcode: `[img]${d.url}[/img]`,
-        };
-        setLinks(matrix);
-
-        saveToHistoryFirestore({
-          name: file?.name || "Untitled Identity",
-          thumb: d.thumb?.url || d.url,
-          timestamp: Date.now(),
-          links: matrix,
-        });
-
-        toast({
-          title: "Uplink Success",
-          description: "Matrix synchronized with host node.",
-        });
-      } else {
-        throw new Error(response.error || "Uplink restricted by remote host.");
-      }
-    } catch (err: any) {
-      setError(err.message || "Uplink restricted by remote host.");
+      const payload = await compressDataUrl(image);
+      const res = await uploadToImgBB(payload, node?.key);
+      if (!res.success || !res.data)
+        throw new Error(res.error || "Upload failed");
+      const d = res.data;
+      const matrix: LinkMatrix = {
+        direct: d.url,
+        view: d.url_viewer || d.url,
+        markdown: `![image](${d.url})`,
+        html: `<img src="${d.url}" alt="image" />`,
+        bbcode: `[img]${d.url}[/img]`,
+      };
+      setLinks(matrix);
+      saveHistory({
+        name: file?.name || "image",
+        thumb: d.thumb?.url || d.url,
+        timestamp: Date.now(),
+        links: matrix,
+      });
+      toast({ title: "Live link ready" });
+    } catch (e: any) {
+      setError(e.message || "Upload failed");
       toast({
         variant: "destructive",
-        title: "Protocol Failure",
-        description: "The upload attempt was rejected.",
+        title: "Upload failed",
+        description: e.message,
       });
     } finally {
-      setIsProcessing(false);
+      setBusy(false);
     }
   };
 
-  const handleTestAndConnect = async () => {
+  const connect = async () => {
     if (!customKey.trim()) return;
-    setIsTestingNode(true);
-    setError(null);
-
+    setTesting(true);
     try {
       const res = await testImgBBKey(customKey.trim());
-      if (res.success) {
-        const node = {
-          key: customKey.trim(),
-          label: customLabel.trim() || "Custom Node",
-        };
-        setActiveNode(node);
+      if (!res.success) throw new Error(res.error || "Invalid key");
+      const n = {
+        key: customKey.trim(),
+        label: customLabel.trim() || "Custom",
+      };
+      setNode(n);
+      if (user)
         localStorage.setItem(
-          `mykit_image_host_node_${user?.uid}`,
-          JSON.stringify(node),
+          `mykit_image_host_node_${user.uid}`,
+          JSON.stringify(n),
         );
-        setShowCustomNode(false);
-        setCustomKey("");
-        setCustomLabel("");
-        toast({
-          title: "Host Node Active",
-          description: `Linked to ${node.label}.`,
-        });
-      } else {
-        setError(res.error || "Handshake Failed");
-        toast({
-          variant: "destructive",
-          title: "Handshake Failed",
-          description: res.error,
-        });
-      }
-    } catch (e) {
-      setError("Protocol Error: Discovery node unreachable.");
-      toast({ variant: "destructive", title: "Protocol Error" });
+      setShowKey(false);
+      setCustomKey("");
+      setCustomLabel("");
+      toast({ title: "Key connected" });
+    } catch (e: any) {
+      toast({
+        variant: "destructive",
+        title: "Key failed",
+        description: e.message,
+      });
     } finally {
-      setIsTestingNode(false);
+      setTesting(false);
     }
   };
 
-  const disconnectNode = () => {
-    setActiveNode(null);
-    localStorage.removeItem(`mykit_image_host_node_${user?.uid}`);
-    setCustomKey("");
-    setCustomLabel("");
-    toast({ title: "Default Node Restored" });
+  const copy = (t: string, id: string) => {
+    navigator.clipboard.writeText(t);
+    setCopied(id);
+    toast({ title: "Copied" });
+    setTimeout(() => setCopied(null), 1200);
   };
 
-  const handleCopy = (text: string, label: string) => {
-    navigator.clipboard.writeText(text);
-    setIsCopied(label);
-    toast({ title: "Copied", description: "Data matrix saved." });
-    setTimeout(() => setIsCopied(null), 2000);
-  };
+  useEffect(() => {
+    const p = (e: ClipboardEvent) => {
+      const f = e.clipboardData?.files?.[0];
+      if (f) take(f);
+    };
+    window.addEventListener("paste", p);
+    return () => window.removeEventListener("paste", p);
+  }, []);
 
-  const handleClear = () => {
-    setImage(null);
-    setFile(null);
-    setLinks(null);
-    setError(null);
-    if (fileInputRef.current) fileInputRef.current.value = "";
-    toast({ title: "Studio Reset" });
-  };
+  const formats = links
+    ? [
+        { k: "Direct", v: links.direct, i: LinkIcon },
+        { k: "Markdown", v: links.markdown, i: FileCode },
+        { k: "HTML", v: links.html, i: Code2 },
+        { k: "BBCode", v: links.bbcode, i: MessageSquare },
+      ]
+    : [];
 
   return (
-    <div className="container mx-auto px-4 md:px-6 py-12 md:py-20 max-w-7xl">
-      <div className="mb-16 animate-reveal">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-primary/10 border border-primary/20 text-[9px] font-black text-primary uppercase tracking-widest mb-4">
-          <Globe className="w-3.5 h-3.5" /> Web Hosting Suite
-        </div>
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
+    <div className="container mx-auto max-w-6xl px-4 py-12 md:px-6 md:py-16">
+      <div className="mb-10 overflow-hidden rounded-[2rem] border border-border bg-gradient-to-br from-blue-600/10 via-background to-orange-400/10 p-6 md:p-8">
+        <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h1 className="text-4xl md:text-6xl font-headline font-black text-foreground uppercase tracking-tighter leading-none">
-              Image to <span className="text-primary italic">Link Studio</span>
+            <p className="mb-2 text-[11px] font-black uppercase tracking-[0.22em] text-blue-600">
+              Hosting
+            </p>
+            <h1 className="text-3xl font-black tracking-tight md:text-5xl">
+              Image to Link
             </h1>
-            <p className="text-foreground/40 text-sm md:text-base font-medium mt-4 max-w-2xl leading-relaxed">
-              The standard for anonymous professional hosting. Transform
-              high-resolution imagery into permanent linguistic sharing
-              protocols with a single hardware handshake.
+            <p className="mt-2 max-w-lg text-sm text-foreground/60">
+              Public URL in one click. Compresses large files. History syncs
+              when you are logged in.
             </p>
           </div>
-          <div className="flex items-center gap-3 shrink-0 pb-2">
+          <div className="flex gap-2">
             <GetHelp toolId="image-to-link" />
             <Button
-              onClick={() => {
-                setError(null);
-                setCustomKey("");
-                setCustomLabel("");
-                setShowCustomNode(true);
-              }}
               variant="outline"
-              size="sm"
-              className={cn(
-                "h-10 px-6 rounded-xl border-white/10 text-[9px] font-black uppercase tracking-widest transition-all shadow-lg",
-                activeNode
-                  ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
-                  : "bg-secondary",
-              )}
+              className="h-10 rounded-xl"
+              onClick={() => setShowKey((v) => !v)}
             >
-              {activeNode ? (
-                <ShieldCheck className="w-3.5 h-3.5 mr-2" />
-              ) : (
-                <Zap className="w-3.5 h-3.5 mr-2" />
-              )}
-              {activeNode ? activeNode.label.toUpperCase() : "HOST"}
+              <Settings2 className="mr-2 h-4 w-4" />
+              {node ? node.label : "API key"}
             </Button>
-            {(image || links) && user && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleClear}
-                className="h-10 px-4 rounded-xl border-white/10 bg-secondary text-[8px] font-black uppercase tracking-widest hover:text-destructive transition-all"
-              >
-                <RotateCcw className="w-3.5 h-3.5 mr-2" /> Reset
-              </Button>
-            )}
           </div>
         </div>
       </div>
 
-      {!user && !authLoading ? (
-        <div className="grid grid-cols-1 gap-8 animate-in fade-in zoom-in duration-500">
-          <Card className="glass-card border-border shadow-2xl p-12 sm:p-24 text-center flex flex-col items-center gap-8 relative overflow-hidden bg-background/10 rounded-[2.5rem]">
-            <div className="absolute top-0 right-0 w-80 h-80 bg-primary/5 rounded-full blur-[120px] pointer-events-none" />
-            <div className="w-20 h-20 rounded-[2rem] bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shadow-2xl ring-1 ring-primary/10 relative z-10">
-              <Lock className="w-8 h-8" />
-            </div>
-            <div className="space-y-4 relative z-10">
-              <h2 className="text-2xl sm:text-4xl font-headline font-black text-foreground uppercase tracking-tight">
-                Authentication Required
-              </h2>
-              <p className="text-[10px] sm:text-xs text-foreground/30 font-black uppercase tracking-[0.4em] leading-relaxed max-w-md mx-auto">
-                Login to save history permanently across all devices.
-              </p>
-            </div>
-            <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md relative z-10">
-              <Button
-                asChild
-                className="h-16 flex-1 bg-primary text-white font-black uppercase text-[10px] tracking-widest rounded-2xl shadow-xl shadow-primary/30 active:scale-95 transition-all"
-              >
-                <Link href="/login?redirect=/image-to-link">startSession</Link>
-              </Button>
-              <Button
-                asChild
-                variant="outline"
-                className="h-16 px-10 border-white/10 bg-white/5 text-white font-black uppercase text-[10px] tracking-widest rounded-2xl"
-              >
-                <Link href="/">Explore Suite</Link>
-              </Button>
-            </div>
-          </Card>
-        </div>
-      ) : authLoading ? (
-        <div className="flex flex-col items-center justify-center py-40 gap-6">
-          <Loader2 className="w-12 h-12 text-primary animate-spin" />
-          <p className="text-[10px] font-black uppercase tracking-[0.4em] text-primary animate-pulse">
-            Synchronizing Identity Node...
-          </p>
+      {authLoading ? (
+        <div className="flex justify-center py-24">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start animate-in fade-in duration-1000">
-          <div className="lg:col-span-5 xl:col-span-4 space-y-8">
-            {showCustomNode && (
-              <Card className="glass-card border-primary/40 bg-primary/[0.03] shadow-2xl overflow-hidden animate-in zoom-in duration-300">
-                <CardHeader className="py-6 border-b border-primary/10 flex flex-row items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <KeyRound className="w-4 h-4 text-primary" />
-                    <span className="text-[10px] font-black uppercase tracking-widest text-primary">
-                      Host Node Configuration
-                    </span>
-                  </div>
-                  <button
-                    onClick={() => setShowCustomNode(false)}
-                    className="text-primary/40 hover:text-primary"
-                  >
-                    <X className="w-4 h-4" />
+        <div className="grid gap-6 lg:grid-cols-12">
+          <div className="space-y-4 lg:col-span-4">
+            {showKey && (
+              <Card className="overflow-hidden rounded-[1.8rem] border border-border shadow-lg">
+                <div className="h-1 bg-gradient-to-r from-blue-600 to-orange-400" />
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <CardTitle className="flex items-center gap-2 text-sm">
+                    <KeyRound className="h-4 w-4 text-blue-600" /> key
+                  </CardTitle>
+                  <button type="button" onClick={() => setShowKey(false)}>
+                    <X className="h-4 w-4" />
                   </button>
                 </CardHeader>
-                <CardContent className="p-6 space-y-6">
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label className="text-[9px] font-black uppercase text-foreground/40 ml-1">
-                        API Key
-                      </Label>
-                      <Input
-                        value={customKey}
-                        onChange={(e) => setCustomKey(e.target.value)}
-                        type="password"
-                        placeholder="Enter your API key"
-                        className="h-11 bg-background border-border text-xs font-mono"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-[9px] font-black uppercase text-foreground/40 ml-1">
-                        Username / Label
-                      </Label>
-                      <Input
-                        value={customLabel}
-                        onChange={(e) => setCustomLabel(e.target.value)}
-                        placeholder="Enter display name"
-                        className="h-11 bg-background border-border text-xs font-bold"
-                      />
-                    </div>
-                  </div>
-                  <div className="flex flex-col gap-3">
-                    <Button
-                      onClick={handleTestAndConnect}
-                      disabled={isTestingNode || !customKey}
-                      className="h-12 w-full bg-primary text-white font-black uppercase text-[10px] rounded-xl shadow-lg"
-                    >
-                      {isTestingNode ? (
-                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                      ) : (
-                        <Zap className="w-4 h-4 mr-2" />
-                      )}
-                      Test & Connect Node
-                    </Button>
-                    {activeNode && (
-                      <Button
-                        variant="outline"
-                        onClick={() => setShowDisconnectConfirm(true)}
-                        className="h-10 text-[9px] font-black uppercase border-destructive/20 text-destructive bg-destructive/5"
-                      >
-                        <Unplug className="w-3.5 h-3.5 mr-2" /> Disconnect Node
-                      </Button>
+                <CardContent className="space-y-3">
+                  <Input
+                    type="password"
+                    value={customKey}
+                    onChange={(e) => setCustomKey(e.target.value)}
+                    placeholder="API key"
+                    className="h-11 rounded-xl"
+                  />
+                  <Input
+                    value={customLabel}
+                    onChange={(e) => setCustomLabel(e.target.value)}
+                    placeholder="Name"
+                    className="h-11 rounded-xl"
+                  />
+                  <Button
+                    className="h-11 w-full rounded-xl bg-blue-600 text-white hover:bg-blue-700"
+                    disabled={testing || !customKey}
+                    onClick={connect}
+                  >
+                    {testing ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      "Test and connect"
                     )}
-                  </div>
+                  </Button>
+                  {node && (
+                    <Button
+                      variant="outline"
+                      className="h-11 w-full rounded-xl text-red-500"
+                      onClick={() => setAskOff(true)}
+                    >
+                      <Unplug className="mr-2 h-4 w-4" /> Disconnect
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
             )}
 
-            <Card className="glass-card border-border shadow-2xl overflow-hidden relative group">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
-              <CardHeader className="pb-8 border-b border-border bg-secondary/30">
-                <CardTitle className="text-[10px] font-black uppercase tracking-[0.3em] flex items-center gap-4 text-foreground">
-                  <FileUp className="w-5 h-5 text-primary" /> IMAGE UPLOAD
+            <Card className="overflow-hidden rounded-[1.8rem] border border-border shadow-xl">
+              <div className="h-1 bg-gradient-to-r from-blue-600 via-sky-400 to-orange-400" />
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-sm">
+                  <FileUp className="h-4 w-4 text-blue-600" /> Upload
                 </CardTitle>
               </CardHeader>
-              <CardContent className="pt-10 space-y-8">
-                <div
-                  onClick={() => !isProcessing && fileInputRef.current?.click()}
+              <CardContent className="space-y-4">
+                <button
+                  type="button"
+                  onClick={() => inputRef.current?.click()}
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={(e) => {
                     e.preventDefault();
-                    if (e.dataTransfer.files[0])
-                      handleFileUpload({
-                        target: { files: e.dataTransfer.files },
-                      } as any);
+                    const f = e.dataTransfer.files?.[0];
+                    if (f) take(f);
                   }}
-                  className={cn(
-                    "relative h-64 rounded-[2.5rem] border-2 border-dashed border-border hover:border-primary/40 transition-all flex flex-col items-center justify-center bg-secondary/30 overflow-hidden cursor-pointer group/upload",
-                    image && "border-solid border-primary/20 bg-background/50",
-                    isProcessing && "opacity-50 cursor-not-allowed",
-                  )}
+                  className="group flex h-52 w-full flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-muted/25 transition hover:border-blue-500/40"
                 >
                   {image ? (
-                    <div className="w-full h-full p-4 flex items-center justify-center relative">
-                      <img
-                        src={image}
-                        alt="Preview"
-                        className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl group-hover/upload:opacity-40 transition-opacity"
-                      />
-                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/upload:opacity-100 transition-opacity bg-background backdrop-blur-sm rounded-2xl">
-                        <RefreshCcw className="w-10 h-10 text-white animate-spin-slow" />
-                      </div>
-                    </div>
+                    <img
+                      src={image}
+                      alt=""
+                      className="max-h-44 object-contain"
+                    />
                   ) : (
-                    <div className="text-center space-y-6 p-8">
-                      <div className="w-16 h-16 rounded-[1.5rem] bg-background border border-border flex items-center justify-center text-foreground/10 group-hover/upload:text-primary group-hover/upload:scale-110 transition-all mx-auto shadow-xl">
-                        <ImageIcon className="w-8 h-8" />
-                      </div>
-                      <div className="space-y-2">
-                        <span className="text-xs font-black uppercase text-foreground/40 tracking-[0.2em] group-hover/upload:text-primary transition-colors">
-                          Select Image
-                        </span>
-                        <p className="text-[9px] text-foreground/20 font-bold uppercase tracking-widest leading-relaxed">
-                          JPEG, PNG, GIF, WebP (Max 10MB)
-                        </p>
-                      </div>
-                    </div>
+                    <>
+                      <span className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600/10 text-blue-600 group-hover:scale-110 transition">
+                        <ImageIcon className="h-6 w-6" />
+                      </span>
+                      <span className="text-sm font-medium">
+                        Drop, click or paste
+                      </span>
+                      <span className="mt-1 text-[11px] text-foreground/45">
+                        PNG JPG WEBP GIF · 12MB
+                      </span>
+                    </>
                   )}
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    accept="image/*"
-                    onChange={handleFileUpload}
-                    className="hidden"
-                  />
-                </div>
-
+                </button>
+                <input
+                  ref={inputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) =>
+                    e.target.files?.[0] && take(e.target.files[0])
+                  }
+                />
                 <Button
-                  onClick={executeUpload}
-                  disabled={isProcessing || !image}
-                  className="w-full h-16 bg-primary text-white font-black text-xs uppercase tracking-[0.2em] rounded-2xl shadow-xl shadow-primary/30 active:scale-95 transition-all"
+                  className="h-12 w-full rounded-xl bg-blue-600 text-white shadow-lg shadow-blue-600/20 hover:bg-blue-700"
+                  disabled={!image || busy}
+                  onClick={upload}
                 >
-                  {isProcessing ? (
-                    <Loader2 className="w-5 h-5 animate-spin mr-3" />
+                  {busy ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   ) : (
-                    <Zap className="w-5 h-5 mr-3" />
+                    <LinkIcon className="mr-2 h-4 w-4" />
                   )}
-                  Upload
+                  Get link
                 </Button>
-
-                <div className="flex items-center gap-3 px-2">
-                  <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                  <span className="text-[8px] font-black uppercase tracking-[0.3em] text-foreground/30">
-                    History synced to cloud
-                  </span>
-                </div>
+                <Button
+                  variant="outline"
+                  className="h-11 w-full rounded-xl"
+                  onClick={() => {
+                    setImage(null);
+                    setFile(null);
+                    setLinks(null);
+                    setError(null);
+                  }}
+                >
+                  <RotateCcw className="mr-2 h-4 w-4" /> Reset
+                </Button>
+                {error && <p className="text-sm text-red-500">{error}</p>}
+                {!user && (
+                  <p className="text-xs text-foreground/50">
+                    <Link
+                      href="/login?redirect=/image-to-link"
+                      className="font-semibold text-blue-600"
+                    >
+                      Login
+                    </Link>{" "}
+                    to keep history on all devices.
+                  </p>
+                )}
               </CardContent>
             </Card>
-
-            <div className="grid grid-cols-1 gap-6">
-              <div className="p-8 rounded-[3rem] bg-secondary/50 border border-border flex items-start gap-6 group hover:bg-secondary/80 transition-all duration-500 shadow-lg">
-                <div className="w-12 h-12 rounded-2xl bg-background border border-border flex items-center justify-center text-primary shrink-0 shadow-lg group-hover:scale-110 transition-transform">
-                  <ShieldCheck className="w-6 h-6" />
-                </div>
-                <div className="space-y-1">
-                  <h4 className="text-[12px] font-black text-foreground uppercase tracking-widest leading-none">
-                    Privacy Matrix
-                  </h4>
-                  <p className="text-[10px] text-foreground/40 leading-relaxed font-medium uppercase">
-                    1:1 binary preservation ensures your visual assets retain
-                    original resolution and metadata during the cloud sync.
-                  </p>
-                </div>
-              </div>
-            </div>
           </div>
 
-          <div className="lg:col-span-7 xl:col-span-8 space-y-10">
-            {links && (
-              <Card className="glass-card border-emerald-500/20 bg-emerald-500/[0.02] shadow-2xl overflow-hidden relative flex flex-col animate-in zoom-in-95 duration-500">
-                <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent" />
-                <CardHeader className="py-8 border-b border-emerald-500/10 bg-emerald-500/5 flex flex-row items-center justify-between shrink-0 px-6 sm:px-10">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center text-white shadow-inner">
-                      <CheckCircle2 className="w-5 h-5" />
-                    </div>
-                    <CardTitle className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.5em]">
-                      Active Master Result
-                    </CardTitle>
+          <div className="space-y-6 lg:col-span-8">
+            {links ? (
+              <Card className="overflow-hidden rounded-[1.8rem] border border-border shadow-xl">
+                <div className="h-1 bg-gradient-to-r from-emerald-500 via-blue-500 to-orange-400" />
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <CardTitle className="flex items-center gap-2 text-sm">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-500" /> Ready
+                  </CardTitle>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="rounded-lg"
+                      onClick={() => copy(links.direct, "all")}
+                    >
+                      <Copy className="mr-1 h-3 w-3" />{" "}
+                      {copied === "all" ? "Copied" : "Copy URL"}
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="rounded-lg bg-blue-600 text-white hover:bg-blue-700"
+                      asChild
+                    >
+                      <a href={links.direct} target="_blank" rel="noreferrer">
+                        <ExternalLink className="mr-1 h-3 w-3" /> Open
+                      </a>
+                    </Button>
                   </div>
-                  <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest">
-                    Uplink Verified
-                  </Badge>
                 </CardHeader>
-                <CardContent className="p-8 sm:p-12">
-                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-12">
-                    <div className="space-y-6">
-                      <Label className="text-[10px] font-black text-foreground/30 uppercase tracking-[0.3em] ml-1">
-                        Preview
-                      </Label>
-                      <div className="aspect-square w-full rounded-[2.5rem] bg-white dark:bg-background border border-emerald-500/10 shadow-2xl p-4 flex items-center justify-center relative group/preview">
-                        <img
-                          src={image!}
-                          alt="Final"
-                          className="max-w-full max-h-full object-contain rounded-xl"
-                        />
-                        <div className="absolute bottom-6 right-6">
-                          <Button
-                            asChild
-                            size="icon"
-                            className="h-10 w-10 rounded-xl bg-emerald-500 shadow-xl shadow-emerald-500/20"
+                <CardContent className="grid gap-6 md:grid-cols-2">
+                  <div className="flex items-center justify-center rounded-2xl bg-muted/30 p-4">
+                    <img
+                      src={image || links.direct}
+                      alt=""
+                      className="max-h-56 object-contain"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    {formats.map((f) => (
+                      <div
+                        key={f.k}
+                        className="rounded-xl border border-border bg-card p-3 transition hover:-translate-y-0.5 hover:shadow-md"
+                      >
+                        <div className="mb-1 flex items-center justify-between">
+                          <span className="flex items-center gap-2 text-xs font-bold">
+                            <f.i className="h-3 w-3 text-blue-600" /> {f.k}
+                          </span>
+                          <button
+                            type="button"
+                            className="text-xs font-semibold text-blue-600"
+                            onClick={() => copy(f.v, f.k)}
                           >
-                            <a
-                              href={links.direct}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                            >
-                              <ExternalLink className="w-5 h-5" />
-                            </a>
-                          </Button>
+                            {copied === f.k ? "Copied" : "Copy"}
+                          </button>
                         </div>
+                        <p className="truncate font-mono text-[11px] text-foreground/60">
+                          {f.v}
+                        </p>
                       </div>
-                    </div>
-
-                    <div className="space-y-6">
-                      <Label className="text-[10px] font-black text-foreground/30 uppercase tracking-[0.3em] ml-1">
-                        All links
-                      </Label>
-                      <div className="space-y-4">
-                        {[
-                          {
-                            label: "Direct Link",
-                            val: links.direct,
-                            icon: LinkIcon,
-                          },
-                          {
-                            label: "Markdown",
-                            val: links.markdown,
-                            icon: FileCode,
-                          },
-                          { label: "HTML", val: links.html, icon: Code2 },
-                          {
-                            label: "BBCode",
-                            val: links.bbcode,
-                            icon: MessageSquare,
-                          },
-                        ].map((item) => (
-                          <div key={item.label} className="space-y-2 group/row">
-                            <div className="flex items-center justify-between px-1">
-                              <div className="flex items-center gap-2">
-                                <item.icon className="w-3 h-3 text-emerald-600/40" />
-                                <span className="text-[9px] font-black uppercase text-foreground/50 tracking-widest">
-                                  {item.label}
-                                </span>
-                              </div>
-                              <button
-                                onClick={() => handleCopy(item.val, item.label)}
-                                className={cn(
-                                  "text-[8px] font-black uppercase transition-all",
-                                  isCopied === item.label
-                                    ? "text-emerald-500"
-                                    : "text-primary/60 hover:text-primary",
-                                )}
-                              >
-                                {isCopied === item.label
-                                  ? "Identity Isolated"
-                                  : "Copy Snippet"}
-                              </button>
-                            </div>
-                            <div className="h-11 bg-white/40 dark:bg-background border border-emerald-500/5 rounded-xl flex items-center px-4 font-mono text-[10px] font-bold text-foreground/80 overflow-hidden shadow-inner group-hover/row:border-emerald-500/20 transition-colors">
-                              <span className="truncate">{item.val}</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
+                    ))}
                   </div>
                 </CardContent>
               </Card>
+            ) : (
+              <Card className="rounded-[1.8rem] border border-dashed border-border p-10 text-center text-sm text-foreground/50">
+                Upload an image to see live links here.
+              </Card>
             )}
 
-            <div className="space-y-6 pt-4">
-              <div className="flex items-center justify-between px-2">
-                <div className="flex items-center gap-3">
-                  <History className="w-4 h-4 text-primary" />
-                  <h3 className="text-xl font-headline font-black uppercase tracking-tight text-foreground/60 tracking-tight">
-                    History
-                  </h3>
-                </div>
-                {history.length > 0 && (
-                  <button
-                    onClick={clearAllHistory}
-                    className="text-[9px] font-black uppercase text-foreground/20 hover:text-destructive transition-colors"
-                  >
-                    delete all
-                  </button>
-                )}
-              </div>
-
-              {historyLoading ? (
-                <div className="flex flex-col items-center justify-center py-20 gap-4 opacity-40">
-                  <Loader2 className="w-8 h-8 text-primary animate-spin" />
-                  <p className="text-[10px] font-black uppercase tracking-widest">
-                    Synchronizing Registry...
-                  </p>
-                </div>
-              ) : history.length === 0 ? (
-                <div className="p-20 text-center flex flex-col items-center gap-6 opacity-10 grayscale border-2 border-dashed border-white/5 rounded-[3rem]">
-                  <Activity className="w-12 h-12 text-primary" />
-                  <p className="text-[11px] font-black uppercase tracking-[0.4em]">
-                    Awaiting Discovery Signal
-                  </p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 gap-4">
-                  {history.map((item) => (
-                    <Card
-                      key={item.id}
-                      className={cn(
-                        "glass-card border-border shadow-xl overflow-hidden group/row transition-all duration-300",
-                        item.isFavorite && "border-primary/10",
-                      )}
-                    >
-                      <div
-                        onClick={() =>
-                          setExpandedId(expandedId === item.id ? null : item.id)
-                        }
-                        className="p-4 sm:p-5 flex items-center justify-between cursor-pointer hover:bg-white/5 transition-all"
-                      >
-                        <div className="flex items-center gap-5 min-w-0">
-                          <div className="w-14 h-14 rounded-2xl bg-secondary border border-border flex items-center justify-center overflow-hidden shrink-0 shadow-inner relative group/thumb">
-                            <img
-                              src={item.thumb}
-                              alt=""
-                              className="w-full h-full object-cover group-hover/row:scale-105 transition-transform"
-                            />
-                            <div className="absolute inset-0 bg-background flex items-center justify-center opacity-0 group-hover/row:opacity-100 transition-opacity">
-                              <Eye className="w-4 h-4 text-white/60" />
-                            </div>
-                          </div>
-                          <div className="min-w-0">
-                            <p className="text-xs font-black text-foreground truncate uppercase tracking-tight">
-                              {item.name}
-                            </p>
-                            <div className="flex items-center gap-3 mt-1">
-                              <p className="text-[8px] font-black text-foreground/20 uppercase tracking-widest">
-                                {new Date(item.timestamp).toLocaleDateString()}
-                              </p>
-                              <div className="w-1 h-1 rounded-full bg-primary/20" />
-                              <p className="text-[8px] font-bold text-primary uppercase tracking-widest">
-                                Uplink Active
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-4 shrink-0">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleFavorite(item.id);
-                            }}
-                            className={cn(
-                              "p-2 rounded-lg transition-all",
-                              item.isFavorite
-                                ? "text-yellow-500 bg-yellow-500/10"
-                                : "text-foreground/10 hover:text-yellow-500",
-                            )}
-                          >
-                            <Star
-                              className={cn(
-                                "w-4 h-4",
-                                item.isFavorite && "fill-current",
-                              )}
-                            />
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              removeFromHistory(item.id);
-                            }}
-                            className="w-9 h-9 rounded-xl flex items-center justify-center text-foreground/10 hover:text-red-500 hover:bg-red-500/10 transition-all"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                          <div
-                            className={cn(
-                              "w-9 h-9 rounded-xl bg-secondary flex items-center justify-center text-foreground/20 transition-all",
-                              expandedId === item.id && "bg-primary text-white",
-                            )}
-                          >
-                            {expandedId === item.id ? (
-                              <ChevronUp className="w-4 h-4" />
-                            ) : (
-                              <ChevronDown className="w-4 h-4" />
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      {expandedId === item.id && (
-                        <div className="px-5 pb-8 pt-2 border-t border-white/5 bg-background animate-in slide-in-from-top-2 duration-500">
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-6">
-                            {[
-                              {
-                                label: "Direct",
-                                val: item.links.direct,
-                                icon: LinkIcon,
-                              },
-                              {
-                                label: "Markdown",
-                                val: item.links.markdown,
-                                icon: FileCode,
-                              },
-                              {
-                                label: "HTML",
-                                val: item.links.html,
-                                icon: Code2,
-                              },
-                              {
-                                label: "BBCode",
-                                val: item.links.bbcode,
-                                icon: MessageSquare,
-                              },
-                            ].map((sub) => (
-                              <div
-                                key={sub.label}
-                                className="space-y-2 group/sub"
-                              >
-                                <div className="flex items-center justify-between px-1">
-                                  <div className="flex items-center gap-2">
-                                    <sub.icon className="w-3 h-3 text-primary/30" />
-                                    <span className="text-[8px] font-black uppercase text-foreground/30 tracking-widest">
-                                      {sub.label} Protocol
-                                    </span>
-                                  </div>
-                                  <button
-                                    onClick={() =>
-                                      handleCopy(
-                                        sub.val,
-                                        `hist-${item.id}-${sub.label}`,
-                                      )
-                                    }
-                                    className={cn(
-                                      "text-[8px] font-black uppercase transition-all",
-                                      isCopied ===
-                                        `hist-${item.id}-${sub.label}`
-                                        ? "text-emerald-500"
-                                        : "text-primary/60 hover:text-primary",
-                                    )}
-                                  >
-                                    {isCopied === `hist-${item.id}-${sub.label}`
-                                      ? "Isolated"
-                                      : "Copy"}
-                                  </button>
-                                </div>
-                                <div className="h-10 bg-background border border-white/5 rounded-xl flex items-center px-4 font-mono text-[9px] font-bold text-foreground/40 overflow-hidden shadow-inner group-hover/sub:border-primary/20 transition-all">
-                                  <span className="truncate">{sub.val}</span>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                          <div className="mt-6 flex justify-center">
-                            <Button
-                              asChild
-                              variant="ghost"
-                              className="h-8 text-[8px] font-black uppercase text-primary/40 hover:text-primary"
-                            >
-                              <a
-                                href={item.links.view}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                              >
-                                Launch Viewer Node{" "}
-                                <ArrowRight className="ml-2 w-3 h-3" />
-                              </a>
-                            </Button>
-                          </div>
-                        </div>
-                      )}
-                    </Card>
-                  ))}
-                </div>
+            <div className="flex items-center justify-between">
+              <h2 className="flex items-center gap-2 text-lg font-bold">
+                <History className="h-4 w-4 text-blue-600" /> History
+              </h2>
+              {history.length > 0 && (
+                <button
+                  type="button"
+                  className="text-xs text-red-500"
+                  onClick={clearAll}
+                >
+                  Clear all
+                </button>
               )}
             </div>
+
+            {historyLoading && user ? (
+              <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+            ) : history.length === 0 ? (
+              <p className="text-sm text-foreground/50">No uploads yet.</p>
+            ) : (
+              <div className="space-y-3">
+                {history.map((item) => (
+                  <Card
+                    key={item.id}
+                    className="overflow-hidden rounded-2xl border border-border transition hover:-translate-y-0.5 hover:shadow-lg"
+                  >
+                    <div className="flex items-center gap-3 p-3">
+                      <img
+                        src={item.thumb}
+                        alt=""
+                        className="h-14 w-14 rounded-xl object-cover"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-semibold">
+                          {item.name}
+                        </p>
+                        <p className="text-[11px] text-foreground/45">
+                          {new Date(item.timestamp).toLocaleString()}
+                        </p>
+                      </div>
+                      {user && (
+                        <button type="button" onClick={() => star(item.id)}>
+                          <Star
+                            className={cn(
+                              "h-4 w-4",
+                              item.isFavorite &&
+                                "fill-yellow-400 text-yellow-400",
+                            )}
+                          />
+                        </button>
+                      )}
+                      <button type="button" onClick={() => removeItem(item.id)}>
+                        <Trash2 className="h-4 w-4 text-red-500" />
+                      </button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="rounded-lg"
+                        onClick={() =>
+                          setOpenId(openId === item.id ? null : item.id)
+                        }
+                      >
+                        {openId === item.id ? "Hide" : "Links"}
+                      </Button>
+                    </div>
+                    {openId === item.id && (
+                      <div className="space-y-2 border-t border-border bg-muted/20 p-3">
+                        {(
+                          ["direct", "markdown", "html", "bbcode"] as const
+                        ).map((k) => (
+                          <div key={k} className="flex items-center gap-2">
+                            <span className="w-20 shrink-0 text-[10px] font-bold uppercase text-foreground/45">
+                              {k}
+                            </span>
+                            <span className="min-w-0 flex-1 truncate font-mono text-xs">
+                              {item.links[k]}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => copy(item.links[k], item.id + k)}
+                            >
+                              <Copy className="h-3.5 w-3.5 text-blue-600" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </Card>
+                ))}
+              </div>
+            )}
           </div>
+
+          <section className="mx-auto mt-16 max-w-3xl">
+            <h2 className="mb-6 text-xl font-bold">Image to Link FAQ</h2>
+            <div className="space-y-3">
+              {[
+                {
+                  q: "Does Image to Link upload my photo to My Kit Tool servers?",
+                  a: "The image is sent to the image host to create a public URL. History is saved to your account if you are logged in.",
+                },
+                {
+                  q: "What link formats do I get?",
+                  a: "Direct URL, Markdown, HTML and BBCode.",
+                },
+                {
+                  q: "Can I use my own ImgBB API key?",
+                  a: "Yes. Open API key, paste the key, then Test and connect.",
+                },
+                {
+                  q: "Is this tool free?",
+                  a: "Yes. Image to Link on My Kit Tool is free.",
+                },
+              ].map((item) => (
+                <div
+                  key={item.q}
+                  className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm"
+                >
+                  <div className="h-1 bg-gradient-to-r from-blue-600 via-sky-400 to-orange-400" />
+                  <div className="p-5">
+                    <h3 className="text-sm font-bold">{item.q}</h3>
+                    <p className="mt-1 text-sm text-foreground/60">{item.a}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
         </div>
       )}
 
-      {/* Disconnect Alert */}
-      <AlertDialog
-        open={showDisconnectConfirm}
-        onOpenChange={setShowDisconnectConfirm}
-      >
-        <AlertDialogContent className="glass-card border-white/10 rounded-[2.5rem] p-8 max-w-sm">
-          <AlertDialogHeader className="space-y-4">
-            <div className="w-16 h-16 rounded-[1.5rem] bg-destructive/10 border border-destructive/20 flex items-center justify-center text-destructive mx-auto">
-              <Unplug className="w-8 h-8" />
-            </div>
-            <AlertDialogTitle className="text-xl font-headline font-black text-foreground uppercase tracking-tight text-center">
-              Disconnect Host
-            </AlertDialogTitle>
-            <AlertDialogDescription className="text-[11px] font-medium text-foreground/40 uppercase tracking-widest leading-relaxed text-center">
-              Are you sure you want to disconnect your private ImgBB node?
+      <AlertDialog open={askOff} onOpenChange={setAskOff}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Disconnect key?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Default ImgBB key will be used.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="mt-8 flex flex-col sm:flex-row gap-3">
-            <AlertDialogCancel className="h-12 flex-1 rounded-xl border-white/5 bg-white/5 text-[9px] font-black uppercase tracking-widest m-0">
-              Abort
-            </AlertDialogCancel>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={disconnectNode}
-              className="h-12 flex-1 rounded-xl bg-destructive text-destructive-foreground font-black uppercase text-[9px] tracking-widest shadow-xl shadow-destructive/20"
+              onClick={() => {
+                setNode(null);
+                if (user)
+                  localStorage.removeItem(`mykit_image_host_node_${user.uid}`);
+              }}
             >
               Disconnect
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      <style jsx global>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          @apply bg-transparent;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          @apply bg-primary/20 rounded-full;
-        }
-        .no-scrollbar::-webkit-scrollbar {
-          display: none;
-        }
-        .no-scrollbar {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-      `}</style>
     </div>
   );
 }
