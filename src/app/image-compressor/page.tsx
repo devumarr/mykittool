@@ -161,8 +161,8 @@ export default function ImageCompressorPage() {
           Image <span className="text-primary italic">Compressor</span>
         </h1>
         <p className="text-foreground/40 text-sm md:text-base font-medium mt-4 max-w-2xl">
-          Professional browser-side image optimization. Reduce file size for web
-          performance while maintaining high visual fidelity. 100% private.
+          Reduce file size for web performance while maintaining high visual
+          fidelity. 100% private.
         </p>
       </div>
 
