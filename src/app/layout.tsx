@@ -36,8 +36,8 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       { url: "/favicon.ico" },
+      { url: "/icon-48.png", sizes: "48x48", type: "image/png" },
       { url: "/favicon-96x96.png", sizes: "96x96", type: "image/png" },
-      { url: "/favicon.svg", type: "image/svg+xml" },
     ],
     apple: "/apple-touch-icon.png",
   },
@@ -103,16 +103,27 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               "@context": "https://schema.org",
-              "@type": "WebSite",
-              name: "My Kit Tool",
-              alternateName: ["MyKitTool", "mykittool"],
-              url: "https://mykittool.online",
-              publisher: {
-                "@type": "Organization",
-                name: "My Kit Tool",
-                url: "https://mykittool.online",
-                logo: "https://mykittool.online/web-app-manifest-512x512.png",
-              },
+              "@graph": [
+                {
+                  "@type": "WebSite",
+                  "@id": "https://mykittool.online/#website",
+                  name: "My Kit Tool",
+                  alternateName: ["MyKitTool", "mykittool.online"],
+                  url: "https://mykittool.online/",
+                  publisher: {
+                    "@id": "https://mykittool.online/#organization",
+                  },
+                },
+                {
+                  "@type": "Organization",
+                  "@id": "https://mykittool.online/#organization",
+                  name: "My Kit Tool",
+                  url: "https://mykittool.online/",
+                  logo: "https://mykittool.online/web-app-manifest-512x512.png",
+                  description:
+                    "Free browser tools for PDF, images, and AI. No signup.",
+                },
+              ],
             }),
           }}
         />
