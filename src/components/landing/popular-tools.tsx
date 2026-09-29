@@ -8,6 +8,7 @@ import {
   QrCode,
   Mic,
   ArrowRight,
+  Sun,
   Activity,
   Moon,
 } from "lucide-react";
@@ -51,10 +52,10 @@ const popularTools = [
   },
 
   {
-    href: "/all-units-converter",
-    icon: Activity,
-    title: "Unit Converter",
-    desc: "Convert length, weight and more.",
+    href: "/weather",
+    icon: Sun,
+    title: "Weather",
+    desc: "Check Weather.",
     well: "bg-blue-500/15 text-blue-600 dark:text-blue-300",
     glow: "hover:shadow-blue-500/25 dark:hover:shadow-blue-400/30",
     span: "sm:col-span-2 lg:col-span-1",

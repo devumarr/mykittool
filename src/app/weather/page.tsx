@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Cloud,
   Sun,
@@ -11,17 +11,7 @@ import {
   Search,
   MapPin,
   Calendar,
-  Thermometer,
-  Navigation,
   RotateCcw,
-  Activity,
-  Zap,
-  CheckCircle2,
-  Globe,
-  Loader2,
-  ChevronRight,
-  ArrowRight,
-  ShieldCheck,
   CloudFog,
   CloudSnow,
   CloudDrizzle,
@@ -29,6 +19,11 @@ import {
   Clock,
   Navigation2,
   Trash2,
+  Loader2,
+  ChevronRight,
+  ShieldCheck,
+  Gauge,
+  Compass,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -38,36 +33,11 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { GetHelp } from "@/components/mykittool/get-help";
 
-// --- Weather Code Mapping (WMO Standard) ---
-const decodeWeather = (code: number) => {
-  if (code === 0)
-    return { label: "Clear Sky", icon: Sun, color: "text-amber-400" };
-  if (code <= 3)
-    return { label: "Partly Cloudy", icon: Cloud, color: "text-blue-300" };
-  if (code <= 48)
-    return { label: "Foggy", icon: CloudFog, color: "text-slate-400" };
-  if (code <= 57)
-    return { label: "Drizzle", icon: CloudDrizzle, color: "text-sky-400" };
-  if (code <= 67)
-    return { label: "Rain", icon: CloudRain, color: "text-blue-500" };
-  if (code <= 77)
-    return { label: "Snowfall", icon: CloudSnow, color: "text-indigo-200" };
-  if (code <= 82)
-    return { label: "Rain Showers", icon: CloudRain, color: "text-blue-400" };
-  if (code <= 86)
-    return { label: "Snow Showers", icon: CloudSnow, color: "text-indigo-300" };
-  if (code >= 95)
-    return {
-      label: "Thunderstorm",
-      icon: CloudLightning,
-      color: "text-purple-500",
-    };
-  return {
-    label: "Atmospheric Change",
-    icon: Activity,
-    color: "text-foreground/40",
-  };
-};
+const LAST_KEY = "mkt_weather_last";
+const RECENTS_KEY = "mkt_weather_recents";
+const UNIT_KEY = "mkt_weather_unit";
+
+type Unit = "c" | "f";
 
 interface CityResult {
   id: number;
@@ -85,69 +55,161 @@ interface WeatherData {
     feelsLike: number;
     humidity: number;
     wind: number;
+    windDir: number;
+    precip: number;
+    uv: number;
     code: number;
+    isDay: boolean;
   };
-  hourly: {
-    time: string[];
-    temp: number[];
-    code: number[];
-  };
+  hourly: { time: string[]; temp: number[]; code: number[] };
   daily: {
     time: string[];
     max: number[];
     min: number[];
     code: number[];
+    rain: number[];
   };
   city: string;
   location: string;
 }
 
+function decodeWeather(code: number) {
+  if (code === 0) return { label: "Clear", icon: Sun, color: "text-amber-500" };
+  if (code <= 3)
+    return { label: "Partly cloudy", icon: Cloud, color: "text-sky-500" };
+  if (code <= 48)
+    return { label: "Fog", icon: CloudFog, color: "text-slate-400" };
+  if (code <= 57)
+    return { label: "Drizzle", icon: CloudDrizzle, color: "text-sky-400" };
+  if (code <= 67)
+    return { label: "Rain", icon: CloudRain, color: "text-blue-500" };
+  if (code <= 77)
+    return { label: "Snow", icon: CloudSnow, color: "text-indigo-300" };
+  if (code <= 82)
+    return { label: "Showers", icon: CloudRain, color: "text-blue-400" };
+  if (code <= 86)
+    return { label: "Snow showers", icon: CloudSnow, color: "text-indigo-400" };
+  if (code >= 95)
+    return {
+      label: "Thunderstorm",
+      icon: CloudLightning,
+      color: "text-violet-500",
+    };
+  return { label: "Changing", icon: Cloud, color: "text-foreground/50" };
+}
+
+function windLabel(deg: number) {
+  const dirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+  return dirs[Math.round(deg / 45) % 8];
+}
+
+function toF(c: number) {
+  return (c * 9) / 5 + 32;
+}
+
+function showTemp(n: number, unit: Unit) {
+  return Math.round(unit === "f" ? toF(n) : n);
+}
+
 export default function WeatherPage() {
   const { toast } = useToast();
   const [query, setQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<CityResult[]>([]);
-  const [selectedCity, setSelectedCity] = useState<CityResult | null>(null);
+  const [results, setResults] = useState<CityResult[]>([]);
+  const [selected, setSelected] = useState<CityResult | null>(null);
   const [weather, setWeather] = useState<WeatherData | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [unit, setUnit] = useState<Unit>("c");
+  const [recents, setRecents] = useState<CityResult[]>([]);
+  const abortRef = useRef<AbortController | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const fetchCities = async () => {
-    if (!query.trim()) return;
-    setIsLoading(true);
-    setError(null);
-    setSelectedCity(null);
-    setWeather(null);
-
+  useEffect(() => {
     try {
-      const response = await fetch(
-        `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=5&language=en&format=json`,
-      );
-      const data = await response.json();
-
-      if (!data.results || data.results.length === 0) {
-        setError(
-          "Geocoding Matrix Error: No locations identified for this query.",
-        );
-      } else {
-        setSearchResults(data.results);
+      const u = localStorage.getItem(UNIT_KEY) as Unit | null;
+      if (u === "c" || u === "f") setUnit(u);
+      const r = localStorage.getItem(RECENTS_KEY);
+      if (r) setRecents(JSON.parse(r));
+      const last = localStorage.getItem(LAST_KEY);
+      if (last) {
+        const city = JSON.parse(last) as CityResult;
+        if (
+          typeof city.latitude === "number" &&
+          typeof city.longitude === "number"
+        ) {
+          fetchForecast(city, false);
+        } else {
+          localStorage.removeItem(LAST_KEY);
+        }
       }
-    } catch (err) {
-      setError("Uplink failure. Discovery node unreachable.");
-    } finally {
-      setIsLoading(false);
+    } catch {
+      localStorage.removeItem(LAST_KEY);
     }
+  }, []);
+
+  const saveRecent = (city: CityResult) => {
+    setRecents((prev) => {
+      const next = [city, ...prev.filter((c) => c.id !== city.id)].slice(0, 5);
+      localStorage.setItem(RECENTS_KEY, JSON.stringify(next));
+      return next;
+    });
+    localStorage.setItem(LAST_KEY, JSON.stringify(city));
   };
 
-  const fetchForecast = async (city: CityResult) => {
-    setIsLoading(true);
-    setError(null);
-    setSelectedCity(city);
-
+  const searchCities = useCallback(async (name: string) => {
+    if (name.trim().length < 2) {
+      setResults([]);
+      return;
+    }
+    abortRef.current?.abort();
+    const ac = new AbortController();
+    abortRef.current = ac;
     try {
-      const response = await fetch(
-        `https://api.open-meteo.com/v1/forecast?latitude=${city.latitude}&longitude=${city.longitude}&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m&hourly=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto`,
+      const res = await fetch(
+        `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&count=6&language=en&format=json`,
+        { signal: ac.signal },
       );
-      const data = await response.json();
+      const data = await res.json();
+      setResults(data.results || []);
+      if (!data.results?.length)
+        setError("No city found. Try another spelling.");
+      else setError(null);
+    } catch (e: any) {
+      if (e.name !== "AbortError") setError("City search failed. Try again.");
+    }
+  }, []);
+
+  useEffect(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => searchCities(query), 350);
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [query, searchCities]);
+
+  const fetchForecast = async (city: CityResult, notify = true) => {
+    if (
+      !city ||
+      typeof city.latitude !== "number" ||
+      typeof city.longitude !== "number"
+    ) {
+      localStorage.removeItem(LAST_KEY);
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    setSelected(city);
+    try {
+      const url =
+        `https://api.open-meteo.com/v1/forecast?latitude=\( {city.latitude}&longitude= \){city.longitude}` +
+        `&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m,wind_direction_10m,precipitation,is_day` +
+        `&hourly=temperature_2m,weather_code` +
+        `&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum` +
+        `&timezone=auto`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("bad");
+      const data = await res.json();
+      if (!data.current) throw new Error("bad");
 
       setWeather({
         current: {
@@ -155,241 +217,222 @@ export default function WeatherPage() {
           feelsLike: data.current.apparent_temperature,
           humidity: data.current.relative_humidity_2m,
           wind: data.current.wind_speed_10m,
+          windDir: data.current.wind_direction_10m ?? 0,
+          precip: data.current.precipitation ?? 0,
+          uv: 0,
           code: data.current.weather_code,
+          isDay: data.current.is_day === 1,
         },
         hourly: {
-          time: data.hourly.time.slice(0, 12),
-          temp: data.hourly.temperature_2m.slice(0, 12),
-          code: data.hourly.weather_code.slice(0, 12),
+          time: data.hourly.time.slice(0, 24),
+          temp: data.hourly.temperature_2m.slice(0, 24),
+          code: data.hourly.weather_code.slice(0, 24),
         },
         daily: {
           time: data.daily.time,
           max: data.daily.temperature_2m_max,
           min: data.daily.temperature_2m_min,
           code: data.daily.weather_code,
+          rain: data.daily.precipitation_sum || data.daily.time.map(() => 0),
         },
         city: city.name,
-        location: `${city.admin1 ? city.admin1 + ", " : ""}${city.country}`,
+        location: `\( {city.admin1 ? city.admin1 + ", " : ""} \){city.country}`,
       });
-
-      setSearchResults([]);
-      toast({
-        title: "Atmosphere Isolated",
-        description: `Forecast matrix active for ${city.name}.`,
-      });
-    } catch (err) {
-      setError("Atmospheric Retrieval Failure: Forecast nodes are restricted.");
+      setResults([]);
+      saveRecent(city);
+      if (notify) toast({ title: city.name, description: "Forecast updated." });
+    } catch {
+      if (notify) {
+        setError("Could not load forecast. Check internet and try again.");
+      } else {
+        localStorage.removeItem(LAST_KEY);
+      }
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
-  const handleMyLocation = () => {
+  const useMyLocation = () => {
     if (!navigator.geolocation) {
-      toast({
-        variant: "destructive",
-        title: "Protocol Error",
-        description: "Geolocation not supported by this hardware.",
-      });
+      toast({ variant: "destructive", title: "Location not supported" });
       return;
     }
-
-    setIsLoading(true);
-    setError(null);
-    setWeather(null);
-    setSearchResults([]);
-
+    setLoading(true);
     navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const { latitude, longitude } = position.coords;
+      async ({ coords }) => {
         try {
-          // Reverse geocode to get city name
-          const revRes = await fetch(
-            `https://geocoding-api.open-meteo.com/v1/reverse?latitude=${latitude}&longitude=${longitude}&count=1&language=en&format=json`,
+          const res = await fetch(
+            `https://geocoding-api.open-meteo.com/v1/reverse?latitude=\( {coords.latitude}&longitude= \){coords.longitude}&count=1&language=en&format=json`,
           );
-          const revData = await revRes.json();
-
-          const cityData: CityResult = revData.results?.[0] || {
-            id: 0,
-            name: "Current Location",
-            country: "Local Node",
-            latitude,
-            longitude,
-            country_code: "???",
+          const data = await res.json();
+          const city: CityResult = data.results?.[0] || {
+            id: Date.now(),
+            name: "My location",
+            country: "",
+            latitude: coords.latitude,
+            longitude: coords.longitude,
+            country_code: "",
           };
-
-          fetchForecast(cityData);
-        } catch (e) {
+          fetchForecast(city);
+        } catch {
           fetchForecast({
-            id: 0,
-            name: "Current Location",
-            country: "Local Node",
-            latitude,
-            longitude,
-            country_code: "???",
+            id: Date.now(),
+            name: "My location",
+            country: "",
+            latitude: coords.latitude,
+            longitude: coords.longitude,
+            country_code: "",
           });
         }
       },
-      (err) => {
-        setIsLoading(false);
-        setError("Location permission needed to starthardware sync.");
-        toast({
-          variant: "destructive",
-          title: "Access Denied",
-          description: "Hardware location permissions required.",
-        });
+      () => {
+        setLoading(false);
+        setError("Allow location in the browser, or search a city.");
       },
     );
   };
 
-  const handleReset = () => {
+  const resetAll = () => {
     setQuery("");
-    setSearchResults([]);
-    setSelectedCity(null);
+    setResults([]);
+    setSelected(null);
     setWeather(null);
     setError(null);
-    toast({ title: "Studio Reset" });
+    localStorage.removeItem(LAST_KEY);
   };
 
-  const refreshData = () => {
-    if (selectedCity) fetchForecast(selectedCity);
+  const toggleUnit = () => {
+    const next: Unit = unit === "c" ? "f" : "c";
+    setUnit(next);
+    localStorage.setItem(UNIT_KEY, next);
   };
+
+  const now = weather ? decodeWeather(weather.current.code) : null;
+  const NowIcon = now?.icon || Cloud;
 
   return (
-    <div className="container mx-auto px-4 md:px-6 py-12 md:py-20 max-w-7xl">
-      <div className="mb-12 animate-reveal">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-primary/10 border border-primary/20 text-[9px] font-black text-primary uppercase tracking-widest mb-4">
-          <Cloud className="w-3.5 h-3.5" /> Environmental Suite
+    <div className="container mx-auto max-w-7xl px-4 py-12 md:px-6 md:py-16">
+      <div className="mb-10 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+        <div>
+          <p className="mb-3 inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary">
+            <Cloud className="h-3.5 w-3.5" /> Weather
+          </p>
+          <h1 className="text-3xl font-black tracking-tight md:text-5xl">
+            Weather <span className="text-primary">forecast</span>
+          </h1>
+          <p className="mt-3 max-w-xl text-sm text-foreground/60">
+            Search any city or use your location. Hourly + 7-day forecast. No
+            account.
+          </p>
         </div>
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
-          <div>
-            <h1 className="text-3xl md:text-6xl font-headline font-black text-foreground uppercase tracking-tight leading-none">
-              Weather{" "}
-              <span className="text-primary italic">Intelligence Studio</span>
-            </h1>
-            <p className="text-foreground/40 text-sm md:text-base font-medium mt-4 max-w-2xl leading-relaxed">
-              Professional atmospheric diagnostic unit. Isolate global
-              meteorological data with real-time telemetry, hourly sync, and
-              7-day projection matrices.
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <GetHelp toolId="weather" />
-            {weather && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={refreshData}
-                disabled={isLoading}
-                className="h-10 px-4 rounded-xl border-border bg-secondary text-[8px] font-black uppercase tracking-widest hover:text-primary"
-              >
-                <RotateCcw
-                  className={cn(
-                    "w-3.5 h-3.5 mr-2",
-                    isLoading && "animate-spin",
-                  )}
-                />{" "}
-                Refresh
-              </Button>
-            )}
-            {(weather || selectedCity || query) && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleReset}
-                className="h-10 px-4 rounded-xl border-border bg-secondary text-[8px] font-black uppercase tracking-widest hover:text-destructive transition-all"
-              >
-                <Trash2 className="w-3.5 h-3.5 mr-2" /> Reset
-              </Button>
-            )}
-          </div>
+        <div className="flex flex-wrap gap-2">
+          <GetHelp toolId="weather" />
+          <Button
+            variant="outline"
+            size="sm"
+            className="rounded-xl"
+            onClick={toggleUnit}
+          >
+            °{unit === "c" ? "C" : "F"}
+          </Button>
+          {weather && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-xl"
+              disabled={loading}
+              onClick={() => selected && fetchForecast(selected)}
+            >
+              <RotateCcw
+                className={cn("mr-2 h-3.5 w-3.5", loading && "animate-spin")}
+              />
+              Refresh
+            </Button>
+          )}
+          {(weather || query) && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-xl"
+              onClick={resetAll}
+            >
+              <Trash2 className="mr-2 h-3.5 w-3.5" /> Reset
+            </Button>
+          )}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
-        {/* Input Column */}
-        <div className="lg:col-span-5 space-y-8 animate-in fade-in slide-in-from-left-6 duration-700">
-          <Card className="glass-card border-border shadow-2xl overflow-hidden relative group">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl" />
-            <CardHeader className="pb-8 border-b border-border bg-secondary/30">
-              <CardTitle className="text-[10px] font-black uppercase tracking-[0.3em] flex items-center gap-4 text-foreground">
-                <Search className="w-5 h-5 text-primary" /> Location Protocol
+      <div className="grid items-start gap-8 lg:grid-cols-12">
+        <div className="space-y-6 lg:col-span-5">
+          <Card className="overflow-hidden rounded-[1.8rem] border-border shadow-xl">
+            <CardHeader className="border-b border-border bg-muted/40">
+              <CardTitle className="flex items-center gap-2 text-sm">
+                <Search className="h-4 w-4 text-primary" /> Find a city
               </CardTitle>
             </CardHeader>
-            <CardContent className="pt-10 space-y-8">
-              <div className="space-y-4">
-                <Label className="text-[10px] font-black text-foreground/40 uppercase tracking-[0.2em] ml-1">
-                  City Matrix
+            <CardContent className="space-y-5 p-6">
+              <div>
+                <Label className="mb-2 block text-xs text-foreground/50">
+                  City name
                 </Label>
-                <div className="relative group/input">
-                  <Input
-                    placeholder="Enter city name (e.g. Lahore, London)..."
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && fetchCities()}
-                    className="h-16 bg-secondary border-border rounded-2xl text-lg font-bold text-center uppercase tracking-widest focus:ring-primary/40"
-                  />
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-20 group-focus-within/input:opacity-100 transition-opacity">
-                    <Globe className="w-6 h-6 text-primary" />
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Button
-                    onClick={fetchCities}
-                    disabled={isLoading || !query.trim()}
-                    className="h-14 bg-primary text-white font-black text-xs uppercase tracking-[0.3em] rounded-2xl shadow-xl shadow-primary/30 active:scale-95 transition-all"
-                  >
-                    {isLoading && query ? (
-                      <Loader2 className="w-6 h-6 animate-spin" />
-                    ) : (
-                      <Zap className="w-6 h-6 mr-3" />
-                    )}
-                    Search City
-                  </Button>
-                  <Button
-                    onClick={handleMyLocation}
-                    disabled={isLoading}
-                    variant="outline"
-                    className="h-14 border-border bg-secondary hover:bg-white/5 text-foreground font-black text-xs uppercase tracking-[0.3em] rounded-2xl transition-all"
-                  >
-                    {isLoading && !query ? (
-                      <Loader2 className="w-6 h-6 animate-spin" />
-                    ) : (
-                      <Navigation2 className="w-6 h-6 mr-3 text-primary" />
-                    )}
-                    My Location
-                  </Button>
-                </div>
+                <Input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Lahore, London, Dubai…"
+                  className="h-12 rounded-xl"
+                />
               </div>
+              <Button
+                className="h-12 w-full rounded-xl"
+                disabled={loading}
+                onClick={useMyLocation}
+                variant="outline"
+              >
+                {loading && !query ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Navigation2 className="mr-2 h-4 w-4 text-primary" />
+                )}
+                Use my location
+              </Button>
 
-              {/* City Selection Matrix */}
-              {searchResults.length > 0 && (
-                <div className="space-y-4 animate-in slide-in-from-top-4 duration-500">
-                  <Label className="text-[9px] font-black text-foreground/30 uppercase tracking-[0.2em] ml-1">
-                    Discovered Nodes
-                  </Label>
-                  <div className="divide-y divide-white/5 bg-background rounded-2xl border border-white/5 overflow-hidden">
-                    {searchResults.map((city) => (
-                      <button
-                        key={city.id}
-                        onClick={() => fetchForecast(city)}
-                        className="w-full p-5 flex items-center justify-between group hover:bg-white/5 transition-all text-left"
-                      >
-                        <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 rounded-xl bg-secondary border border-white/5 flex items-center justify-center text-primary/40 group-hover:text-primary transition-colors shrink-0 shadow-inner">
-                            <MapPin className="w-4 h-4" />
-                          </div>
-                          <div className="min-w-0">
-                            <p className="text-sm font-bold text-foreground truncate uppercase">
-                              {city.name}
-                            </p>
-                            <p className="text-[8px] font-black text-foreground/20 uppercase tracking-widest">
-                              {city.admin1 ? city.admin1 + ", " : ""}
-                              {city.country}
-                            </p>
-                          </div>
+              {results.length > 0 && (
+                <div className="overflow-hidden rounded-2xl border border-border">
+                  {results.map((city, i) => (
+                    <button
+                      key={String(city.id) + "-" + String(i)}
+                      onClick={() => fetchForecast(city)}
+                      className="flex w-full items-center justify-between border-b border-border px-4 py-3 text-left last:border-0 hover:bg-muted/50"
+                    >
+                      <div className="flex items-center gap-3">
+                        <MapPin className="h-4 w-4 text-primary" />
+                        <div>
+                          <p className="text-sm font-semibold">{city.name}</p>
+                          <p className="text-xs text-foreground/50">
+                            {city.admin1 ? `${city.admin1}, ` : ""}
+                            {city.country}
+                          </p>
                         </div>
-                        <ChevronRight className="w-4 h-4 text-foreground/10 group-hover:text-primary transition-all" />
+                      </div>
+                      <ChevronRight className="h-4 w-4 text-foreground/30" />
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {recents.length > 0 && results.length === 0 && (
+                <div>
+                  <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-foreground/40">
+                    Recent
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {recents.map((c) => (
+                      <button
+                        key={c.id}
+                        onClick={() => fetchForecast(c)}
+                        className="rounded-full border border-border px-3 py-1.5 text-xs hover:border-primary hover:text-primary"
+                      >
+                        {c.name}
                       </button>
                     ))}
                   </div>
@@ -397,236 +440,173 @@ export default function WeatherPage() {
               )}
 
               {error && (
-                <div className="p-4 rounded-xl bg-destructive/10 border border-destructive/20 flex items-center gap-3 animate-in shake duration-500">
-                  <AlertCircle className="w-4 h-4 text-destructive" />
-                  <p className="text-[10px] font-bold text-destructive uppercase tracking-widest">
-                    {error}
-                  </p>
+                <div className="flex items-center gap-2 rounded-xl border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  {error}
                 </div>
               )}
             </CardContent>
           </Card>
 
-          <div className="p-8 rounded-[3rem] bg-secondary border border-border flex items-start gap-6 group hover:bg-secondary/80 transition-all duration-500 shadow-lg">
-            <div className="w-14 h-14 rounded-2xl bg-background border border-border flex items-center justify-center text-primary shrink-0 shadow-lg group-hover:scale-110 transition-transform">
-              <ShieldCheck className="w-7 h-7" />
-            </div>
-            <div className="space-y-2">
-              <h4 className="text-[13px] font-black text-foreground uppercase tracking-widest leading-none">
-                Privacy Sovereign
-              </h4>
-              <p className="text-[11px] text-foreground/40 leading-relaxed font-medium uppercase">
-                Environmental lookups are volatile and held strictly in local
-                memory. The studio does not track or store your location
-                history.
-              </p>
-            </div>
+          <div className="flex gap-3 rounded-[1.6rem] border border-border bg-muted/30 p-5">
+            <ShieldCheck className="h-5 w-5 shrink-0 text-primary" />
+            <p className="text-sm text-foreground/60">
+              Location is used only in this tab. Nothing is saved on our
+              servers.
+            </p>
           </div>
         </div>
 
-        {/* Results Panel - Right */}
-        <div className="lg:col-span-7 space-y-8 animate-in fade-in slide-in-from-right-6 duration-1000 stagger-2">
-          <Card className="glass-card border-border shadow-2xl overflow-hidden relative flex flex-col min-h-[600px]">
-            <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
-            <CardHeader className="py-8 border-b border-border bg-secondary/30">
-              <CardTitle className="text-[10px] font-black text-primary uppercase tracking-[0.5em] flex items-center gap-3">
-                <Activity className="w-4 h-4 fill-primary/20" /> Atmospheric
-                Master
+        <div className="lg:col-span-7">
+          <Card className="min-h-[560px] overflow-hidden rounded-[1.8rem] border-border shadow-xl">
+            <CardHeader className="border-b border-border bg-muted/40">
+              <CardTitle className="flex items-center gap-2 text-sm">
+                <Gauge className="h-4 w-4 text-primary" /> Forecast
               </CardTitle>
             </CardHeader>
-            <CardContent className="flex-1 p-6 sm:p-10 flex flex-col gap-10 bg-background/10">
-              {!weather && !isLoading && !error && (
-                <div className="flex-1 flex flex-col items-center justify-center opacity-10 space-y-6 py-20">
-                  <Cloud className="w-24 h-24 text-primary" />
-                  <p className="text-sm font-black uppercase tracking-[0.3em]">
-                    Awaiting Location Signal
-                  </p>
+            <CardContent className="p-6 md:p-8">
+              {loading && (
+                <div className="flex flex-col items-center justify-center py-24 text-primary">
+                  <Loader2 className="h-10 w-10 animate-spin" />
+                  <p className="mt-4 text-sm">Loading forecast…</p>
                 </div>
               )}
 
-              {isLoading && (
-                <div className="flex-1 flex flex-col items-center justify-center space-y-10 py-20">
-                  <div className="relative">
-                    <div className="w-28 h-28 rounded-full border-4 border-primary/10 border-t-primary animate-spin" />
-                    <Zap className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 text-primary animate-pulse" />
-                  </div>
-                  <div className="text-center space-y-2">
-                    <p className="text-[11px] font-black uppercase text-primary tracking-[0.4em]">
-                      Decoding Atmospheric Buffer...
-                    </p>
-                    <p className="text-[9px] font-bold text-foreground/20 uppercase tracking-widest">
-                      Hardware Edge Synthesis
-                    </p>
-                  </div>
+              {!weather && !loading && (
+                <div className="flex flex-col items-center justify-center py-24 text-foreground/30">
+                  <Cloud className="h-16 w-16" />
+                  <p className="mt-4 text-sm">Search a city to see weather</p>
                 </div>
               )}
 
-              {weather && !isLoading && (
-                <div className="w-full space-y-12 animate-in zoom-in-95 duration-500">
-                  {/* Header: Large Temp */}
-                  <div className="text-center space-y-6">
-                    <div className="flex flex-col items-center gap-2">
+              {weather && !loading && now && (
+                <div className="space-y-10">
+                  <div className="text-center">
+                    <div
+                      className={cn(
+                        "mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10",
+                        now.color,
+                      )}
+                    >
+                      <NowIcon className="h-8 w-8" />
+                    </div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
+                      {now.label}
+                      {weather.current.isDay ? " · Day" : " · Night"}
+                    </p>
+                    <p className="mt-2 text-7xl font-black tracking-tighter">
+                      {showTemp(weather.current.temp, unit)}°
+                    </p>
+                    <p className="mt-1 text-sm text-foreground/50">
+                      Feels like {showTemp(weather.current.feelsLike, unit)}°
+                    </p>
+                    <h2 className="mt-4 text-2xl font-black">{weather.city}</h2>
+                    <p className="text-xs text-foreground/45">
+                      {weather.location}
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    {[
+                      {
+                        icon: Droplets,
+                        l: "Humidity",
+                        v: `${weather.current.humidity}%`,
+                      },
+                      {
+                        icon: Wind,
+                        l: "Wind",
+                        v: `${Math.round(weather.current.wind)} km/h`,
+                      },
+                      {
+                        icon: Compass,
+                        l: "Direction",
+                        v: windLabel(weather.current.windDir),
+                      },
+                      {
+                        icon: CloudRain,
+                        l: "Rain now",
+                        v: `${weather.current.precip} mm`,
+                      },
+                    ].map((s) => (
                       <div
-                        className={cn(
-                          "w-20 h-20 rounded-[2.5rem] bg-white/5 flex items-center justify-center mb-4",
-                          decodeWeather(weather.current.code).color,
-                        )}
+                        key={s.l}
+                        className="rounded-2xl border border-border bg-muted/30 p-4"
                       >
-                        {React.createElement(
-                          decodeWeather(weather.current.code).icon,
-                          { className: "w-10 h-10" },
-                        )}
+                        <s.icon className="mb-2 h-4 w-4 text-primary" />
+                        <p className="text-[11px] text-foreground/45">{s.l}</p>
+                        <p className="text-sm font-bold">{s.v}</p>
                       </div>
-                      <p className="text-[10px] font-black uppercase text-primary tracking-[0.6em]">
-                        {decodeWeather(weather.current.code).label}
-                      </p>
-                    </div>
-
-                    <div className="relative inline-block">
-                      <h2 className="text-7xl sm:text-9xl font-headline font-black text-foreground tracking-tighter leading-none">
-                        {Math.round(weather.current.temp)}°
-                      </h2>
-                      <div className="absolute -top-4 -right-12 sm:-right-16 text-left">
-                        <p className="text-[8px] sm:text-[10px] font-black uppercase text-foreground/20 tracking-widest">
-                          Feels Like
-                        </p>
-                        <p className="text-lg sm:text-2xl font-black text-primary">
-                          {Math.round(weather.current.feelsLike)}°
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="space-y-1">
-                      <h3 className="text-2xl font-headline font-black uppercase text-foreground">
-                        {weather.city}
-                      </h3>
-                      <p className="text-[10px] font-black text-foreground/30 uppercase tracking-[0.2em]">
-                        {weather.location}
-                      </p>
-                    </div>
+                    ))}
                   </div>
 
-                  {/* Stats Matrix */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="p-6 rounded-[2.5rem] bg-secondary/50 border border-border flex items-start gap-5">
-                      <Droplets className="w-5 h-5 text-primary mt-1 shrink-0" />
-                      <div className="space-y-1">
-                        <p className="text-[9px] font-black uppercase text-foreground/30 tracking-widest">
-                          Humidity
-                        </p>
-                        <p className="text-xl font-headline font-black text-foreground uppercase">
-                          {weather.current.humidity}%
-                        </p>
-                      </div>
+                  <div>
+                    <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-foreground/40">
+                      <Clock className="h-4 w-4 text-primary" /> Next 24 hours
                     </div>
-                    <div className="p-6 rounded-[2.5rem] bg-secondary/50 border border-border flex items-start gap-5">
-                      <Wind className="w-5 h-5 text-primary mt-1 shrink-0" />
-                      <div className="space-y-1">
-                        <p className="text-[9px] font-black uppercase text-foreground/30 tracking-widest">
-                          Wind Flow
-                        </p>
-                        <p className="text-xl font-headline font-black text-foreground uppercase">
-                          {weather.current.wind}{" "}
-                          <span className="text-[10px]">km/h</span>
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Hourly Scroll Matrix */}
-                  <div className="space-y-6">
-                    <div className="flex items-center justify-between px-1">
-                      <div className="flex items-center gap-3">
-                        <Clock className="w-4 h-4 text-primary" />
-                        <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-foreground/40">
-                          12-Hour Telemetry
-                        </h4>
-                      </div>
-                      <span className="text-[8px] font-black text-primary uppercase animate-pulse">
-                        Sync Active
-                      </span>
-                    </div>
-                    <div className="flex gap-4 overflow-x-auto no-scrollbar scroll-smooth snap-x snap-mandatory pb-4">
-                      {weather.hourly.time.map((time, i) => {
+                    <div className="no-scrollbar flex gap-3 overflow-x-auto pb-2">
+                      {weather.hourly.time.map((t, i) => {
                         const w = decodeWeather(weather.hourly.code[i]);
-                        const date = new Date(time);
+                        const Icon = w.icon;
                         return (
                           <div
-                            key={i}
-                            className="min-w-[100px] p-5 rounded-[2rem] bg-white/5 border border-white/5 flex flex-col items-center gap-3 snap-start group hover:border-primary/20 transition-all"
+                            key={t}
+                            className="min-w-[76px] rounded-2xl border border-border bg-muted/20 px-3 py-4 text-center"
                           >
-                            <span className="text-[8px] font-black uppercase text-white/20">
-                              {date.getHours().toString().padStart(2, "0")}:00
-                            </span>
-                            <div
-                              className={cn(
-                                "w-8 h-8 rounded-lg bg-secondary flex items-center justify-center transition-transform group-hover:scale-110",
-                                w.color,
-                              )}
-                            >
-                              {React.createElement(w.icon, {
-                                className: "w-4 h-4",
-                              })}
-                            </div>
-                            <span className="text-sm font-black text-foreground">
-                              {Math.round(weather.hourly.temp[i])}°
-                            </span>
+                            <p className="text-[10px] text-foreground/40">
+                              {new Date(t)
+                                .getHours()
+                                .toString()
+                                .padStart(2, "0")}
+                              :00
+                            </p>
+                            <Icon
+                              className={cn("mx-auto my-2 h-4 w-4", w.color)}
+                            />
+                            <p className="text-sm font-bold">
+                              {showTemp(weather.hourly.temp[i], unit)}°
+                            </p>
                           </div>
                         );
                       })}
                     </div>
                   </div>
 
-                  {/* 7-Day Projection */}
-                  <div className="space-y-6">
-                    <div className="flex items-center gap-3 px-1">
-                      <Calendar className="w-4 h-4 text-primary" />
-                      <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-foreground/40">
-                        7-Day Projection Matrix
-                      </h4>
+                  <div>
+                    <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-foreground/40">
+                      <Calendar className="h-4 w-4 text-primary" /> 7 days
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                      {weather.daily.time.map((time, idx) => {
-                        const w = decodeWeather(weather.daily.code[idx]);
-                        const isToday = idx === 0;
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
+                      {weather.daily.time.map((t, i) => {
+                        const w = decodeWeather(weather.daily.code[i]);
+                        const Icon = w.icon;
                         return (
                           <div
-                            key={idx}
+                            key={t}
                             className={cn(
-                              "p-6 rounded-[2.5rem] border flex flex-col items-center gap-4 hover:border-primary/20 transition-all group",
-                              isToday
-                                ? "bg-primary/10 border-primary/20 shadow-xl"
-                                : "bg-white/5 border-white/5",
+                              "rounded-2xl border p-3 text-center",
+                              i === 0
+                                ? "border-primary/30 bg-primary/10"
+                                : "border-border bg-muted/20",
                             )}
                           >
-                            <p
-                              className={cn(
-                                "text-[9px] font-black uppercase",
-                                isToday ? "text-primary" : "text-foreground/40",
-                              )}
-                            >
-                              {isToday
+                            <p className="text-[10px] font-semibold text-foreground/50">
+                              {i === 0
                                 ? "Today"
-                                : new Date(time).toLocaleDateString("en-US", {
+                                : new Date(t).toLocaleDateString("en-US", {
                                     weekday: "short",
                                   })}
                             </p>
-                            <div
-                              className={cn(
-                                "w-10 h-10 rounded-xl bg-secondary flex items-center justify-center transition-transform group-hover:scale-110",
-                                w.color,
-                              )}
-                            >
-                              <w.icon className="w-5 h-5" />
-                            </div>
-                            <div className="text-center space-y-0.5">
-                              <p className="text-lg font-headline font-black text-foreground">
-                                {Math.round(weather.daily.max[idx])}°
-                              </p>
-                              <p className="text-[9px] font-black text-foreground/20 uppercase tracking-widest">
-                                {Math.round(weather.daily.min[idx])}° LOW
-                              </p>
-                            </div>
+                            <Icon
+                              className={cn("mx-auto my-2 h-5 w-5", w.color)}
+                            />
+                            <p className="text-sm font-black">
+                              {showTemp(weather.daily.max[i], unit)}°
+                            </p>
+                            <p className="text-[10px] text-foreground/40">
+                              {showTemp(weather.daily.min[i], unit)}° ·{" "}
+                              {weather.daily.rain[i]}mm
+                            </p>
                           </div>
                         );
                       })}
@@ -636,43 +616,8 @@ export default function WeatherPage() {
               )}
             </CardContent>
           </Card>
-
-          <div className="p-8 rounded-[3rem] bg-secondary border border-border flex items-start gap-6 group hover:bg-secondary/80 transition-all duration-500 shadow-lg">
-            <div className="w-14 h-14 rounded-2xl bg-background border border-border flex items-center justify-center text-primary shrink-0 shadow-lg group-hover:scale-110 transition-transform">
-              <Navigation className="w-7 h-7" />
-            </div>
-            <div className="space-y-2">
-              <h4 className="text-[13px] font-black text-foreground uppercase tracking-widest leading-none">
-                Precision Calibration
-              </h4>
-              <p className="text-[11px] text-foreground/40 leading-relaxed font-medium uppercase">
-                Telemetry is sourced via the Open-Meteo edge network using
-                verified GPS coordinates for high-fidelity regional accuracy.
-              </p>
-            </div>
-          </div>
         </div>
       </div>
-
-      <style jsx global>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 4px;
-          height: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          @apply bg-transparent;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          @apply bg-primary/20 rounded-full;
-        }
-        .no-scrollbar::-webkit-scrollbar {
-          display: none;
-        }
-        .no-scrollbar {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-      `}</style>
     </div>
   );
 }
