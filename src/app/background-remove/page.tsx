@@ -212,410 +212,350 @@ export default function BackgroundRemovePage() {
     if (fileInputRef.current) fileInputRef.current.value = "";
     toast({ title: "Studio Reset" });
   };
+  const [dragOver, setDragOver] = useState(false);
 
+  function handleDrop(e: React.DragEvent<HTMLDivElement>) {
+    e.preventDefault();
+    setDragOver(false);
+    if (isProcessing || !e.dataTransfer.files?.length) return;
+    handleFileUpload({
+      target: { files: e.dataTransfer.files },
+    } as React.ChangeEvent<HTMLInputElement>);
+  }
   return (
-    <div className="container mx-auto px-4 md:px-6 py-12 md:py-20 max-w-7xl">
-      <div className="mb-12 animate-reveal flex flex-col md:flex-row md:items-end justify-between gap-8">
-        <div className="min-w-0">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-primary/10 border border-primary/20 text-[9px] font-black text-primary uppercase tracking-widest mb-4">
-            <Eraser className="w-3.5 h-3.5" /> Identity Protection Suite
-          </div>
-          <h1 className="text-3xl md:text-6xl font-headline font-black text-foreground uppercase tracking-tighter leading-none">
-            Background <span className="text-primary italic">Remove</span>
+    <div className="mx-auto w-full max-w-5xl px-4 py-8">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p className="text-xs font-semibold tracking-wide text-primary">
+            IMAGE TOOLS
+          </p>
+          <h1 className="mt-1 text-3xl font-semibold tracking-tight">
+            Background Remover
           </h1>
-          <p className="text-foreground/40 text-sm md:text-base font-medium mt-4 max-w-2xl leading-relaxed">
-            Professional subject isolation. Neutralize backgrounds with 1:1
-            hardware fidelity using clinical neural extraction nodes.
+          <p className="mt-2 max-w-xl text-sm text-foreground/70">
+            Cut out a subject and download a transparent PNG.
           </p>
         </div>
-        <div className="flex items-center gap-3 shrink-0 pb-2">
-          <GetHelp toolId="background-remove" />
+        <div className="flex gap-2">
           <Button
+            variant="outline"
             onClick={() => {
               setLocalError(null);
               setCustomKey("");
               setShowCustomNode(true);
             }}
-            variant="outline"
-            size="sm"
-            className={cn(
-              "h-10 px-6 rounded-xl border-white/10 text-[9px] font-black uppercase tracking-widest transition-all shadow-lg",
-              activeNode
-                ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
-                : "bg-secondary",
-            )}
           >
-            {activeNode ? (
-              <ShieldCheck className="w-3.5 h-3.5 mr-2" />
-            ) : (
-              <Zap className="w-3.5 h-3.5 mr-2" />
-            )}
-            {activeNode ? "HOST ACTIVE" : "HOST"}
+            {activeNode ? "API key connected" : "Add API key"}
           </Button>
           {(image || result) && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleClear}
-              className="h-10 px-4 rounded-xl border-white/10 bg-secondary text-[8px] font-black uppercase tracking-widest hover:text-destructive"
-            >
-              <RotateCcw className="w-3.5 h-3.5 mr-2" /> Reset
+            <Button variant="outline" onClick={handleClear}>
+              Reset
             </Button>
           )}
         </div>
       </div>
 
-      {!user && !authLoading ? (
-        <Card className="glass-card border-border shadow-2xl p-12 text-center flex flex-col items-center gap-8 relative overflow-hidden bg-background/10 rounded-[2.5rem]">
-          <div className="w-20 h-20 rounded-[2rem] bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shadow-2xl relative z-10">
-            <Lock className="w-8 h-8" />
-          </div>
-          <h2 className="text-2xl sm:text-4xl font-headline font-black text-foreground uppercase tracking-tight relative z-10">
-            Authentication Required
-          </h2>
-          <Button
-            asChild
-            className="h-16 w-full max-w-md bg-primary text-white font-black uppercase text-[10px] tracking-widest rounded-2xl shadow-xl shadow-primary/30 relative z-10"
-          >
-            <Link href="/login?redirect=/background-remove">startSession</Link>
-          </Button>
-        </Card>
-      ) : authLoading ? (
-        <div className="flex flex-col items-center justify-center py-40 gap-6">
-          <Loader2 className="w-12 h-12 text-primary animate-spin" />
-          <p className="text-[10px] font-black uppercase tracking-[0.4em] text-primary animate-pulse">
-            Synchronizing Identity Node...
-          </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start animate-in fade-in duration-1000">
-          <div className="lg:col-span-5 xl:col-span-4 space-y-8 animate-in fade-in slide-in-from-left-6 duration-700">
-            {showCustomNode && (
-              <Card className="glass-card border-primary/40 bg-primary/[0.03] shadow-2xl overflow-hidden animate-in zoom-in duration-300">
-                <CardHeader className="py-6 border-b border-primary/10 flex flex-row items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <KeyRound className="w-4 h-4 text-primary" />
-                    <span className="text-[10px] font-black uppercase tracking-widest text-primary">
-                      Remove.bg Node Config
-                    </span>
-                  </div>
-                  <button
-                    onClick={() => setShowCustomNode(false)}
-                    className="text-primary/40 hover:text-primary"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </CardHeader>
-                <CardContent className="p-6 space-y-6">
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label className="text-[9px] font-black uppercase text-foreground/40 ml-1">
-                        API Key
-                      </Label>
-                      <Input
-                        value={customKey}
-                        onChange={(e) => setCustomKey(e.target.value)}
-                        type="password"
-                        placeholder="Enter your API key"
-                        className="h-11 bg-background border-border text-xs font-mono"
-                      />
-                    </div>
-                  </div>
-                  <div className="flex flex-col gap-3">
-                    <Button
-                      onClick={handleTestAndConnect}
-                      disabled={isTestingNode || !customKey}
-                      className="h-12 w-full bg-primary text-white font-black uppercase text-[10px] rounded-xl shadow-lg"
-                    >
-                      {isTestingNode ? (
-                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                      ) : (
-                        <Zap className="w-4 h-4 mr-2" />
-                      )}
-                      Validate & Connect
-                    </Button>
-                    {activeNode && (
-                      <Button
-                        variant="outline"
-                        onClick={() => setShowDisconnectConfirm(true)}
-                        className="h-10 text-[9px] font-black uppercase border-destructive/20 text-destructive bg-destructive/5"
-                      >
-                        <Unplug className="w-3.5 h-3.5 mr-2" /> Disconnect
-                      </Button>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
+      {showCustomNode && (
+        <Card className="mt-4 border">
+          <CardHeader className="py-4">
+            <CardTitle className="text-sm">API key</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3 sm:flex-row">
+            <Input
+              value={customKey}
+              onChange={(e) => setCustomKey(e.target.value)}
+              type="password"
+              placeholder="Paste API key"
+            />
+            <Button
+              onClick={handleTestAndConnect}
+              disabled={isTestingNode || !customKey}
+            >
+              {isTestingNode ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : null}
+              Connect
+            </Button>
+            {activeNode && (
+              <Button
+                variant="outline"
+                onClick={() => setShowDisconnectConfirm(true)}
+              >
+                Disconnect
+              </Button>
             )}
+          </CardContent>
+        </Card>
+      )}
 
-            <Card className="glass-card border-border shadow-2xl overflow-hidden relative group">
-              <CardHeader className="pb-8 border-b border-border bg-secondary/30">
-                <CardTitle className="text-[10px] font-black uppercase tracking-[0.3em] flex items-center gap-4 text-foreground">
-                  <Upload className="w-5 h-5 text-primary" /> Visual Intake
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-10 space-y-8">
-                <div
-                  onClick={() => !isProcessing && fileInputRef.current?.click()}
-                  className={cn(
-                    "relative h-64 rounded-[2.5rem] border-2 border-dashed border-border hover:border-primary/40 transition-all flex flex-col items-center justify-center bg-secondary/30 overflow-hidden cursor-pointer",
-                    image && "border-solid border-primary/20",
-                    isProcessing && "opacity-50 cursor-not-allowed",
-                  )}
-                >
-                  {image ? (
-                    <div className="w-full h-full p-4 flex items-center justify-center relative">
-                      <img
-                        src={image}
-                        alt="Preview"
-                        className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl transition-opacity"
-                      />
-                    </div>
-                  ) : (
-                    <div className="text-center space-y-6">
-                      <div className="w-16 h-16 rounded-[1.5rem] bg-background border border-border flex items-center justify-center text-foreground/10 group-hover:text-primary transition-all mx-auto shadow-xl">
-                        <ImageIcon className="w-8 h-8" />
-                      </div>
-                      <span className="text-[10px] font-black uppercase text-foreground/30 tracking-widest">
-                        Import Carrier Image
-                      </span>
-                    </div>
-                  )}
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    accept="image/jpeg,image/png"
-                    onChange={handleFileUpload}
-                    className="hidden"
-                  />
-                </div>
-
-                <Button
-                  onClick={executeExtraction}
-                  disabled={isProcessing || !image}
-                  className="w-full h-16 bg-primary text-white font-black text-xs uppercase tracking-[0.2em] rounded-2xl shadow-xl shadow-primary/30 active:scale-95 transition-all"
-                >
-                  {isProcessing ? (
-                    <Loader2 className="w-5 h-5 animate-spin mr-3" />
-                  ) : (
-                    <Zap className="w-5 h-5 mr-3" />
-                  )}
-                  Execute Extraction
-                </Button>
-
-                {error && (
-                  <div className="p-6 rounded-[2rem] bg-destructive/5 border border-destructive/20 space-y-3 animate-in shake duration-500">
-                    <div className="flex items-center gap-3 text-destructive">
-                      <AlertTriangle className="w-4 h-4" />
-                      <h4 className="text-[10px] font-black uppercase tracking-widest">
-                        Protocol Failure
-                      </h4>
-                    </div>
-                    <p className="text-[10px] font-bold text-destructive/80 leading-relaxed uppercase">
-                      {error}
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            <div className="grid grid-cols-1 gap-6">
-              <div className="p-8 rounded-[3rem] bg-secondary/50 border border-border flex items-start gap-6 group hover:bg-secondary/80 transition-all duration-500 shadow-lg">
-                <div className="w-12 h-12 rounded-2xl bg-background border border-border flex items-center justify-center text-primary shrink-0 shadow-lg group-hover:scale-110 transition-transform">
-                  <ShieldCheck className="w-6 h-6" />
-                </div>
-                <div className="space-y-1">
-                  <h4 className="text-[12px] font-black text-foreground uppercase tracking-widest leading-none">
-                    Privacy Matrix
-                  </h4>
-                  <p className="text-[10px] text-foreground/40 leading-relaxed font-medium uppercase">
-                    Subject isolation is performed via secure server-side
-                    tunnels. Your visual data is definitively purged after
-                    extraction.
+      <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <Card className="border shadow-sm">
+          <CardHeader className="border-b py-4">
+            <CardTitle className="text-sm">Photo</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4 p-5">
+            <div
+              onClick={() => !isProcessing && fileInputRef.current?.click()}
+              onDragOver={(e) => {
+                e.preventDefault();
+                if (!isProcessing) setDragOver(true);
+              }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={handleDrop}
+              className={cn(
+                "flex h-56 cursor-pointer items-center justify-center rounded-xl border-2 border-dashed text-center",
+                dragOver
+                  ? "border-primary bg-primary/5"
+                  : "border-border bg-secondary/30",
+                isProcessing && "cursor-not-allowed opacity-60",
+              )}
+            >
+              {image ? (
+                <img
+                  src={image}
+                  alt="Selected photo"
+                  className="max-h-52 w-auto object-contain"
+                />
+              ) : (
+                <div>
+                  <Upload className="mx-auto mb-2 h-6 w-6 text-foreground/40" />
+                  <p className="text-sm font-medium">
+                    Drop a photo here, or click to browse
                   </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="lg:col-span-7 xl:col-span-8 space-y-8 animate-in fade-in slide-in-from-right-6 duration-1000">
-            <Card className="glass-card border-border shadow-2xl overflow-hidden relative flex flex-col min-h-[600px] bg-background">
-              <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
-              <CardHeader className="py-6 border-b border-border bg-secondary/30 flex flex-row items-center justify-between shrink-0 px-6 sm:px-10">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shadow-inner">
-                    <Eye className="w-5 h-5" />
-                  </div>
-                  <CardTitle className="text-[10px] font-black text-primary uppercase tracking-[0.5em]">
-                    Linguistic Visualizer
-                  </CardTitle>
-                </div>
-                <div className="flex items-center gap-4">
-                  {result && (
-                    <div className="flex items-center gap-2 bg-background/50 px-3 py-1 rounded-full border border-border">
-                      <span className="text-[8px] font-black uppercase text-foreground/40">
-                        Compare A/B
-                      </span>
-                      <Switch
-                        checked={showOriginal}
-                        onCheckedChange={setShowOriginal}
-                        className="scale-50 h-4 w-8"
-                      />
-                    </div>
-                  )}
-                </div>
-              </CardHeader>
-
-              <CardContent className="flex-1 p-8 sm:p-12 flex flex-col items-center justify-center relative overflow-hidden bg-checkered">
-                {!image && !isProcessing ? (
-                  <div className="flex flex-col items-center justify-center opacity-10 gap-6">
-                    <ImageIcon className="w-20 h-20 text-primary" />
-                    <p className="text-xs font-black uppercase tracking-[0.3em]">
-                      Awaiting Visual Input
-                    </p>
-                  </div>
-                ) : isProcessing ? (
-                  <div className="flex flex-col items-center gap-8 py-24">
-                    <div className="relative">
-                      <div className="w-28 h-28 rounded-full border-4 border-primary/10 border-t-primary animate-spin" />
-                      <Eraser className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 text-primary animate-pulse" />
-                    </div>
-                    <p className="text-[11px] font-black uppercase text-primary tracking-[0.4em]">
-                      Executing Neural Extraction...
-                    </p>
-                  </div>
-                ) : (
-                  <div className="relative w-full h-full flex items-center justify-center">
-                    <div className="relative max-w-full rounded-2xl overflow-hidden shadow-2xl ring-1 ring-white/10">
-                      {showOriginal ? (
-                        <div className="relative group/compare w-full h-full">
-                          <div className="absolute inset-0 z-10 pointer-events-none">
-                            <div
-                              className="absolute inset-0 bg-no-repeat bg-contain bg-center opacity-100"
-                              style={{
-                                backgroundImage: `url(${image})`,
-                                width: `${compareSplit}%`,
-                                borderRight: "2px solid white",
-                              }}
-                            />
-                          </div>
-                          <img
-                            src={result || image!}
-                            alt="Processed"
-                            className="max-h-[500px] w-auto object-contain"
-                          />
-                          <input
-                            type="range"
-                            min="0"
-                            max="100"
-                            value={compareSplit}
-                            onChange={(e) =>
-                              setCompareSplit(parseInt(e.target.value))
-                            }
-                            className="absolute bottom-0 left-0 w-full z-20 opacity-0 cursor-ew-resize h-full"
-                          />
-                        </div>
-                      ) : (
-                        <img
-                          src={result || image!}
-                          alt="Result"
-                          className="max-h-[500px] w-auto object-contain transition-all"
-                        />
-                      )}
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-
-              {result && (
-                <div className="p-8 border-t border-white/5 bg-[#0a0a0c] flex flex-col sm:flex-row items-center justify-between gap-6 shrink-0">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-[1.2rem] bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500">
-                      <CheckCircle2 className="w-6 h-6" />
-                    </div>
-                    <div>
-                      <p className="text-[11px] font-black uppercase text-foreground leading-none">
-                        Extraction Complete
-                      </p>
-                      <p className="text-[8px] font-bold text-foreground/20 uppercase tracking-widest">
-                        Master PNG Ready
-                      </p>
-                    </div>
-                  </div>
-                  <Button
-                    onClick={handleDownload}
-                    className="h-16 px-12 bg-white text-black hover:bg-white/90 font-black rounded-2xl flex items-center justify-center gap-4 text-sm shadow-2xl active:scale-95 transition-all"
-                  >
-                    <Download className="w-6 h-6 mr-1" /> Save Transparent
-                    Master
-                  </Button>
+                  <p className="mt-1 text-xs text-foreground/45">JPG or PNG</p>
                 </div>
               )}
-            </Card>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png"
+                onChange={handleFileUpload}
+                className="hidden"
+              />
+            </div>
+            <Button
+              onClick={executeExtraction}
+              disabled={isProcessing || !image}
+              className="h-11 w-full"
+            >
+              {isProcessing ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : null}
+              Remove background
+            </Button>
+            {error && <p className="text-sm text-destructive">{error}</p>}
+            <p className="text-xs text-foreground/55">
+              A plain wall and light on the face give a cleaner edge. Download
+              PNG to keep transparency.
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="border shadow-sm">
+          <CardHeader className="border-b py-4">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm">Result</CardTitle>
+              {result && (
+                <label className="flex items-center gap-2 text-xs text-foreground/60">
+                  Compare
+                  <Switch
+                    checked={showOriginal}
+                    onCheckedChange={setShowOriginal}
+                  />
+                </label>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4 p-5">
+            <div
+              className="flex h-72 items-center justify-center rounded-xl border p-3"
+              style={{
+                backgroundImage:
+                  "linear-gradient(45deg,#e5e5e5 25%,transparent 25%),linear-gradient(-45deg,#e5e5e5 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#e5e5e5 75%),linear-gradient(-45deg,transparent 75%,#e5e5e5 75%)",
+                backgroundSize: "16px 16px",
+                backgroundColor: "#fff",
+              }}
+            >
+              {isProcessing ? (
+                <p className="text-sm text-foreground/60">
+                  Removing background...
+                </p>
+              ) : result || image ? (
+                <img
+                  src={showOriginal ? image! : result || image!}
+                  alt="Background removed preview"
+                  className="max-h-64 w-auto object-contain"
+                />
+              ) : (
+                <p className="text-sm text-foreground/45">
+                  The cutout will show here.
+                </p>
+              )}
+            </div>
+            {result && (
+              <Button onClick={handleDownload} className="h-11 w-full">
+                <Download className="mr-2 h-4 w-4" />
+                Download PNG
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      <section className="mx-auto mt-14 max-w-3xl border-t pt-10">
+        <p className="text-xs font-semibold tracking-wide text-primary">
+          GUIDE
+        </p>
+        <h2 className="mt-2 text-2xl font-semibold tracking-tight">
+          Remove a background from a photo
+        </h2>
+        <p className="mt-3 text-sm leading-7 text-foreground/75">
+          A background remover cuts the person or object out of a picture so you
+          can place it on a plain color, a shop listing, or a slide. The hard
+          part is the edge: hair, glasses, and a collar that is the same color
+          as the wall. A clean source photo does more than any slider.
+        </p>
+
+        <div className="mt-8 grid gap-3 sm:grid-cols-3">
+          <div className="rounded-xl border p-4">
+            <p className="text-sm font-medium">1. Add the photo</p>
+            <p className="mt-1 text-xs leading-5 text-foreground/60">
+              Drop a JPG or PNG, or click the box. A plain wall works better
+              than a street.
+            </p>
+          </div>
+          <div className="rounded-xl border p-4">
+            <p className="text-sm font-medium">2. Remove the background</p>
+            <p className="mt-1 text-xs leading-5 text-foreground/60">
+              Press Remove background. The checkerboard means that area is
+              transparent.
+            </p>
+          </div>
+          <div className="rounded-xl border p-4">
+            <p className="text-sm font-medium">3. Download PNG</p>
+            <p className="mt-1 text-xs leading-5 text-foreground/60">
+              PNG keeps the empty area empty. JPG will fill it with a color.
+            </p>
           </div>
         </div>
-      )}
+
+        <div className="mt-8 space-y-3 text-sm leading-7 text-foreground/75">
+          <h2 className="text-lg font-semibold text-foreground">
+            How to get a cleaner cut
+          </h2>
+          <p>
+            Stand away from the wall. Use even light on the face, not a window
+            behind the head. Avoid a shirt that matches the background. A busy
+            market photo leaves specks around the hair. A light gray or white
+            wall usually does not. After the cut, zoom the hair. A gray halo
+            means the light was behind the subject. Take the photo again facing
+            the light, then run it once more.
+          </p>
+          <p>
+            Download PNG when you still need a transparent background, for a
+            logo lockup, a thumbnail, or a slide. JPG cannot store transparency,
+            so that export paints the empty pixels. For a product listing, put
+            the cutout on white yourself and export JPG at the size the shop
+            asks for. For a CV photo, white is the usual background. Do not
+            leave the checkerboard in the file you send. That pattern is only
+            the preview.
+          </p>
+          <h2 className="pt-2 text-lg font-semibold text-foreground">
+            What this should not be used for
+          </h2>
+          <p>
+            A passport, visa, or exam photo often must be unedited, on a set
+            background, at a set size. Removing the background can get that file
+            rejected even if the face looks fine. Read the form before you cut
+            anything. If the form allows a plain background, cut the photo,
+            place it on that exact color, and export at the pixel size they
+            wrote.
+          </p>
+          <p>
+            Use a picture you have the right to edit. A logo you do not own, or
+            a photo of someone who did not agree, should not be cut out and
+            republished. Crop out account numbers and chat text before you
+            download. This page needs a Api key for the cut itself. The key’s
+            quota is the limit, not a hidden fee on the page.
+          </p>
+          <h2 className="pt-2 text-lg font-semibold text-foreground">
+            After you download
+          </h2>
+          <p>
+            Open the PNG on a white page and on a dark page. If the edge only
+            looks clean on one of them, the halo is still there. Run a tighter
+            source photo instead of stacking filters. One good cut is better
+            than three passes on a bad one. Close the tab when you are done so
+            the preview leaves the page.
+          </p>
+        </div>
+
+        <h2 className="mt-10 text-lg font-semibold">Background remover FAQ</h2>
+        <div className="mt-3 divide-y rounded-xl border px-4">
+          <div className="py-4">
+            <p className="font-medium">Is background removal free?</p>
+            <p className="mt-1 text-sm text-foreground/70">
+              The page is free to open. The cut uses a Api key, so the number of
+              photos follows that key’s quota.
+            </p>
+          </div>
+          <div className="py-4">
+            <p className="font-medium">
+              Which file keeps the transparent background?
+            </p>
+            <p className="mt-1 text-sm text-foreground/70">
+              PNG. JPG fills the empty area with a color, so download PNG if you
+              still need transparency.
+            </p>
+          </div>
+          <div className="py-4">
+            <p className="font-medium">Why is the hair edge messy?</p>
+            <p className="mt-1 text-sm text-foreground/70">
+              A busy background or light behind the subject leaves a halo. A
+              plain wall and light on the face cut cleaner.
+            </p>
+          </div>
+          <div className="py-4">
+            <p className="font-medium">Can I use this for a passport photo?</p>
+            <p className="mt-1 text-sm text-foreground/70">
+              Only if the form allows an edited photo. Many ID and visa forms
+              want an unedited picture on a set background.
+            </p>
+          </div>
+          <div className="py-4">
+            <p className="font-medium">What does the checkerboard mean?</p>
+            <p className="mt-1 text-sm text-foreground/70">
+              It is the preview for transparent pixels. It is not part of the
+              downloaded PNG.
+            </p>
+          </div>
+        </div>
+      </section>
 
       <AlertDialog
         open={showDisconnectConfirm}
         onOpenChange={setShowDisconnectConfirm}
       >
-        <AlertDialogContent className="glass-card border-white/10 rounded-[2.5rem] p-8 max-w-sm">
-          <AlertDialogHeader className="space-y-4">
-            <div className="w-16 h-16 rounded-[1.5rem] bg-destructive/10 border border-destructive/20 flex items-center justify-center text-destructive mx-auto">
-              <Unplug className="w-8 h-8" />
-            </div>
-            <AlertDialogTitle className="text-xl font-headline font-black text-foreground uppercase tracking-tight text-center">
-              Disconnect Host
-            </AlertDialogTitle>
-            <AlertDialogDescription className="text-[11px] font-medium text-foreground/40 uppercase tracking-widest leading-relaxed text-center">
-              Are you sure you want to disconnect your private background
-              removal node?
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Disconnect API key?</AlertDialogTitle>
+            <AlertDialogDescription>
+              The saved Api Key will be removed from this browser.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="mt-8 flex flex-col sm:flex-row gap-3">
-            <AlertDialogCancel className="h-12 flex-1 rounded-xl border-white/5 bg-white/5 text-[9px] font-black uppercase tracking-widest m-0">
-              Abort
-            </AlertDialogCancel>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 disconnectNode();
                 setShowDisconnectConfirm(false);
               }}
-              className="h-12 flex-1 rounded-xl bg-destructive text-destructive-foreground font-black uppercase text-[9px] tracking-widest shadow-xl shadow-destructive/20"
             >
               Disconnect
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      <style jsx global>{`
-        .bg-checkered {
-          background-image:
-            linear-gradient(45deg, #111113 25%, transparent 25%),
-            linear-gradient(-45deg, #111113 25%, transparent 25%),
-            linear-gradient(45deg, transparent 75%, #111113 75%),
-            linear-gradient(-45deg, transparent 75%, #111113 75%);
-          background-size: 20px 20px;
-        }
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          @apply bg-transparent;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          @apply bg-primary/20 rounded-full;
-        }
-        .no-scrollbar::-webkit-scrollbar {
-          display: none;
-        }
-        .no-scrollbar {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-      `}</style>
     </div>
   );
 }

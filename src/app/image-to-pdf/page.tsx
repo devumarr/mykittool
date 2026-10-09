@@ -296,46 +296,128 @@ export default function ImageToPdfPage() {
         </Card>
       </div>
 
-      <section className="mx-auto mt-16 max-w-3xl">
-        <div className="mb-8 flex items-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600/10 text-blue-600">
-            <FileText className="h-5 w-5" />
-          </span>
-          <div>
-            <h2 className="text-xl font-bold">Image to PDF FAQ</h2>
-            <p className="text-sm text-foreground/55">How conversion works</p>
+      <section className="col-span-full mx-auto mt-14 w-full max-w-3xl border-t px-4 pt-10">
+        <p className="text-xs font-semibold tracking-wide text-primary">
+          GUIDE
+        </p>
+        <h2 className="mt-2 text-2xl font-semibold tracking-tight">
+          Turn images into one PDF
+        </h2>
+        <p className="mt-3 text-sm leading-7 text-foreground/75">
+          Forms usually want one PDF, not a folder of camera photos. Image to
+          PDF puts each picture on its own page, in the order you set, and gives
+          you a single file to upload. Conversion runs in the browser. The
+          photos are not sent to a server.
+        </p>
+
+        <div className="mt-8 grid gap-3 sm:grid-cols-3">
+          <div className="rounded-xl border p-4">
+            <p className="text-sm font-medium">1. Add the photos</p>
+            <p className="mt-1 text-xs leading-5 text-foreground/60">
+              Drop JPG or PNG files, or click the box. Add every page the form
+              asked for.
+            </p>
+          </div>
+          <div className="rounded-xl border p-4">
+            <p className="text-sm font-medium">2. Set the order</p>
+            <p className="mt-1 text-xs leading-5 text-foreground/60">
+              Page one should be the first document, not the last photo you
+              took.
+            </p>
+          </div>
+          <div className="rounded-xl border p-4">
+            <p className="text-sm font-medium">3. Create the PDF</p>
+            <p className="mt-1 text-xs leading-5 text-foreground/60">
+              A4 is the usual choice. Fit fills the page. Original keeps the
+              photo size.
+            </p>
           </div>
         </div>
-        <div className="space-y-3">
-          {[
-            {
-              q: "Which images can I convert?",
-              a: "JPG, PNG, WebP and other common image files. Add more than one and reorder them.",
-            },
-            {
-              q: "Do you upload my photos?",
-              a: "No. The PDF is built in your browser. Images stay on your device.",
-            },
-            {
-              q: "What is A4 vs Fit vs Original?",
-              a: "A4 uses a standard page with margins. Fit scales to a fixed width. Original keeps the photo size.",
-            },
-            {
-              q: "Is Image to PDF free?",
-              a: "Yes. This tool on My Kit Tool is free.",
-            },
-          ].map((item) => (
-            <div
-              key={item.q}
-              className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm"
-            >
-              <div className="h-1 bg-gradient-to-r from-blue-600 via-sky-400 to-orange-400" />
-              <div className="p-5">
-                <h3 className="text-sm font-bold">{item.q}</h3>
-                <p className="mt-1 text-sm text-foreground/60">{item.a}</p>
-              </div>
-            </div>
-          ))}
+
+        <div className="mt-8 space-y-3 text-sm leading-7 text-foreground/75">
+          <h2 className="text-lg font-semibold text-foreground">
+            A4, Fit, and Original
+          </h2>
+          <p>
+            A4 keeps a margin and is the right pick for a university form, a
+            visa upload, or a print shop. Fit scales the photo to the page,
+            which is useful when the scan should be as large as possible.
+            Original keeps the image at its own size, so a phone photo can
+            become a very wide page. If the portal does not say, use A4.
+          </p>
+          <p>
+            Check rotation before you create the file. A sideways CNIC or degree
+            scan is the usual reason a PDF comes back. Put the front of an ID
+            before the back. If you are sending two different documents, make
+            two PDFs. Mixing a degree and a bank letter in one file gets
+            rejected on some portals.
+          </p>
+          <h2 className="pt-2 text-lg font-semibold text-foreground">
+            Size and file type
+          </h2>
+          <p>
+            A PDF of camera photos is about as large as the photos. If the
+            upload limit is 2 MB or 5 MB, compress the images first, then build
+            the PDF. Compressing after the PDF is made shrinks less, because the
+            pictures are already inside the file. JPG is the right source for a
+            camera photo. PNG is better for a screenshot that has small text.
+          </p>
+          <p>
+            Name the download after the form, not IMG_2044. A file called
+            cnic-and-degree.pdf is easier to find later than a camera name. This
+            tool does not read the text in the photo. The PDF holds the picture,
+            so you cannot search the words inside a scanned page. If you still
+            have the document in Word or Google Docs, export PDF from there
+            instead of photographing the screen.
+          </p>
+          <h2 className="pt-2 text-lg font-semibold text-foreground">
+            Privacy
+          </h2>
+          <p>
+            Conversion stays on this device. Closing the tab clears the photos
+            from the page. Nothing is stored in an account. Crop account numbers
+            and chat text before you add the image. A scan of an ID is fine to
+            convert here only if you needed the PDF yourself, not to send the
+            file to someone who should not have it.
+          </p>
+        </div>
+
+        <h2 className="mt-10 text-lg font-semibold">Image to PDF FAQ</h2>
+        <div className="mt-3 divide-y rounded-xl border px-4">
+          <div className="py-4">
+            <p className="font-medium">Is image to PDF free?</p>
+            <p className="mt-1 text-sm text-foreground/70">
+              Yes. Build the PDF on My Kit Tool at no cost.
+            </p>
+          </div>
+          <div className="py-4">
+            <p className="font-medium">Do you upload my photos?</p>
+            <p className="mt-1 text-sm text-foreground/70">
+              No. Conversion runs in your browser. The files stay on your
+              device.
+            </p>
+          </div>
+          <div className="py-4">
+            <p className="font-medium">Which page size should I use?</p>
+            <p className="mt-1 text-sm text-foreground/70">
+              A4 for forms. Fit if the photo should fill the page. Original if
+              you need the photo’s own size.
+            </p>
+          </div>
+          <div className="py-4">
+            <p className="font-medium">Does this read the text in the photo?</p>
+            <p className="mt-1 text-sm text-foreground/70">
+              No. The PDF holds the picture. It does not OCR the page.
+            </p>
+          </div>
+          <div className="py-4">
+            <p className="font-medium">
+              The PDF is too large to upload. What now?
+            </p>
+            <p className="mt-1 text-sm text-foreground/70">
+              Compress the images first, then create the PDF again.
+            </p>
+          </div>
         </div>
       </section>
     </div>

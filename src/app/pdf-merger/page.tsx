@@ -239,7 +239,7 @@ export default function PdfMergerPage() {
           </CardContent>
         </Card>
 
-        <Card className="overflow-hidden rounded-[1.8rem] border-border shadow-xl lg:col-span-5">
+        <Card className=" col-span-full w-full overflow-visible overflow-hidden rounded-[1.8rem] border-border shadow-xl lg:col-span-5">
           <div className="h-1 bg-gradient-to-r from-blue-600 to-orange-400" />
           <CardHeader className="border-b border-border bg-muted/40">
             <CardTitle className="text-sm">Merge</CardTitle>
@@ -295,7 +295,79 @@ export default function PdfMergerPage() {
           </CardContent>
         </Card>
       </div>
+      <section className="col-span-full mx-auto mt-14 w-full max-w-3xl border-t px-4 pt-10">
+        <p className="text-xs font-semibold tracking-wide text-primary">
+          GUIDE
+        </p>
+        <h2 className="mt-2 text-2xl font-semibold tracking-tight">
+          Merge PDFs into one file
+        </h2>
+        <p className="mt-3 text-sm leading-7 text-foreground/75">
+          A merger joins separate PDFs in an order you choose. Use it when a
+          portal wants the form, the ID, and the photo page as one upload. The
+          files are combined in the browser. They are not sent to a server.
+        </p>
 
+        <div className="mt-8 grid gap-3 sm:grid-cols-3">
+          <div className="rounded-xl border p-4">
+            <p className="text-sm font-medium">1. Add the PDFs</p>
+            <p className="mt-1 text-xs leading-5 text-foreground/60">
+              Drop the files, or click the box. Add only the documents this
+              upload needs.
+            </p>
+          </div>
+          <div className="rounded-xl border p-4">
+            <p className="text-sm font-medium">2. Set the order</p>
+            <p className="mt-1 text-xs leading-5 text-foreground/60">
+              Move the first required document to the top before you merge.
+            </p>
+          </div>
+          <div className="rounded-xl border p-4">
+            <p className="text-sm font-medium">3. Download</p>
+            <p className="mt-1 text-xs leading-5 text-foreground/60">
+              One file comes back. Name it after the form, not after the first
+              scan.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-8 space-y-3 text-sm leading-7 text-foreground/75">
+          <h2 className="text-lg font-semibold text-foreground">
+            Order matters more than the merge
+          </h2>
+          <p>
+            Reviewers open page one and stop if it is the wrong paper. A cover
+            page, then the form, then the supporting scans, is the usual order.
+            Put the front of an ID before the back. If two files are different
+            document types and the portal asked for them separately, do not
+            merge them. One PDF for the degree and another for the bank letter
+            is safer than a mix that gets rejected.
+          </p>
+          <p>
+            This page joins PDFs. It does not turn a JPG into a page. Convert
+            the photo with Image to PDF first, then add that PDF here. A
+            sideways scan should be rotated before the merge, not after, so you
+            are not opening the finished file just to fix one page.
+          </p>
+          <h2 className="pt-2 text-lg font-semibold text-foreground">
+            Size, locks, and signatures
+          </h2>
+          <p>
+            Merged size is about the sum of the parts. Merging does not shrink
+            anything. If the result is too large to email, compress the heavy
+            file first, then merge. A locked or password-protected PDF is
+            skipped, because the pages cannot be read without the password.
+            Unlock a copy, then add that copy.
+          </p>
+          <p>
+            A digital signature can break when a signed PDF is merged into a new
+            file. If a contract must stay signed, do not merge that file. Merge
+            the unsigned copies, and send the signed original separately.
+            Closing the tab clears the files from the page. Nothing is stored in
+            an account.
+          </p>
+        </div>
+      </section>
       <section className="mx-auto mt-16 max-w-3xl">
         <div className="mb-8 flex items-center gap-3">
           <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600/10 text-blue-600">

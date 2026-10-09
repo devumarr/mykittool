@@ -405,6 +405,70 @@ export default function PdfCompressorPage() {
           ))}
         </div>
       </section>
+      <section className="mx-auto max-w-3xl px-4 py-10 text-sm leading-7 text-neutral-700">
+        <h2 className="text-xl font-semibold text-neutral-900">
+          Compress a PDF online without uploading it
+        </h2>
+        <p className="mt-3">
+          A PDF compressor reduces file size so a document is easier to email,
+          upload to a form, or send on WhatsApp. My Kit Tool compresses the file
+          in your browser. The PDF is not sent to a server, and you do not need
+          an account.
+        </p>
+        <h2 className="mt-8 text-xl font-semibold text-neutral-900">
+          How to compress a PDF
+        </h2>
+        <p className="mt-3">
+          Drop one or more PDFs into the box, or click it to choose files. Pick
+          Low, Medium, or High. Medium is the default and is the right choice
+          for most email and form uploads. Press Compress, then download the
+          file. If you added more than one PDF, the download is a ZIP.
+        </p>
+        <p className="mt-3">
+          Low keeps the file closest to the original and shrinks it the least.
+          High pushes the size down further and can make photos inside the PDF
+          softer. Use High only when a site rejects the file for being too
+          large, then check that text is still readable.
+        </p>
+        <h2 className="mt-8 text-xl font-semibold text-neutral-900">
+          Why the size sometimes does not drop
+        </h2>
+        <p className="mt-3">
+          A PDF that is already mostly text is often small. Compressing it again
+          does little. A scanned PDF or a file full of photos is large because
+          of the images, and a browser compressor cannot always shrink those
+          much. If the rebuilt file would be bigger than the original, this tool
+          keeps the original so you do not download a worse copy.
+        </p>
+        <p className="mt-3">
+          For a text PDF that is still over the limit, export it again from Word
+          or Google Docs with images set to a lower resolution, then compress
+          that export. For a scan, a smaller scan resolution before you make the
+          PDF usually beats any online compressor.
+        </p>
+        <h2 className="mt-8 text-xl font-semibold text-neutral-900">
+          When to use this
+        </h2>
+        <p className="mt-3">
+          Use it when an email bounces above 10 or 25 MB, when a university or
+          visa form caps the upload, or when WhatsApp will not send the
+          document. It is also useful before you store invoices and notes in
+          Drive, so folders stay smaller.
+        </p>
+        <p className="mt-3">
+          Do not use it on a signed or legally sealed PDF if the signature must
+          stay valid. Rebuilding a file can break a digital signature even when
+          the pages look the same. Compress a copy, and keep the signed original
+          untouched.
+        </p>
+        <h2 className="mt-8 text-xl font-semibold text-neutral-900">Privacy</h2>
+        <p className="mt-3">
+          Compression runs on this device. Closing the tab clears the file from
+          the page. Nothing is stored in an account, because there is no
+          account. That is the reason a bank statement, a CV, or an ID scan can
+          be compressed here without uploading it.
+        </p>
+      </section>
     </div>
   );
 }

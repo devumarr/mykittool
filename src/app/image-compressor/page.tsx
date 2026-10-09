@@ -150,293 +150,359 @@ export default function ImageCompressorPage() {
     if (fileInputRef.current) fileInputRef.current.value = "";
     toast({ title: "Studio Reset", description: "All fields cleared." });
   };
+  const [dragOver, setDragOver] = useState(false);
 
+  function handleDrop(e: React.DragEvent<HTMLDivElement>) {
+    e.preventDefault();
+    setDragOver(false);
+    if (isProcessing || !e.dataTransfer.files?.length) return;
+    handleFileUpload({
+      target: { files: e.dataTransfer.files },
+    } as React.ChangeEvent<HTMLInputElement>);
+  }
   return (
-    <div className="container mx-auto px-6 py-12 md:py-20">
-      <div className="mb-12 animate-reveal">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-primary/10 border border-primary/20 text-[9px] font-black text-primary uppercase tracking-widest mb-4">
-          <Maximize className="w-3.5 h-3.5" /> Performance Suite
-        </div>
-        <h1 className="text-3xl md:text-5xl font-headline font-black text-foreground uppercase tracking-tight">
-          Image <span className="text-primary italic">Compressor</span>
-        </h1>
-        <p className="text-foreground/40 text-sm md:text-base font-medium mt-4 max-w-2xl">
-          Reduce file size for web performance while maintaining high visual
-          fidelity. 100% private.
-        </p>
-      </div>
+    <div className="mx-auto w-full max-w-5xl px-4 py-8">
+      <p className="text-xs font-semibold tracking-wide text-primary">
+        IMAGE TOOLS
+      </p>
+      <h1 className="mt-1 text-3xl font-semibold tracking-tight text-foreground">
+        Image Compressor
+      </h1>
+      <p className="mt-2 max-w-2xl text-sm text-foreground/70">
+        Shrink a JPG, PNG, or WebP in the browser. The file stays on this
+        device.
+      </p>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
-        {/* Input & Controls */}
-        <div className="space-y-8 animate-in fade-in slide-in-from-left-6 duration-700">
-          <Card className="glass-card border-border shadow-2xl overflow-hidden relative group">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
-
-            <CardHeader className="pb-8 border-b border-border bg-secondary/30">
-              <CardTitle className="text-xl font-headline flex items-center gap-4 text-foreground">
-                <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary ring-1 ring-primary/40 shadow-inner group-hover:scale-110 transition-transform">
-                  <FileImage className="w-6 h-6" />
-                </div>
-                Source
-              </CardTitle>
-            </CardHeader>
-
-            <CardContent className="pt-10 space-y-10">
-              {/* Upload Zone */}
-              <div className="space-y-4">
-                <div
-                  onClick={() => !isProcessing && fileInputRef.current?.click()}
-                  className={cn(
-                    "relative group/upload h-48 rounded-[2.5rem] border-2 border-dashed border-border hover:border-primary/40 transition-all flex flex-col items-center justify-center bg-secondary/30 overflow-hidden cursor-pointer",
-                    originalImage && "border-solid border-primary/40",
-                    isProcessing && "cursor-not-allowed opacity-80",
-                  )}
-                >
-                  {originalImage ? (
-                    <div className="text-center p-6 space-y-2">
-                      <ImageIcon className="w-10 h-10 text-primary mx-auto mb-2" />
-                      <p className="text-xs font-black uppercase text-foreground truncate max-w-[240px]">
-                        {fileInfo?.name}
-                      </p>
-                      <p className="text-[10px] font-bold text-foreground/30 uppercase tracking-widest">
-                        {formatSize(fileInfo?.size || 0)} detected
-                      </p>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="w-12 h-12 rounded-2xl bg-background border border-border flex items-center justify-center text-foreground/20 group-hover:text-primary group-hover:scale-110 transition-all mb-4">
-                        <Upload className="w-6 h-6" />
-                      </div>
-                      <p className="text-[10px] font-black uppercase text-foreground/40 tracking-widest group-hover:text-primary transition-colors text-center px-6">
-                        Drop High-Res Asset or click to browse
-                      </p>
-                    </>
-                  )}
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    accept="image/jpeg,image/png,image/webp"
-                    onChange={handleFileUpload}
-                    className="hidden"
-                  />
-                </div>
-              </div>
-
-              {/* Advanced Settings */}
-              <div className="space-y-8">
-                <div className="space-y-4">
-                  <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-foreground/50">
-                    <Label className="flex items-center gap-2">
-                      Compression Quality
-                    </Label>
-                    <span className="text-primary font-mono">{quality}%</span>
-                  </div>
-                  <Slider
-                    value={[quality]}
-                    min={10}
-                    max={100}
-                    step={1}
-                    onValueChange={(v) => setQuality(v[0])}
-                  />
-                  <p className="text-[9px] text-foreground/30 font-bold uppercase tracking-widest leading-relaxed">
-                    Note: PNG output ignores quality settings (lossless by
-                    design).
+      <div className="mt-6 grid w-full grid-cols-1 gap-4 lg:grid-cols-2">
+        <Card className="border shadow-sm">
+          <CardHeader className="border-b py-4">
+            <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+              <FileImage className="h-4 w-4 text-primary" />
+              Source
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-5 p-5">
+            <div
+              onClick={() => !isProcessing && fileInputRef.current?.click()}
+              onDragOver={(e) => {
+                e.preventDefault();
+                if (!isProcessing) setDragOver(true);
+              }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={handleDrop}
+              className={cn(
+                "flex h-44 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed px-4 text-center transition-colors",
+                dragOver
+                  ? "border-primary bg-primary/5"
+                  : "border-border bg-secondary/30",
+                originalImage && "border-solid border-primary/30",
+                isProcessing && "cursor-not-allowed opacity-70",
+              )}
+            >
+              {originalImage ? (
+                <>
+                  <ImageIcon className="mb-2 h-8 w-8 text-primary" />
+                  <p className="max-w-[260px] truncate text-sm font-medium">
+                    {fileInfo?.name}
                   </p>
-                </div>
+                  <p className="mt-1 text-xs text-foreground/50">
+                    {formatSize(fileInfo?.size || 0)}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <Upload className="mb-2 h-6 w-6 text-foreground/40" />
+                  <p className="text-sm font-medium">
+                    Drop an image here, or click to browse
+                  </p>
+                  <p className="mt-1 text-xs text-foreground/45">
+                    JPG, PNG, WebP
+                  </p>
+                </>
+              )}
+              <input
+                type="file"
+                ref={fileInputRef}
+                accept="image/jpeg,image/png,image/webp"
+                onChange={handleFileUpload}
+                className="hidden"
+              />
+            </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div className="space-y-4">
-                    <Label className="text-[10px] font-black text-foreground/50 uppercase tracking-[0.2em]">
-                      Max Width (px)
-                    </Label>
-                    <Input
-                      type="number"
-                      placeholder="e.g. 1920"
-                      value={maxWidth}
-                      onChange={(e) =>
-                        setMaxWidth(
-                          e.target.value === "" ? "" : parseInt(e.target.value),
-                        )
-                      }
-                      className="h-12 bg-secondary border-border rounded-xl text-foreground font-bold"
-                    />
-                  </div>
-                  <div className="space-y-4">
-                    <Label className="text-[10px] font-black text-foreground/50 uppercase tracking-[0.2em]">
-                      Output Format
-                    </Label>
-                    <Select
-                      value={format}
-                      onValueChange={(val: any) => setOutputFormat(val)}
-                    >
-                      <SelectTrigger className="h-12 bg-secondary border-border rounded-xl text-foreground font-bold">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="glass-card">
-                        <SelectItem
-                          value="image/jpeg"
-                          className="text-xs font-bold uppercase"
-                        >
-                          JPG (Efficient)
-                        </SelectItem>
-                        <SelectItem
-                          value="image/webp"
-                          className="text-xs font-bold uppercase"
-                        >
-                          WebP (Next-Gen)
-                        </SelectItem>
-                        <SelectItem
-                          value="image/png"
-                          className="text-xs font-bold uppercase"
-                        >
-                          PNG (HQ)
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex flex-col sm:flex-row gap-3 pt-4">
-                <Button
-                  onClick={compressImage}
-                  disabled={!originalImage || isProcessing}
-                  className="w-full h-14 bg-primary hover:bg-primary/90 text-primary-foreground font-black rounded-2xl flex items-center justify-center gap-4 text-lg shadow-xl shadow-primary/30 transition-all active:scale-95 group/btn"
-                >
-                  {isProcessing ? (
-                    <Loader2 className="w-6 h-6 animate-spin" />
-                  ) : (
-                    <Zap className="w-6 h-6 group-hover:rotate-12 transition-transform" />
-                  )}
-                  Compress
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={handleClear}
-                  className="w-full sm:w-16 h-14 sm:h-16 rounded-2xl border-border bg-secondary hover:bg-secondary/80 text-foreground/40 hover:text-destructive transition-all active:scale-95 shrink-0"
-                >
-                  <Trash2 className="w-6 h-6" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          <div className="p-6 rounded-[2.5rem] bg-primary/5 border border-primary/10 flex items-start gap-5 group-hover:bg-primary/10 transition-colors">
-            <Info className="w-6 h-6 text-primary mt-1 shrink-0" />
             <div className="space-y-2">
-              <h4 className="text-[11px] font-black text-primary uppercase tracking-widest">
-                Privacy Guarantee
-              </h4>
-              <p className="text-[11px] text-foreground/40 leading-relaxed font-medium">
-                Compression occurs entirely on your device using your browser's
-                rendering engine. Your visuals never leave your machine,
-                ensuring 100% data security.
+              <div className="flex items-center justify-between text-sm">
+                <Label>Quality</Label>
+                <span className="font-medium text-primary">{quality}%</span>
+              </div>
+              <Slider
+                value={[quality]}
+                min={10}
+                max={100}
+                step={1}
+                onValueChange={(v) => setQuality(v[0])}
+              />
+              <p className="text-xs text-foreground/50">
+                PNG stays lossless and ignores this slider.
               </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs">Max width</Label>
+                <Input
+                  type="number"
+                  placeholder="1920"
+                  value={maxWidth}
+                  onChange={(e) =>
+                    setMaxWidth(
+                      e.target.value === "" ? "" : parseInt(e.target.value),
+                    )
+                  }
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Format</Label>
+                <Select
+                  value={format}
+                  onValueChange={(val: any) => setOutputFormat(val)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="image/jpeg">JPG</SelectItem>
+                    <SelectItem value="image/webp">WebP</SelectItem>
+                    <SelectItem value="image/png">PNG</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+              <Button
+                onClick={compressImage}
+                disabled={!originalImage || isProcessing}
+                className="h-11 flex-1"
+              >
+                {isProcessing ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : null}
+                Compress
+              </Button>
+              <Button
+                variant="outline"
+                className="h-11"
+                onClick={handleClear}
+                aria-label="Clear"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+            <p className="text-xs text-foreground/55">
+              The image is processed on this device and is not uploaded.
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="border shadow-sm">
+          <CardHeader className="border-b py-4">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-semibold">Preview</CardTitle>
+              {compressedSize ? (
+                <span className="rounded-md bg-primary/10 px-2 py-1 text-xs font-medium text-primary">
+                  {Math.max(
+                    0,
+                    Math.round(
+                      (1 - compressedSize / (fileInfo?.size || 1)) * 100,
+                    ),
+                  )}
+                  % smaller
+                </span>
+              ) : null}
+            </div>
+          </CardHeader>
+          <CardContent className="flex h-[calc(100%-57px)] flex-col gap-4 pt-5">
+            <div className="flex h-72 items-center justify-center rounded-xl border bg-secondary/20 p-4">
+              {compressedImage ? (
+                <img
+                  src={compressedImage}
+                  alt="Compressed preview"
+                  className="max-h-72 w-auto object-contain"
+                />
+              ) : (
+                <p className="text-sm text-foreground/45">
+                  {originalImage
+                    ? "Press Compress to preview the result."
+                    : "Drop an image to start."}
+                </p>
+              )}
+            </div>
+            {compressedImage ? (
+              <>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div className="rounded-lg border px-3 py-2">
+                    <p className="text-xs text-foreground/50">Original</p>
+                    <p className="font-medium">
+                      {formatSize(fileInfo?.size || 0)}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border px-3 py-2">
+                    <p className="text-xs text-foreground/50">Compressed</p>
+                    <p className="font-medium">
+                      {formatSize(compressedSize || 0)}
+                    </p>
+                  </div>
+                </div>
+                <Button onClick={handleDownload} className="h-11 w-full">
+                  <Download className="mr-2 h-4 w-4" />
+                  Download
+                </Button>
+              </>
+            ) : null}
+          </CardContent>
+        </Card>
+      </div>
+      <section className="col-span-full w-full basis-full">
+        <div className="mx-auto max-w-3xl px-4 py-10">
+          <p className="text-xs font-semibold tracking-[0.18em] text-blue-600">
+            IMAGE TOOLS
+          </p>
+          <h2 className="mt-2 text-3xl font-bold tracking-tight text-neutral-900">
+            Image Compressor
+          </h2>
+          <p className="mt-2 max-w-xl text-neutral-600">
+            Shrink JPG, PNG, and WebP in the browser. Nothing is uploaded.
+          </p>
+
+          <div className="mt-8 rounded-2xl border bg-white p-5 sm:p-6">
+            <h2 className="text-lg font-semibold text-neutral-900">
+              Image compressor FAQ
+            </h2>
+            <p className="mt-1 text-sm text-neutral-500">
+              Size, quality, and what stays on your device
+            </p>
+            <div className="mt-4 divide-y">
+              <div className="py-4">
+                <p className="font-medium text-neutral-900">
+                  Is image compression free?
+                </p>
+                <p className="mt-1 text-sm text-neutral-600">
+                  Yes. Compress images on My Kit Tool at no cost.
+                </p>
+              </div>
+              <div className="py-4">
+                <p className="font-medium text-neutral-900">
+                  Do you upload my photo?
+                </p>
+                <p className="mt-1 text-sm text-neutral-600">
+                  No. Compression runs in your browser. The file stays on your
+                  device.
+                </p>
+              </div>
+              <div className="py-4">
+                <p className="font-medium text-neutral-900">
+                  Why is the PNG still large?
+                </p>
+                <p className="mt-1 text-sm text-neutral-600">
+                  PNG keeps sharp edges, so logos and screenshots stay bigger
+                  than photos. Export JPG or WebP for a camera photo.
+                </p>
+              </div>
+              <div className="py-4">
+                <p className="font-medium text-neutral-900">
+                  Will this make a blurry photo sharp?
+                </p>
+                <p className="mt-1 text-sm text-neutral-600">
+                  No. It only reduces file size. Detail that was not in the
+                  original cannot be added.
+                </p>
+              </div>
             </div>
           </div>
         </div>
+      </section>
+      <section className="mx-auto mt-14 max-w-3xl border-t pt-10">
+        <p className="text-xs font-semibold tracking-wide text-primary">
+          GUIDE
+        </p>
+        <h2 className="mt-2 text-2xl font-semibold tracking-tight">
+          Compress an image without uploading it
+        </h2>
+        <p className="mt-3 text-sm leading-7 text-foreground/75">
+          A photo from a phone is often 3 to 8 MB. Email, WhatsApp, and
+          application forms reject that size, and a page full of heavy pictures
+          loads slowly. This compressor shrinks the file in your browser. The
+          image is not sent to a server, and you do not need an account.
+        </p>
 
-        {/* Output & Preview */}
-        <div className="space-y-8 animate-in fade-in slide-in-from-right-6 duration-1000 stagger-2">
-          <Card className="glass-card border-border shadow-2xl overflow-hidden relative group min-h-[500px] flex flex-col">
-            <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
-            <CardHeader className="py-8 border-b border-border bg-secondary/30">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-[10px] font-black text-primary uppercase tracking-[0.5em] flex items-center gap-2">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  Compressed Preview
-                </CardTitle>
-                {compressedSize && (
-                  <div className="px-3 py-1 rounded-lg bg-primary/10 border border-primary/20 text-[9px] font-black text-primary uppercase tracking-widest">
-                    -
-                    {Math.max(
-                      0,
-                      Math.round(
-                        (1 - compressedSize / (fileInfo?.size || 1)) * 100,
-                      ),
-                    )}
-                    % Reduced
-                  </div>
-                )}
-              </div>
-            </CardHeader>
-            <CardContent className="flex-1 flex flex-col pt-10 space-y-10">
-              <div className="flex-1 relative group/preview min-h-[300px] flex items-center justify-center rounded-[2rem] bg-secondary/30 border border-border p-6 overflow-hidden">
-                {compressedImage ? (
-                  <div className="w-full h-full flex flex-col gap-6">
-                    <img
-                      src={compressedImage}
-                      alt="Compressed"
-                      className="max-h-[350px] w-auto mx-auto rounded-lg shadow-xl object-contain"
-                    />
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="p-4 rounded-xl bg-background border border-border text-center space-y-1">
-                        <p className="text-[8px] font-black uppercase text-foreground/30 tracking-widest">
-                          Original Size
-                        </p>
-                        <p className="text-xs font-bold text-foreground">
-                          {formatSize(fileInfo?.size || 0)}
-                        </p>
-                      </div>
-                      <div className="p-4 rounded-xl bg-primary/5 border border-primary/20 text-center space-y-1">
-                        <p className="text-[8px] font-black uppercase text-primary/40 tracking-widest">
-                          Compressed Size
-                        </p>
-                        <p className="text-xs font-bold text-primary">
-                          {formatSize(compressedSize || 0)}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ) : originalImage ? (
-                  <div className="text-center space-y-6">
-                    <div className="relative w-24 h-24 mx-auto">
-                      <div className="w-24 h-24 rounded-full border-4 border-primary/10 border-t-primary animate-spin" />
-                      <FileImage className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 text-primary/40" />
-                    </div>
-                    <p className="text-[10px] font-black text-primary uppercase tracking-[0.3em]">
-                      Pending Compression
-                    </p>
-                  </div>
-                ) : (
-                  <div className="opacity-10 group-hover:opacity-20 transition-opacity text-center">
-                    <Settings2 className="w-20 h-20 text-primary mb-4 mx-auto" />
-                    <p className="text-xs font-black uppercase tracking-[0.3em]">
-                      No Target Detected
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              {compressedImage && (
-                <div className="space-y-6">
-                  <Button
-                    onClick={handleDownload}
-                    className="w-full h-16 bg-primary hover:bg-primary/90 text-primary-foreground font-black rounded-2xl flex items-center justify-center gap-4 text-xl shadow-lg transition-all active:scale-95"
-                  >
-                    <Download className="w-6 h-6" />
-                    DOWNLOAD
-                  </Button>
-
-                  <div className="p-6 rounded-2xl bg-secondary border border-border flex items-start gap-4 group">
-                    <ArrowDownCircle className="w-5 h-5 text-primary mt-0.5 shrink-0 transition-transform group-hover:translate-y-1" />
-                    <div className="space-y-1">
-                      <p className="text-[10px] font-black text-foreground uppercase tracking-widest">
-                        Ready for Production
-                      </p>
-                      <p className="text-[10px] text-foreground/40 font-medium leading-relaxed">
-                        Your compressed asset is encoded as{" "}
-                        {format.split("/")[1].toUpperCase()} at {quality}%
-                        quality setting.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+        <div className="mt-8 grid gap-3 sm:grid-cols-3">
+          <div className="rounded-xl border p-4">
+            <p className="text-sm font-medium">1. Add the image</p>
+            <p className="mt-1 text-xs leading-5 text-foreground/60">
+              Drop a JPG, PNG, or WebP, or click the box to browse.
+            </p>
+          </div>
+          <div className="rounded-xl border p-4">
+            <p className="text-sm font-medium">2. Set quality</p>
+            <p className="mt-1 text-xs leading-5 text-foreground/60">
+              80% JPG is enough for most uploads. Lower it only if the form
+              still rejects the file.
+            </p>
+          </div>
+          <div className="rounded-xl border p-4">
+            <p className="text-sm font-medium">3. Download</p>
+            <p className="mt-1 text-xs leading-5 text-foreground/60">
+              Check the preview, then save the smaller file. Closing the tab
+              clears it.
+            </p>
+          </div>
         </div>
-      </div>
+
+        <div className="mt-8 space-y-3 text-sm leading-7 text-foreground/75">
+          <h2 className="text-lg font-semibold text-foreground">
+            Which format to pick
+          </h2>
+          <p>
+            JPG is the right output for a camera photo, a product shot, or a CV
+            picture. PNG stays larger because it keeps sharp edges, which is
+            what you want for a logo or a screenshot with small text. WebP is
+            smaller than both on most photos. If the site you are uploading to
+            rejects WebP, export JPG instead.
+          </p>
+          <p>
+            The quality slider applies to JPG and WebP. PNG ignores it and stays
+            lossless, so a PNG that is still too big should be exported as JPG.
+            A max width of 1600 or 1920 is enough for a web page. A 4000-pixel
+            photo compressed to a small file can still be rejected if the form
+            also limits pixel size. Set the width first, then compress.
+          </p>
+          <h2 className="pt-2 text-lg font-semibold text-foreground">
+            What compression does not fix
+          </h2>
+          <p>
+            Compression does not add detail. A blurry photo stays blurry. It
+            also does not crop the frame. If a screenshot shows an account
+            number, a chat, or an address, crop that out before you download.
+            Shrink the file only after the private part is gone.
+          </p>
+          <p>
+            Use this for a listing photo, a form upload, or a picture WhatsApp
+            will not send. For print, keep the original. A compressed web image
+            is the wrong file to hand a print shop. Do not run the same photo
+            through the tool again and again. Each JPG save throws away a little
+            more detail.
+          </p>
+          <h2 className="pt-2 text-lg font-semibold text-foreground">
+            Privacy
+          </h2>
+          <p>
+            Compression runs on this device, using the browser. Nothing is
+            stored in an account, because there is no account. That is why a
+            scan of an ID or a bank letter can be reduced here without uploading
+            it. Close the tab when you are done, and the image leaves the page.
+          </p>
+        </div>
+      </section>
     </div>
   );
 }
