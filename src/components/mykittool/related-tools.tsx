@@ -313,7 +313,8 @@ export function RelatedTools() {
       return false;
     return true;
   }, [pathname]);
-
+  const tool = TOOL_DETAILS[pathname];
+  if (!tool) return null;
   const relatedTools = useMemo(() => {
     const paths = RELATED_MAP[pathname] || FALLBACK_TOOLS;
     return paths
