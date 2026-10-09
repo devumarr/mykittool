@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useMemo, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import {
@@ -313,18 +313,21 @@ export function RelatedTools() {
       return false;
     return true;
   }, [pathname]);
-  const tool = TOOL_DETAILS[pathname];
-  if (!tool) return null;
+
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const relatedTools = useMemo(() => {
     const paths = RELATED_MAP[pathname] || FALLBACK_TOOLS;
     return paths
-      .filter((p) => p !== pathname) // Don't suggest the current tool
-      .map((p) => ({ href: p, ...TOOL_DETAILS[p] }))
-      .filter((t) => t.title)
-      .slice(0, 4);
+      .filter((p) => p !== pathname && TOOL_DETAILS[p])
+      .map((p) => ({ href: p, ...TOOL_DETAILS[p] }));
   }, [pathname]);
-
-  if (!isToolPage) return null;
+  const tool = TOOL_DETAILS[pathname];
+  if (!mounted || !tool) return null;
 
   return (
     <section className="w-full py-24 border-t border-white/5 bg-background mt-32 animate-in fade-in duration-1000">
