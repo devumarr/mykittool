@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Hero } from "@/components/landing/hero";
 import { PopularTools } from "@/components/landing/popular-tools";
 import { HowItWorks } from "@/components/landing/how-it-works";
+import HomeFaq from "@/components/landing/home-faq";
 
 export default function Home() {
   const [count, setCount] = useState(0);
@@ -96,6 +97,7 @@ export default function Home() {
         </div>
       </section>
       <HowItWorks />
+      <HomeFaq />
     </div>
   );
 }

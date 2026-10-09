@@ -97,20 +97,9 @@ export function Hero() {
           <br />
           images and AI
         </h1>
-        <p className="mt-5 max-w-md text-[15px] leading-relaxed text-muted-foreground md:text-lg">
-          Compress a{" "}
-          <span className="font-medium text-rose-600 dark:text-rose-400">
-            photo
-          </span>
-          , build a{" "}
-          <span className="font-medium text-emerald-600 dark:text-emerald-400">
-            resume
-          </span>
-          , or chat with{" "}
-          <span className="font-medium text-violet-600 dark:text-violet-400">
-            AI
-          </span>
-          . No install. No signup.
+        <p className="mx-auto mt-4 max-w-xl text-sm leading-6 text-foreground/70">
+          Compress a PDF, merge files, turn photos into a PDF, or open a temp
+          inbox in the browser. No account. Files stay on this device.
         </p>
 
         <form onSubmit={handleSearch} className="mt-10 w-full">
@@ -135,15 +124,15 @@ export function Hero() {
 
         <div className="mt-5 flex items-center gap-3 text-[13px] md:text-sm">
           <span className="font-medium text-blue-600 dark:text-blue-400">
-            PDF
+            PDF Tools
           </span>
           <span className="h-0.5 w-0.5 rounded-full bg-border" />
           <span className="font-medium text-rose-600 dark:text-rose-400">
-            Images
+            Images Tools
           </span>
           <span className="h-0.5 w-0.5 rounded-full bg-border" />
           <span className="font-medium text-violet-600 dark:text-violet-400">
-            AI
+            Ai Tools
           </span>
         </div>
         <button

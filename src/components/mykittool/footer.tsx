@@ -123,11 +123,11 @@ export function Footer() {
           <div className="grid grid-cols-2 gap-10 md:col-span-7 md:grid-cols-3">
             <div className="flex flex-col gap-3">
               <p className="text-xs font-medium text-muted-foreground">Tools</p>
-              <FooterLink href="/all-tools">All Tools</FooterLink>
-              <FooterLink href="/single">Single QR</FooterLink>
-              <FooterLink href="/bulk">Bulk Mode</FooterLink>
-              <FooterLink href="/logo-maker">Logo Maker</FooterLink>
-              <FooterLink href="/ocr">Photo to Text</FooterLink>
+              <FooterLink href="/pdf-compressor">PDF Compressor</FooterLink>
+              <FooterLink href="/image-compressor">Image Compressor</FooterLink>
+              <FooterLink href="/temp-mail">Temp Mail</FooterLink>
+              <FooterLink href="/image-to-pdf">Image to PDF</FooterLink>
+              <FooterLink href="/pdf-merger">PDF Merger</FooterLink>
             </div>
             <div className="flex flex-col gap-3">
               <p className="text-xs font-medium text-muted-foreground">About</p>
@@ -139,10 +139,6 @@ export function Footer() {
               <FooterLink href="/faq">FAQ</FooterLink>
             </div>
             <div className="col-span-2 flex flex-col gap-3 sm:col-span-1">
-              <p className="text-xs font-medium text-muted-foreground">
-                Developer
-              </p>
-              <p className="text-sm text-muted-foreground">Umar Farooq</p>
               <Link
                 href="/donate"
                 className="mt-1 inline-flex w-fit items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1.5 text-sm font-medium text-primary transition-all hover:border-primary/40 hover:shadow-[0_0_20px_rgba(37,99,235,0.3)]"
