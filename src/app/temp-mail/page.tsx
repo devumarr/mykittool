@@ -885,6 +885,94 @@ export default function TempMailPage() {
             </Card>
           </div>
         </div>
+
+        <section className="col-span-full mx-auto mt-14 w-full max-w-3xl border-t px-4 pt-10">
+          <p className="text-xs font-semibold tracking-wide text-primary">
+            GUIDE
+          </p>
+          <h2 className="mt-2 text-2xl font-semibold tracking-tight">
+            Use a temporary email without signing up
+          </h2>
+          <p className="mt-3 text-sm leading-7 text-foreground/75">
+            A temporary email is a short-lived inbox for a site that wants an
+            address before you trust it. Use it for a download, a trial, or a
+            newsletter you do not want in your real inbox. Do not use it for a
+            bank, a job application, or any account you need to open again next
+            month.
+          </p>
+
+          <div className="mt-8 grid gap-3 sm:grid-cols-3">
+            <div className="rounded-xl border p-4">
+              <p className="text-sm font-medium">1. Copy the address</p>
+              <p className="mt-1 text-xs leading-5 text-foreground/60">
+                The inbox is already on the page. Copy it before the site asks
+                for an email.
+              </p>
+            </div>
+            <div className="rounded-xl border p-4">
+              <p className="text-sm font-medium">2. Paste it once</p>
+              <p className="mt-1 text-xs leading-5 text-foreground/60">
+                Use it on one signup. A second site on the same address mixes
+                the mail.
+              </p>
+            </div>
+            <div className="rounded-xl border p-4">
+              <p className="text-sm font-medium">3. Read, then leave</p>
+              <p className="mt-1 text-xs leading-5 text-foreground/60">
+                Open the confirmation, finish the step, and do not store a
+                password here.
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-8 space-y-3 text-sm leading-7 text-foreground/75">
+            <h2 className="text-lg font-semibold text-foreground">
+              When a temp inbox is the right tool
+            </h2>
+            <p>
+              Shops and apps often ask for an email only to send a code or a
+              receipt. If you do not want that sender in your real inbox, a
+              temporary address keeps the signup off your name. It is also
+              useful when you are checking whether a form works, or when a Wi-Fi
+              portal wants an email before it lets you online.
+            </p>
+            <p>
+              It is the wrong tool for anything you must recover. A password
+              reset sent next week will not find this inbox. A university, a
+              client, or a payment service should get your real address. If the
+              site says the email will be used to log in later, stop and use a
+              normal account.
+            </p>
+            <h2 className="pt-2 text-lg font-semibold text-foreground">
+              What stays public
+            </h2>
+            <p>
+              A temporary inbox is not a private mailbox. The address is
+              generated for this page, and a message that arrives can be read
+              while the inbox is open. Do not receive a bank code, an ID scan,
+              or a work document here. Anyone who has the address can open the
+              same inbox. Treat every message as public.
+            </p>
+            <p>
+              Copy only the link or code you need, then close the tab. Do not
+              reply from this address. Do not forward a password into it. If a
+              sender asks you to confirm a payment or to send a document, that
+              mail belongs in your real inbox, not here.
+            </p>
+            <h2 className="pt-2 text-lg font-semibold text-foreground">
+              Limits
+            </h2>
+            <p>
+              Many sites block known temporary domains. If the form rejects the
+              address, that site does not allow this kind of inbox. Use your
+              real email instead of hunting a new domain. The inbox also
+              expires. A code that arrives after the address is gone cannot be
+              read. Generate a new address only for a new signup, and finish the
+              confirmation while the page is still open.
+            </p>
+          </div>
+        </section>
+
         <section className="mx-auto mt-16 max-w-3xl px-4 pb-20">
           <div className="mb-8 flex items-center gap-3">
             <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600/10 text-blue-600">
