@@ -17,15 +17,15 @@ import {
   FiTrash2,
   FiEye,
   FiEyeOff,
-  FiSliders,
-  FiSquare,
   FiCircle,
+  FiSquare,
 } from "react-icons/fi";
 
 type Mode = "none" | "manual" | "ai";
 
 export default function BackgroundRemovePage() {
   const [original, setOriginal] = useState<string | null>(null);
+  const [originalFile, setOriginalFile] = useState<File | null>(null);
   const [result, setResult] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -41,6 +41,16 @@ export default function BackgroundRemovePage() {
   const [historyIndex, setHistoryIndex] = useState(-1);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [selectStart, setSelectStart] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
+  const [selectRect, setSelectRect] = useState<{
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+  } | null>(null);
   const progressInterval = useRef<NodeJS.Timeout | null>(null);
   const isProcessing = useRef(false);
   const isDrawing = useRef(false);
@@ -83,7 +93,7 @@ export default function BackgroundRemovePage() {
     }, 25);
   };
 
-  const handleFile = async (file: File) => {
+  const handleFile = (file: File) => {
     if (!file) return;
     setError("");
     setResult(null);
@@ -91,22 +101,20 @@ export default function BackgroundRemovePage() {
     setMode("none");
     setHistory([]);
     setHistoryIndex(-1);
+    setOriginalFile(file);
     setOriginal(URL.createObjectURL(file));
   };
 
   const startAI = async () => {
-    if (!original) return;
+    if (!originalFile) return;
     setMode("ai");
     setLoading(true);
     startSmoothProgress();
 
     try {
-      const response = await fetch(original);
-      const blob = await response.blob();
-      const file = new File([blob], "image.png", { type: blob.type });
-
       const { removeBackground } = await import("@imgly/background-removal");
-      const resultBlob = await removeBackground(file, {
+
+      const resultBlob = await removeBackground(originalFile, {
         model: "isnet_fp16",
         device: "cpu",
         output: { format: "image/png", quality: 1 },
@@ -116,19 +124,21 @@ export default function BackgroundRemovePage() {
       const finalBlob = await applyBackground(resultBlob, bgColor, showColor);
       setResult(URL.createObjectURL(finalBlob));
     } catch (err: any) {
+      console.error(err);
       isProcessing.current = false;
       if (progressInterval.current) clearInterval(progressInterval.current);
       setProgress(0);
-      setError(err?.message || "Failed to remove background.");
+      setError(err?.message || "Failed to remove background. Try again.");
     } finally {
       setTimeout(() => setLoading(false), 400);
     }
   };
 
   const startManual = () => {
+    if (!original) return;
     setMode("manual");
     setIsEditing(true);
-    setTimeout(() => loadImageToCanvas(original!), 100);
+    setTimeout(() => loadImageToCanvas(original), 100);
   };
 
   const applyBackground = async (
@@ -185,28 +195,80 @@ export default function BackgroundRemovePage() {
   const getPos = (e: React.MouseEvent | React.TouchEvent) => {
     const canvas = canvasRef.current!;
     const rect = canvas.getBoundingClientRect();
+
+    let clientX: number, clientY: number;
+
+    if ("touches" in e && e.touches.length > 0) {
+      clientX = e.touches[0].clientX;
+      clientY = e.touches[0].clientY;
+    } else {
+      clientX = (e as React.MouseEvent).clientX;
+      clientY = (e as React.MouseEvent).clientY;
+    }
+
+    // Relative position inside the displayed canvas
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+
+    // Scale to actual canvas resolution
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
-    const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
-    const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
+
     return {
-      x: (clientX - rect.left) * scaleX,
-      y: (clientY - rect.top) * scaleY,
+      x: x * scaleX,
+      y: y * scaleY,
     };
   };
 
-  const draw = (e: React.MouseEvent | React.TouchEvent) => {
-    if (!isDrawing.current || !canvasRef.current || showOriginal) return;
-    e.preventDefault();
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d")!;
+  const handlePointerDown = (e: React.MouseEvent | React.TouchEvent) => {
+    if (showOriginal) return;
     const pos = getPos(e);
-    ctx.globalCompositeOperation = "destination-out";
-    ctx.beginPath();
-    ctx.arc(pos.x, pos.y, brushSize, 0, Math.PI * 2);
-    ctx.fill();
+    isDrawing.current = true;
+
+    if (tool === "select") {
+      setSelectStart(pos);
+      setSelectRect(null);
+    }
   };
 
+  const handlePointerMove = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!isDrawing.current || showOriginal) return;
+    e.preventDefault();
+
+    const pos = getPos(e);
+
+    if (tool === "eraser") {
+      const canvas = canvasRef.current!;
+      const ctx = canvas.getContext("2d")!;
+      ctx.globalCompositeOperation = "destination-out";
+      ctx.beginPath();
+      ctx.arc(pos.x, pos.y, brushSize, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (tool === "select" && selectStart) {
+      const x = Math.min(selectStart.x, pos.x);
+      const y = Math.min(selectStart.y, pos.y);
+      const w = Math.abs(pos.x - selectStart.x);
+      const h = Math.abs(pos.y - selectStart.y);
+      setSelectRect({ x, y, w, h });
+    }
+  };
+
+  const handlePointerUp = () => {
+    if (!isDrawing.current) return;
+    isDrawing.current = false;
+
+    if (tool === "select" && selectRect && canvasRef.current) {
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext("2d")!;
+      ctx.globalCompositeOperation = "destination-out";
+      ctx.fillRect(selectRect.x, selectRect.y, selectRect.w, selectRect.h);
+      setSelectRect(null);
+      setSelectStart(null);
+      saveHistory();
+    } else if (tool === "eraser") {
+      saveHistory();
+    }
+  };
   const undo = () => {
     if (historyIndex <= 0 || !canvasRef.current) return;
     const newIndex = historyIndex - 1;
@@ -254,6 +316,7 @@ export default function BackgroundRemovePage() {
 
   const reset = () => {
     setOriginal(null);
+    setOriginalFile(null);
     setResult(null);
     setError("");
     setProgress(0);
@@ -511,7 +574,7 @@ export default function BackgroundRemovePage() {
                     </span>
                   </div>
 
-                  <div className="relative border border-neutral-200 dark:border-neutral-700 rounded-2xl overflow-hidden bg-neutral-100 dark:bg-neutral-950">
+                  <div className="relative inline-block border border-neutral-200 dark:border-neutral-700 rounded-2xl overflow-hidden bg-neutral-100 dark:bg-neutral-950">
                     {showOriginal && original && (
                       <img
                         src={original}
@@ -521,28 +584,28 @@ export default function BackgroundRemovePage() {
                     )}
                     <canvas
                       ref={canvasRef}
-                      className="w-full max-h-[480px] object-contain cursor-crosshair touch-none relative z-10"
-                      onMouseDown={() => {
-                        if (!showOriginal) isDrawing.current = true;
-                      }}
-                      onMouseUp={() => {
-                        isDrawing.current = false;
-                        saveHistory();
-                      }}
-                      onMouseLeave={() => {
-                        isDrawing.current = false;
-                      }}
-                      onMouseMove={draw}
-                      onTouchStart={(e) => {
-                        e.preventDefault();
-                        if (!showOriginal) isDrawing.current = true;
-                      }}
-                      onTouchEnd={() => {
-                        isDrawing.current = false;
-                        saveHistory();
-                      }}
-                      onTouchMove={draw}
+                      className="max-w-full max-h-[480px] block curser-crosshair touch-none"
+                      style={{ touchAction: "none" }}
+                      onMouseDown={handlePointerDown}
+                      onMouseMove={handlePointerMove}
+                      onMouseUp={handlePointerUp}
+                      onMouseLeave={handlePointerUp}
+                      onTouchStart={handlePointerDown}
+                      onTouchMove={handlePointerMove}
+                      onTouchEnd={handlePointerUp}
                     />
+
+                    {selectRect && tool === "select" && canvasRef.current && (
+                      <div
+                        className="absolute border-2 border-blue-500 bg-blue-500/20 pointer-events-none z-20"
+                        style={{
+                          left: `${(selectRect.x / canvasRef.current.width) * canvasRef.current.clientWidth}px`,
+                          top: `${(selectRect.y / canvasRef.current.height) * canvasRef.current.clientHeight}px`,
+                          width: `${(selectRect.w / canvasRef.current.width) * canvasRef.current.clientWidth}px`,
+                          height: `${(selectRect.h / canvasRef.current.height) * canvasRef.current.clientHeight}px`,
+                        }}
+                      />
+                    )}
                   </div>
 
                   <div className="flex gap-3 mt-5">
