@@ -6,11 +6,20 @@ import {
   FileText,
   ImageIcon,
   FileImage,
-  Files,
+  Eraser,
   ArrowRight,
 } from "lucide-react";
 
 const popularTools = [
+  {
+    href: "/background-remove",
+    icon: Eraser,
+    title: "Ai Background Remover",
+    desc: "Instantly isolates subjects by erasing image backgrounds with one click.",
+    well: "bg-amber-500/15 text-amber-600 dark:text-amber-300",
+    glow: "hover:shadow-amber-500/25 dark:hover:shadow-amber-400/30",
+    span: "sm:col-span-2 lg:col-span-1",
+  },
   {
     href: "/temp-mail",
     icon: Mail,
@@ -46,15 +55,6 @@ const popularTools = [
     well: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-300",
     glow: "hover:shadow-emerald-500/25 dark:hover:shadow-emerald-400/30",
     span: "",
-  },
-  {
-    href: "/pdf-merger",
-    icon: Files,
-    title: "PDF Merger",
-    desc: "Join PDFs, then download one file.",
-    well: "bg-amber-500/15 text-amber-600 dark:text-amber-300",
-    glow: "hover:shadow-amber-500/25 dark:hover:shadow-amber-400/30",
-    span: "sm:col-span-2 lg:col-span-1",
   },
 ];
 
